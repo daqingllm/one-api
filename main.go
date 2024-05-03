@@ -6,6 +6,7 @@ import (
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
 	"github.com/songquanpeng/one-api/common"
 	"github.com/songquanpeng/one-api/common/config"
 	"github.com/songquanpeng/one-api/common/logger"
@@ -22,6 +23,7 @@ import (
 var buildFS embed.FS
 
 func main() {
+	godotenv.Load()
 	logger.SetupLogger()
 	logger.SysLog(fmt.Sprintf("One API %s started", common.Version))
 	if os.Getenv("GIN_MODE") != "debug" {
