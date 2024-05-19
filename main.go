@@ -67,19 +67,12 @@ func main() {
 	// Initialize options
 	model.InitOptionMap()
 	logger.SysLog(fmt.Sprintf("using theme %s", config.Theme))
-	if common.RedisEnabled {
-		// for compatibility with old versions
-		config.MemoryCacheEnabled = true
-	}
-	if config.MemoryCacheEnabled {
-		logger.SysLog("memory cache enabled")
-		logger.SysLog(fmt.Sprintf("sync frequency: %d seconds", config.SyncFrequency))
-		model.InitChannelCache()
-	}
-	if config.MemoryCacheEnabled {
-		go model.SyncOptions(config.SyncFrequency)
-		go model.SyncChannelCache(config.SyncFrequency)
-	}
+
+	logger.SysLog("memory cache enabled")
+	logger.SysLog(fmt.Sprintf("sync frequency: %d seconds", config.SyncFrequency))
+	model.InitChannelCache()
+	go model.SyncOptions(config.SyncFrequency)
+	go model.SyncChannelCache(config.SyncFrequency)
 	if os.Getenv("CHANNEL_TEST_FREQUENCY") != "" {
 		frequency, err := strconv.Atoi(os.Getenv("CHANNEL_TEST_FREQUENCY"))
 		if err != nil {
