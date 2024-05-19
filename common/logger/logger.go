@@ -3,8 +3,6 @@ package logger
 import (
 	"context"
 	"fmt"
-	"io"
-	"log"
 	"os"
 	"path/filepath"
 	"sync"
@@ -27,13 +25,17 @@ var setupLogOnce sync.Once
 func SetupLogger() {
 	setupLogOnce.Do(func() {
 		if LogDir != "" {
-			logPath := filepath.Join(LogDir, fmt.Sprintf("oneapi-%s.log", time.Now().Format("20060102")))
-			fd, err := os.OpenFile(logPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-			if err != nil {
-				log.Fatal("failed to open log file")
-			}
-			gin.DefaultWriter = io.MultiWriter(os.Stdout, fd)
-			gin.DefaultErrorWriter = io.MultiWriter(os.Stderr, fd)
+			//logPath := filepath.Join(LogDir, fmt.Sprintf("oneapi-%s.log", time.Now().Format("20060102")))
+			//fd, err := os.OpenFile(logPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+			//if err != nil {
+			//	log.Fatal("failed to open log file")
+			//}
+			//gin.DefaultWriter = io.MultiWriter(os.Stdout, fd)
+			//gin.DefaultErrorWriter = io.MultiWriter(os.Stderr, fd)
+
+			// 创建每天北京时间凌晨2:00分割日志的 io.Writer
+			gin.DefaultWriter = NewDailyRotateWriter(filepath.Join(LogDir, "app.log"), 10)
+			gin.DefaultErrorWriter = NewDailyRotateWriter(filepath.Join(LogDir, "error.log"), 10)
 		}
 	})
 }

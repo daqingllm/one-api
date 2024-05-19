@@ -245,11 +245,41 @@ func CacheGetRandomSatisfiedChannel(group string, model string, ignoreFirstPrior
 			}
 		}
 	}
-	idx := rand.Intn(endIdx)
+	idx := calcIdxByWeight(channels, endIdx)
 	if ignoreFirstPriority {
 		if endIdx < len(channels) { // which means there are more than one priority
 			idx = random.RandRange(endIdx, len(channels))
 		}
 	}
 	return channels[idx], nil
+}
+
+func calcIdxByWeight(channels []*Channel, endIdx int) int {
+	if endIdx == 1 {
+		return 0
+	}
+	totalWeight := 0
+	for i, channel := range channels {
+		if i < endIdx {
+			totalWeight += getChannelWeight(channel)
+		}
+	}
+	randomNum := rand.Intn(totalWeight)
+	index := 0
+	sum := 0
+	for i, channel := range channels {
+		sum += getChannelWeight(channel)
+		if sum > randomNum {
+			index = i
+			break
+		}
+	}
+	return index
+}
+
+func getChannelWeight(channel *Channel) int {
+	if *channel.Weight <= 0 {
+		return 1
+	}
+	return int(*channel.Weight)
 }

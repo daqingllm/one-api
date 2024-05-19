@@ -44,9 +44,6 @@ func init() {
 			config.SessionSecret = os.Getenv("SESSION_SECRET")
 		}
 	}
-	if os.Getenv("SQLITE_PATH") != "" {
-		SQLitePath = os.Getenv("SQLITE_PATH")
-	}
 	if *LogDir != "" {
 		var err error
 		*LogDir, err = filepath.Abs(*LogDir)
