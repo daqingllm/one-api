@@ -92,7 +92,7 @@ func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, meta *meta.Met
 			usage = ResponseText2Usage(responseText, meta.ActualModelName, meta.PromptTokens)
 		}
 		if usage.TotalTokens != 0 && usage.PromptTokens == 0 { // some channels don't return prompt tokens & completion tokens
-			logger.Info(context.Background(), fmt.Sprintf("Usage tokens maybe abnormal, response=%s, meta=%+v", responseText, *meta))
+			logger.Error(context.Background(), fmt.Sprintf("Usage tokens maybe abnormal, response=%s, meta=%+v", responseText, *meta))
 			usage.PromptTokens = meta.PromptTokens
 			usage.CompletionTokens = usage.TotalTokens - meta.PromptTokens
 		}
