@@ -1,7 +1,10 @@
 package model
 
 import (
+	"crypto/tls"
+	"crypto/x509"
 	"errors"
+	mysql_driver "github.com/go-sql-driver/mysql"
 	"github.com/songquanpeng/one-api/common"
 	"github.com/songquanpeng/one-api/common/config"
 	"github.com/songquanpeng/one-api/common/env"
@@ -11,6 +14,7 @@ import (
 	"gorm.io/driver/mysql"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	"log"
 	"os"
 	"strings"
 	"time"
@@ -75,6 +79,17 @@ func chooseDB(envName string) (*gorm.DB, error) {
 		// Use MySQL
 		logger.SysLog("using MySQL as database")
 		common.UsingMySQL = true
+
+		if os.Getenv("CA_FILE") != "" {
+			caFile := os.Getenv("CA_FILE")
+			tlsConf := createTLSConf(caFile)
+			err := mysql_driver.RegisterTLSConfig("custom", &tlsConf)
+			if err != nil {
+				log.Printf("Error %s when RegisterTLSConfig\n", err)
+				return nil, err
+			}
+		}
+
 		return gorm.Open(mysql.Open(dsn), &gorm.Config{
 			PrepareStmt: true, // precompile SQL
 		})
@@ -82,6 +97,35 @@ func chooseDB(envName string) (*gorm.DB, error) {
 	// Use SQLite
 	logger.SysError("SQL_DSN not set!")
 	return nil, errors.New("SQL_DSN not set")
+}
+
+// path to cert-files hard coded
+// Most of this is copy pasted from the internet
+// and used without much reflection
+func createTLSConf(caFile string) tls.Config {
+
+	rootCertPool := x509.NewCertPool()
+	pem, err := os.ReadFile(caFile)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if ok := rootCertPool.AppendCertsFromPEM(pem); !ok {
+		log.Fatal("Failed to append PEM.")
+	}
+	//clientCert := make([]tls.Certificate, 0, 1)
+
+	//certs, err := tls.LoadX509KeyPair("cert/client-cert.pem", "cert/client-key.pem")
+	//if err != nil {
+	//	log.Fatal(err)
+	//}
+	//
+	//clientCert = append(clientCert, certs)
+
+	return tls.Config{
+		RootCAs: rootCertPool,
+		//Certificates:       clientCert,
+		InsecureSkipVerify: true, // needed for self signed certs
+	}
 }
 
 func InitDB(envName string) (db *gorm.DB, err error) {
