@@ -124,7 +124,6 @@ func createTLSConf(caFile string) tls.Config {
 	return tls.Config{
 		RootCAs: rootCertPool,
 		//Certificates:       clientCert,
-		InsecureSkipVerify: true, // needed for self signed certs
 	}
 }
 
