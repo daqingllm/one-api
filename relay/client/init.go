@@ -1,6 +1,7 @@
 package client
 
 import (
+	"crypto/tls"
 	"github.com/songquanpeng/one-api/common/config"
 	"net/http"
 	"time"
@@ -10,11 +11,17 @@ var HTTPClient *http.Client
 var ImpatientHTTPClient *http.Client
 
 func init() {
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
 	if config.RelayTimeout == 0 {
-		HTTPClient = &http.Client{}
+		HTTPClient = &http.Client{
+			Transport: tr,
+		}
 	} else {
 		HTTPClient = &http.Client{
-			Timeout: time.Duration(config.RelayTimeout) * time.Second,
+			Transport: tr,
+			Timeout:   time.Duration(config.RelayTimeout) * time.Second,
 		}
 	}
 
