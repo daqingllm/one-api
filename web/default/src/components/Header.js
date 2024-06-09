@@ -20,7 +20,7 @@ let headerButtons = [
     admin: true
   },
   {
-    name: '令牌',
+    name: 'API keys',
     to: '/token',
     icon: 'key'
   },
@@ -52,7 +52,7 @@ let headerButtons = [
     icon: 'setting'
   },
   {
-    name: '关于',
+    name: '使用教程',
     to: '/about',
     icon: 'info circle'
   }

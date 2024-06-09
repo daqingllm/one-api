@@ -34,11 +34,11 @@ const About = () => {
       {
         aboutLoaded && about === '' ? <>
           <Segment>
-            <Header as='h3'>关于</Header>
-            <p>可在设置页面设置关于内容，支持 HTML & Markdown</p>
+            <Header as='h3'>使用教程</Header>
+            <p>使用说明</p>
             项目仓库地址：
-            <a href='https://github.com/songquanpeng/one-api'>
-              https://github.com/songquanpeng/one-api
+            <a href='https://github.com/euansu/AIHubMix'>
+              https://doc.aihubmix.com
             </a>
           </Segment>
         </> : <>

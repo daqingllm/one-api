@@ -206,7 +206,7 @@ const LogsTable = () => {
         </Header>
         <Form>
           <Form.Group>
-            <Form.Input fluid label={'令牌名称'} width={3} value={token_name}
+            <Form.Input fluid label={'Key名称'} width={3} value={token_name}
                         placeholder={'可选值'} name='token_name' onChange={handleInputChange} />
             <Form.Input fluid label='模型名称' width={3} value={model_name} placeholder='可选值'
                         name='model_name'
@@ -274,7 +274,7 @@ const LogsTable = () => {
                 }}
                 width={1}
               >
-                令牌
+                Key
               </Table.HeaderCell>
               <Table.HeaderCell
                 style={{ cursor: 'pointer' }}
@@ -301,7 +301,7 @@ const LogsTable = () => {
                 }}
                 width={1}
               >
-                提示
+                输入
               </Table.HeaderCell>
               <Table.HeaderCell
                 style={{ cursor: 'pointer' }}
@@ -310,7 +310,7 @@ const LogsTable = () => {
                 }}
                 width={1}
               >
-                补全
+                输出
               </Table.HeaderCell>
               <Table.HeaderCell
                 style={{ cursor: 'pointer' }}
