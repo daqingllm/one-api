@@ -1,9 +1,14 @@
 package env
 
 import (
+	"github.com/joho/godotenv"
 	"os"
 	"strconv"
 )
+
+func init() {
+	godotenv.Load()
+}
 
 func Bool(env string, defaultValue bool) bool {
 	if env == "" || os.Getenv(env) == "" {
