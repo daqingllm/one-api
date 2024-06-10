@@ -56,23 +56,23 @@ const Home = () => {
       {
         homePageContentLoaded && homePageContent === '' ? <>
           <Segment>
-            <Header as='h3'>系统状况</Header>
+            <Header as='h3'>AiHubMix</Header>
             <Grid columns={2} stackable>
               <Grid.Column>
                 <Card fluid>
                   <Card.Content>
-                    <Card.Header>系统信息</Card.Header>
-                    <Card.Meta>系统信息总览</Card.Meta>
+                    <Card.Header>AiHubMix</Card.Header>
+                    <Card.Meta>AiHubMix</Card.Meta>
                     <Card.Description>
                       <p>名称：{statusState?.status?.system_name}</p>
                       <p>版本：{statusState?.status?.version ? statusState?.status?.version : "unknown"}</p>
                       <p>
                         源码：
                         <a
-                          href='https://github.com/songquanpeng/one-api'
+                          href='https://github.com/euansu/AIHubMix'
                           target='_blank'
                         >
-                          https://github.com/songquanpeng/one-api
+                          https://github.com/euansu/AIHubMix
                         </a>
                       </p>
                       <p>启动时间：{getStartTimeString()}</p>

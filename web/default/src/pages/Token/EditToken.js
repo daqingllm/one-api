@@ -110,9 +110,9 @@ const EditToken = () => {
     const { success, message } = res.data;
     if (success) {
       if (isEdit) {
-        showSuccess('令牌更新成功！');
+        showSuccess('Key更新成功！');
       } else {
-        showSuccess('令牌创建成功，请在列表页面点击复制获取令牌！');
+        showSuccess('Key创建成功，请在列表页面点击复制获取Key！');
         setInputs(originInputs);
       }
     } else {
@@ -123,7 +123,7 @@ const EditToken = () => {
   return (
     <>
       <Segment loading={loading}>
-        <Header as='h3'>{isEdit ? '更新令牌信息' : '创建新的令牌'}</Header>
+        <Header as='h3'>{isEdit ? '更新Key信息' : '创建新的Key'}</Header>
         <Form autoComplete='new-password'>
           <Form.Field>
             <Form.Input
@@ -158,7 +158,7 @@ const EditToken = () => {
             <Form.Input
               label='IP 限制'
               name='subnet'
-              placeholder={'请输入允许访问的网段，例如：192.168.0.0/24，请使用英文逗号分隔多个网段'}
+              placeholder={'新手勿填，请输入允许访问的网段，例如：192.168.0.0/24，请使用英文逗号分隔多个网段'}
               onChange={handleInputChange}
               value={inputs.subnet}
               autoComplete='new-password'
@@ -192,7 +192,7 @@ const EditToken = () => {
               setExpiredTime(0, 0, 0, 1);
             }}>一分钟后过期</Button>
           </div>
-          <Message>注意，令牌的额度仅用于限制令牌本身的最大额度使用量，实际的使用受到账户的剩余额度限制。</Message>
+          <Message>注意，新手建议选择无限额度，Key的额度仅用于限制Key本身的最大额度使用量，实际的使用受到账户的剩余额度限制。</Message>
           <Form.Field>
             <Form.Input
               label={`额度${renderQuotaWithPrompt(remain_quota)}`}
