@@ -34,8 +34,8 @@ func SetupLogger() {
 			//gin.DefaultErrorWriter = io.MultiWriter(os.Stderr, fd)
 
 			// 创建每天北京时间凌晨2:00分割日志的 io.Writer
-			gin.DefaultWriter = NewDailyRotateWriter(filepath.Join(LogDir, "app.log"), 200)
-			gin.DefaultErrorWriter = NewDailyRotateWriter(filepath.Join(LogDir, "error.log"), 200)
+			gin.DefaultWriter = NewLoggerWithRotation(filepath.Join(LogDir, "app.log"), 200)
+			gin.DefaultErrorWriter = NewLoggerWithRotation(filepath.Join(LogDir, "error.log"), 200)
 		}
 	})
 }

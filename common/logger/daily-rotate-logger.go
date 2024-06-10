@@ -3,61 +3,50 @@ package logger
 import (
 	"gopkg.in/natefinch/lumberjack.v2"
 	"log"
-	"os"
-	"path/filepath"
 	"time"
 )
 
-// DailyRotateWriter 实现每天北京时间凌晨2:00分割日志的 io.Writer
-type DailyRotateWriter struct {
-	*lumberjack.Logger
-	lastRotate time.Time
+// LoggerWithRotation 包装 lumberjack.Logger 以支持定时分割
+type LoggerWithRotation struct {
+	Logger *lumberjack.Logger
 }
 
-// NewDailyRotateWriter 创建一个新的 DailyRotateWriter
-func NewDailyRotateWriter(filename string, maxSize int) *DailyRotateWriter {
-	dir := filepath.Dir(filename)
-	if _, err := os.Stat(dir); os.IsNotExist(err) {
-		if err := os.MkdirAll(dir, 0755); err != nil {
-			log.Fatalf("Failed to create log directory: %v", err)
-		}
-	}
-
-	w := &DailyRotateWriter{
+// NewLoggerWithRotation 创建并初始化 LoggerWithRotation
+func NewLoggerWithRotation(filename string, maxSize int) *LoggerWithRotation {
+	l := &LoggerWithRotation{
 		Logger: &lumberjack.Logger{
 			Filename:   filename,
-			MaxSize:    maxSize, // 单个日志文件最大 10MB
+			MaxSize:    maxSize, // megabytes
 			MaxBackups: 30,
-			MaxAge:     7, // 保留 7 天内的日志文件
-			Compress:   true,
+			MaxAge:     7,    //days
+			Compress:   true, // enabled by default
 		},
-		lastRotate: time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), 2, 0, 0, 0, time.FixedZone("Asia/Shanghai", 8*3600)),
 	}
-
-	// 每天北京时间凌晨2:00进行日志文件分割
-	go w.runDailyRotate()
-
-	return w
+	go l.scheduleRotation()
+	return l
 }
 
-func (w *DailyRotateWriter) Write(p []byte) (n int, err error) {
-	// 检查是否需要进行日志文件分割
-	if time.Now().In(time.FixedZone("Asia/Shanghai", 8*3600)).After(w.lastRotate.Add(24 * time.Hour)) {
-		w.Rotate()
-		w.lastRotate = w.lastRotate.Add(24 * time.Hour)
+// scheduleRotation 设置每天北京时间 02:00 触发日志分割
+func (l *LoggerWithRotation) scheduleRotation() {
+	loc, err := time.LoadLocation("Asia/Shanghai")
+	if err != nil {
+		log.Fatalf("Failed to load location: %v", err)
 	}
-
-	return w.Logger.Write(p)
-}
-
-func (w *DailyRotateWriter) runDailyRotate() {
 	for {
-		// 等待到下一个北京时间凌晨2:00
-		nextRotate := time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day()+1, 2, 0, 0, 0, time.FixedZone("Asia/Shanghai", 8*3600))
-		time.Sleep(nextRotate.Sub(time.Now().In(time.FixedZone("Asia/Shanghai", 8*3600))))
-
-		// 进行日志文件分割
-		w.Rotate()
-		w.lastRotate = nextRotate
+		now := time.Now().In(loc)
+		// 计算下一个 02:00 的时间
+		next := now.Add(time.Hour * 24)
+		next = time.Date(next.Year(), next.Month(), next.Day(), 2, 0, 0, 0, loc)
+		duration := next.Sub(now)
+		time.AfterFunc(duration, func() {
+			l.Logger.Rotate()
+			l.scheduleRotation()
+		})
+		break
 	}
+}
+
+// Write 实现 io.Writer 接口
+func (l *LoggerWithRotation) Write(p []byte) (n int, err error) {
+	return l.Logger.Write(p)
 }
