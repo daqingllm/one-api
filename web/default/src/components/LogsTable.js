@@ -43,11 +43,8 @@ function renderType(type) {
 
 const LogsTable = () => {
   const [logs, setLogs] = useState([]);
-  const [showStat, setShowStat] = useState(false);
   const [loading, setLoading] = useState(true);
   const [activePage, setActivePage] = useState(1);
-  const [searchKeyword, setSearchKeyword] = useState('');
-  const [searching, setSearching] = useState(false);
   const [logType, setLogType] = useState(0);
   const isAdminUser = isAdmin();
   let now = new Date();
@@ -94,15 +91,12 @@ const LogsTable = () => {
     }
   };
 
-  const handleEyeClick = async () => {
-    if (!showStat) {
+  const handleLogStat = async () => {
       if (isAdminUser) {
         await getLogStat();
       } else {
         await getLogSelfStat();
       }
-    }
-    setShowStat(!showStat);
   };
 
   const loadLogs = async (startIdx) => {
@@ -143,35 +137,13 @@ const LogsTable = () => {
   const refresh = async () => {
     setLoading(true);
     setActivePage(1);
+    handleLogStat()
     await loadLogs(0);
   };
 
   useEffect(() => {
     refresh().then();
   }, [logType]);
-
-  const searchLogs = async () => {
-    if (searchKeyword === '') {
-      // if keyword is blank, load files instead.
-      await loadLogs(0);
-      setActivePage(1);
-      return;
-    }
-    setSearching(true);
-    const res = await API.get(`/api/log/self/search?keyword=${searchKeyword}`);
-    const { success, message, data } = res.data;
-    if (success) {
-      setLogs(data);
-      setActivePage(1);
-    } else {
-      showError(message);
-    }
-    setSearching(false);
-  };
-
-  const handleKeywordChange = async (e, { value }) => {
-    setSearchKeyword(value.trim());
-  };
 
   const sortLog = (key) => {
     if (logs.length === 0) return;
@@ -198,12 +170,6 @@ const LogsTable = () => {
   return (
     <>
       <Segment>
-        <Header as='h3'>
-          使用明细（总消耗额度：
-          {showStat && renderQuota(stat.quota)}
-          {!showStat && <span onClick={handleEyeClick} style={{ cursor: 'pointer', color: 'gray' }}>点击查看</span>}
-          ）
-        </Header>
         <Form>
           <Form.Group>
             <Form.Input fluid label={'Key名称'} width={3} value={token_name}
@@ -233,6 +199,9 @@ const LogsTable = () => {
             </>
           }
         </Form>
+        <Header as='h4' floated='left'>
+          使用明细（总消耗额度：{renderQuota(stat.quota)}）
+        </Header>
         <Table basic compact size='small'>
           <Table.Header>
             <Table.Row>
@@ -321,15 +290,6 @@ const LogsTable = () => {
               >
                 额度
               </Table.HeaderCell>
-              <Table.HeaderCell
-                style={{ cursor: 'pointer' }}
-                onClick={() => {
-                  sortLog('content');
-                }}
-                width={isAdminUser ? 4 : 6}
-              >
-                详情
-              </Table.HeaderCell>
             </Table.Row>
           </Table.Header>
 
@@ -360,7 +320,6 @@ const LogsTable = () => {
                     <Table.Cell>{log.prompt_tokens ? log.prompt_tokens : ''}</Table.Cell>
                     <Table.Cell>{log.completion_tokens ? log.completion_tokens : ''}</Table.Cell>
                     <Table.Cell>{log.quota ? renderQuota(log.quota, 6) : ''}</Table.Cell>
-                    <Table.Cell>{log.content}</Table.Cell>
                   </Table.Row>
                 );
               })}
