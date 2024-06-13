@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Button, Form, Header, Message, Segment } from 'semantic-ui-react';
+import { Button, Form, Header, Message, Segment, Accordion, AccordionTitle, AccordionContent, Icon } from 'semantic-ui-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { API, copy, showError, showSuccess, timestamp2string } from '../../helpers';
 import { renderQuotaWithPrompt } from '../../helpers/render';
@@ -9,12 +9,13 @@ const EditToken = () => {
   const tokenId = params.id;
   const isEdit = tokenId !== undefined;
   const [loading, setLoading] = useState(isEdit);
+  const [activeAccordion, setActiveAccordion] = useState(false);
   const [modelOptions, setModelOptions] = useState([]);
   const originInputs = {
     name: '',
     remain_quota: isEdit ? 0 : 500000,
     expired_time: -1,
-    unlimited_quota: false,
+    unlimited_quota: true,
     models: [],
     subnet: "",
   };
@@ -124,7 +125,7 @@ const EditToken = () => {
     <>
       <Segment loading={loading}>
         <Header as='h3'>{isEdit ? '更新Key信息' : '创建新的Key'}</Header>
-        <Form autoComplete='new-password'>
+        <Form autoComplete='new-password' style={{ paddingBottom: 50 }}>
           <Form.Field>
             <Form.Input
               label='名称'
@@ -134,34 +135,6 @@ const EditToken = () => {
               value={name}
               autoComplete='new-password'
               required={!isEdit}
-            />
-          </Form.Field>
-          <Form.Field>
-            <Form.Dropdown
-              label='模型范围'
-              placeholder={'请选择允许使用的模型，留空则不进行限制'}
-              name='models'
-              fluid
-              multiple
-              search
-              onLabelClick={(e, { value }) => {
-                copy(value).then();
-              }}
-              selection
-              onChange={handleInputChange}
-              value={inputs.models}
-              autoComplete='new-password'
-              options={modelOptions}
-            />
-          </Form.Field>
-          <Form.Field>
-            <Form.Input
-              label='IP 限制'
-              name='subnet'
-              placeholder={'新手勿填，请输入允许访问的网段，例如：192.168.0.0/24，请使用英文逗号分隔多个网段'}
-              onChange={handleInputChange}
-              value={inputs.subnet}
-              autoComplete='new-password'
             />
           </Form.Field>
           <Form.Field>
@@ -208,6 +181,45 @@ const EditToken = () => {
           <Button type={'button'} onClick={() => {
             setUnlimitedQuota();
           }}>{unlimited_quota ? '取消无限额度' : '设为无限额度'}</Button>
+          <Accordion style={{ marginTop: 20, marginBottom: 20 }}>
+            <AccordionTitle
+              active={activeAccordion}
+              index={0}
+              onClick={() => setActiveAccordion(!activeAccordion)}
+            >
+              <h4><Icon name='dropdown' />此高级选项，新手勿操作</h4>
+            </AccordionTitle>
+            <AccordionContent active={activeAccordion}>
+              <Form.Field>
+                <Form.Dropdown
+                  label='模型范围'
+                  placeholder={'请选择允许使用的模型，留空则不进行限制'}
+                  name='models'
+                  fluid
+                  multiple
+                  search
+                  onLabelClick={(e, { value }) => {
+                    copy(value).then();
+                  }}
+                  selection
+                  onChange={handleInputChange}
+                  value={inputs.models}
+                  autoComplete='new-password'
+                  options={modelOptions}
+                />
+              </Form.Field>
+              <Form.Field>
+                <Form.Input
+                  label='IP 限制'
+                  name='subnet'
+                  placeholder={'新手勿填，请输入允许访问的网段，例如：192.168.0.0/24，请使用英文逗号分隔多个网段'}
+                  onChange={handleInputChange}
+                  value={inputs.subnet}
+                  autoComplete='new-password'
+                />
+              </Form.Field>
+            </AccordionContent>
+          </Accordion>
           <Button floated='right' positive onClick={submit}>提交</Button>
           <Button floated='right' onClick={handleCancel}>取消</Button>
         </Form>

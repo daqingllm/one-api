@@ -41,7 +41,7 @@ export function getFooterHTML() {
 export async function copy(text) {
   let okay = true;
   try {
-    await navigator.clipboard.writeText(text);
+    await window.navigator.clipboard.writeText(text);
   } catch (e) {
     okay = false;
     console.error(e);
