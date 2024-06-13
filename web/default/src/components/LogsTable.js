@@ -1,17 +1,75 @@
 import React, { useEffect, useState } from 'react';
-import { Button, Form, Header, Label, Pagination, Segment, Select, Table } from 'semantic-ui-react';
+import { Button, Form, Header, Label, Pagination, Segment, Icon, Table } from 'semantic-ui-react';
 import { API, isAdmin, showError, timestamp2string } from '../helpers';
 
 import { ITEMS_PER_PAGE } from '../constants';
 import { renderQuota } from '../helpers/render';
 
-function renderTimestamp(timestamp) {
-  return (
-    <>
-      {timestamp2string(timestamp)}
-    </>
-  );
-}
+const adminColumns = [
+  {
+    title: '渠道',
+    dataIndex: 'channel',
+    width: 1,
+    label: true,
+    basic: true,
+  },
+  {
+    title: '用户',
+    dataIndex: 'username',
+    width: 1,
+    label: true,
+    basic: false,
+  },
+  {
+    title: '详情',
+    dataIndex: 'content',
+    width: 4,
+  }
+]
+
+const defaultColumns = [
+  {
+    title: 'key',
+    dataIndex: 'token_name',
+    width: 1,
+    label: true,
+    basic: true,
+  },
+  {
+    title: '类型',
+    dataIndex: 'type',
+    width: 1,
+  },
+  {
+    title: '模型',
+    dataIndex: 'model_name',
+    width: 2,
+    label: true,
+    basic: true,
+  },
+  {
+    title: '输入',
+    dataIndex: 'prompt_tokens',
+    width: 1,
+  },
+  {
+    title: '输出',
+    dataIndex: 'completion_tokens',
+    width: 1,
+  },
+  {
+    title: '额度',
+    dataIndex: 'quota',
+    width: 1,
+  },
+  {
+    title: '时间',
+    dataIndex: 'created_at',
+    width: 3,
+  },
+]
+
+const specialField = ['type', 'quota'];
 
 const MODE_OPTIONS = [
   { key: 'all', text: '全部用户', value: 'all' },
@@ -44,8 +102,8 @@ function renderType(type) {
 const LogsTable = () => {
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [downloadLoading, setDownloadLoading] = useState(false);
   const [activePage, setActivePage] = useState(1);
-  const [logType, setLogType] = useState(0);
   const isAdminUser = isAdmin();
   let now = new Date();
   const [inputs, setInputs] = useState({
@@ -54,9 +112,11 @@ const LogsTable = () => {
     model_name: '',
     start_timestamp: timestamp2string(0),
     end_timestamp: timestamp2string(now.getTime() / 1000 + 3600),
-    channel: ''
+    channel: '',
+    logType: 0
   });
-  const { username, token_name, model_name, start_timestamp, end_timestamp, channel } = inputs;
+  const columns = [...(isAdminUser? adminColumns : []), ...defaultColumns];
+  const { username, token_name, logType, model_name, start_timestamp, end_timestamp, channel } = inputs;
 
   const [stat, setStat] = useState({
     quota: 0,
@@ -110,12 +170,16 @@ const LogsTable = () => {
     }
     const res = await API.get(url);
     const { success, message, data } = res.data;
+    const curData = data.map(item => ({
+      ...item,
+      created_at: timestamp2string(item.created_at)
+    }))
     if (success) {
       if (startIdx === 0) {
-        setLogs(data);
+        setLogs(curData);
       } else {
         let newLogs = [...logs];
-        newLogs.splice(startIdx * ITEMS_PER_PAGE, data.length, ...data);
+        newLogs.splice(startIdx * ITEMS_PER_PAGE, curData.length, ...curData);
         setLogs(newLogs);
       }
     } else {
@@ -141,10 +205,6 @@ const LogsTable = () => {
     await loadLogs(0);
   };
 
-  useEffect(() => {
-    refresh().then();
-  }, [logType]);
-
   const sortLog = (key) => {
     if (logs.length === 0) return;
     setLoading(true);
@@ -166,6 +226,52 @@ const LogsTable = () => {
     setLogs(sortedLogs);
     setLoading(false);
   };
+  // 批量下载
+  const batchExport = async () => {
+    setDownloadLoading(true)
+    let url = '';
+    let localStartTimestamp = Date.parse(start_timestamp) / 1000;
+    let localEndTimestamp = Date.parse(end_timestamp) / 1000;
+    if (isAdminUser) {
+      url = `/api/log/?p=0&num=10000&type=${logType}&username=${username}&token_name=${token_name}&model_name=${model_name}&start_timestamp=${localStartTimestamp}&end_timestamp=${localEndTimestamp}&channel=${channel}`;
+    } else {
+      url = `/api/log/self/?p=&num=10000&type=${logType}&token_name=${token_name}&model_name=${model_name}&start_timestamp=${localStartTimestamp}&end_timestamp=${localEndTimestamp}`;
+    }
+    const res = await API.get(url);
+    const { success, message, data } = res.data;
+    if (success) {
+      const curData = data.map(item => ({
+        ...item,
+        created_at: timestamp2string(item.created_at)
+      }))
+      // 下载
+      const tableRows = [
+        columns.map(item => item.title), // 第一行就是表格表头
+        ...curData.map(log => columns.map(item => log[item.dataIndex]))
+      ]
+      // 构造数据字符，换行需要用\r\n
+      let CsvString = tableRows.map(data => data.join(',')).join('\r\n');
+      // 加上 CSV 文件头标识
+      CsvString = 'data:application/vnd.ms-excel;charset=utf-8,\uFEFF' + encodeURIComponent(CsvString);
+      // 通过创建a标签下载
+      const link = document.createElement('a');
+      link.href = CsvString;
+      // 对下载的文件命名
+      link.download = `使用明细.csv`;
+      // 模拟点击下载
+      link.click();
+      // 移除a标签
+      link.remove();
+      setDownloadLoading(false)
+    } else {
+      showError(message);
+      setDownloadLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    refresh().then();
+  }, []);
 
   return (
     <>
@@ -177,119 +283,57 @@ const LogsTable = () => {
             <Form.Input fluid label='模型名称' width={3} value={model_name} placeholder='可选值'
                         name='model_name'
                         onChange={handleInputChange} />
+            <Form.Select fluid label='明细分类' width={2} options={LOG_OPTIONS} value={logType} onChange={(e, o) => handleInputChange(e, { name: 'logType', value: o.value })}/>
             <Form.Input fluid label='起始时间' width={4} value={start_timestamp} type='datetime-local'
                         name='start_timestamp'
                         onChange={handleInputChange} />
             <Form.Input fluid label='结束时间' width={4} value={end_timestamp} type='datetime-local'
                         name='end_timestamp'
-                        onChange={handleInputChange} />
-            <Form.Button fluid label='操作' width={2} onClick={refresh}>查询</Form.Button>
+                      onChange={handleInputChange} />
           </Form.Group>
-          {
+          <Form.Group>
+            {
             isAdminUser && <>
-              <Form.Group>
                 <Form.Input fluid label={'渠道 ID'} width={3} value={channel}
                             placeholder='可选值' name='channel'
                             onChange={handleInputChange} />
                 <Form.Input fluid label={'用户名称'} width={3} value={username}
                             placeholder={'可选值'} name='username'
                             onChange={handleInputChange} />
-
-              </Form.Group>
             </>
-          }
+            }
+            <Form.Field inline width={isAdminUser ? 8 : 14} />
+            <Form.Button fluid label={isAdminUser ? '操作' : ''} width={2} onClick={refresh} loading={loading}>查询</Form.Button>
+          </Form.Group>
+        
         </Form>
-        <Header as='h4' floated='left'>
-          使用明细（总消耗额度：{renderQuota(stat.quota)}）
-        </Header>
+        <Segment clearing textAlign='left' basic style={{ padding: 0 }}>
+          <Header as='h4' floated='left' style={{ marginBottom: 0, lineHeight: '33px' }}>
+            使用明细（总消耗额度：{renderQuota(stat.quota)}）
+          </Header>
+          <Button as='div' labelPosition='left' floated='right' onClick={batchExport} loading={downloadLoading}>
+            <Label as='span' basic>
+              最多10000条
+            </Label>
+            <Button icon>
+              <Icon name='download' />
+            </Button>
+          </Button>
+        </Segment>
         <Table basic compact size='small'>
           <Table.Header>
             <Table.Row>
-              <Table.HeaderCell
-                style={{ cursor: 'pointer' }}
-                onClick={() => {
-                  sortLog('created_time');
-                }}
-                width={3}
-              >
-                时间
-              </Table.HeaderCell>
-              {
-                isAdminUser && <Table.HeaderCell
+              {columns.map(item => 
+                <Table.HeaderCell
                   style={{ cursor: 'pointer' }}
                   onClick={() => {
-                    sortLog('channel');
+                    sortLog(item.dataIndex);
                   }}
-                  width={1}
+                  width={item.width}
                 >
-                  渠道
+                  {item.title}
                 </Table.HeaderCell>
-              }
-              {
-                isAdminUser && <Table.HeaderCell
-                  style={{ cursor: 'pointer' }}
-                  onClick={() => {
-                    sortLog('username');
-                  }}
-                  width={1}
-                >
-                  用户
-                </Table.HeaderCell>
-              }
-              <Table.HeaderCell
-                style={{ cursor: 'pointer' }}
-                onClick={() => {
-                  sortLog('token_name');
-                }}
-                width={1}
-              >
-                Key
-              </Table.HeaderCell>
-              <Table.HeaderCell
-                style={{ cursor: 'pointer' }}
-                onClick={() => {
-                  sortLog('type');
-                }}
-                width={1}
-              >
-                类型
-              </Table.HeaderCell>
-              <Table.HeaderCell
-                style={{ cursor: 'pointer' }}
-                onClick={() => {
-                  sortLog('model_name');
-                }}
-                width={2}
-              >
-                模型
-              </Table.HeaderCell>
-              <Table.HeaderCell
-                style={{ cursor: 'pointer' }}
-                onClick={() => {
-                  sortLog('prompt_tokens');
-                }}
-                width={1}
-              >
-                输入
-              </Table.HeaderCell>
-              <Table.HeaderCell
-                style={{ cursor: 'pointer' }}
-                onClick={() => {
-                  sortLog('completion_tokens');
-                }}
-                width={1}
-              >
-                输出
-              </Table.HeaderCell>
-              <Table.HeaderCell
-                style={{ cursor: 'pointer' }}
-                onClick={() => {
-                  sortLog('quota');
-                }}
-                width={1}
-              >
-                额度
-              </Table.HeaderCell>
+                )}
             </Table.Row>
           </Table.Header>
 
@@ -302,24 +346,12 @@ const LogsTable = () => {
               .map((log, idx) => {
                 if (log.deleted) return <></>;
                 return (
-                  <Table.Row key={log.id}>
-                    <Table.Cell>{renderTimestamp(log.created_at)}</Table.Cell>
-                    {
-                      isAdminUser && (
-                        <Table.Cell>{log.channel ? <Label basic>{log.channel}</Label> : ''}</Table.Cell>
-                      )
-                    }
-                    {
-                      isAdminUser && (
-                        <Table.Cell>{log.username ? <Label>{log.username}</Label> : ''}</Table.Cell>
-                      )
-                    }
-                    <Table.Cell>{log.token_name ? <Label basic>{log.token_name}</Label> : ''}</Table.Cell>
-                    <Table.Cell>{renderType(log.type)}</Table.Cell>
-                    <Table.Cell>{log.model_name ? <Label basic>{log.model_name}</Label> : ''}</Table.Cell>
-                    <Table.Cell>{log.prompt_tokens ? log.prompt_tokens : ''}</Table.Cell>
-                    <Table.Cell>{log.completion_tokens ? log.completion_tokens : ''}</Table.Cell>
-                    <Table.Cell>{log.quota ? renderQuota(log.quota, 6) : ''}</Table.Cell>
+                  <Table.Row key={log.created_at}>
+                    {columns.map(item => 
+                      <Table.Cell>
+                        {item.dataIndex === 'type' ? renderType(log.type) : item.dataIndex === 'quota' ? renderQuota(log.quota, 6) : ''}
+                        {specialField.includes(item.dataIndex) ? '' : item.label? <Label basic={item.basic}>{log[item.dataIndex]}</Label> : log[item.dataIndex]}
+                      </Table.Cell>)}
                   </Table.Row>
                 );
               })}
@@ -328,17 +360,6 @@ const LogsTable = () => {
           <Table.Footer>
             <Table.Row>
               <Table.HeaderCell colSpan={'10'}>
-                <Select
-                  placeholder='选择明细分类'
-                  options={LOG_OPTIONS}
-                  style={{ marginRight: '8px' }}
-                  name='logType'
-                  value={logType}
-                  onChange={(e, { name, value }) => {
-                    setLogType(value);
-                  }}
-                />
-                <Button size='small' onClick={refresh} loading={loading}>刷新</Button>
                 <Pagination
                   floated='right'
                   activePage={activePage}

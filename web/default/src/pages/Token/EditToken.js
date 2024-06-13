@@ -149,23 +149,13 @@ const EditToken = () => {
             />
           </Form.Field>
           <div style={{ lineHeight: '40px' }}>
-            <Button type={'button'} onClick={() => {
-              setExpiredTime(0, 0, 0, 0);
-            }}>永不过期</Button>
-            <Button type={'button'} onClick={() => {
-              setExpiredTime(1, 0, 0, 0);
-            }}>一个月后过期</Button>
-            <Button type={'button'} onClick={() => {
-              setExpiredTime(0, 1, 0, 0);
-            }}>一天后过期</Button>
-            <Button type={'button'} onClick={() => {
-              setExpiredTime(0, 0, 1, 0);
-            }}>一小时后过期</Button>
-            <Button type={'button'} onClick={() => {
-              setExpiredTime(0, 0, 0, 1);
-            }}>一分钟后过期</Button>
+            <Button type={'button'} primary={expired_time === -1} onClick={() => {setExpiredTime(0, 0, 0, 0)}}>永不过期</Button>
+            <Button type={'button'} onClick={() => {setExpiredTime(1, 0, 0, 0)}}>一个月后过期</Button>
+            <Button type={'button'} onClick={() => {setExpiredTime(0, 1, 0, 0)}}>一天后过期</Button>
+            <Button type={'button'} onClick={() => {setExpiredTime(0, 0, 1, 0)}}>一小时后过期</Button>
+            <Button type={'button'} onClick={() => {setExpiredTime(0, 0, 0, 1)}}>一分钟后过期</Button>
           </div>
-          <Message>注意，新手建议选择无限额度，Key的额度仅用于限制Key本身的最大额度使用量，实际的使用受到账户的剩余额度限制。</Message>
+          <Message size='tiny' color='yellow'>注意，新手建议选择无限额度，Key的额度仅用于限制Key本身的最大额度使用量，实际的使用受到账户的剩余额度限制。</Message>
           <Form.Field>
             <Form.Input
               label={`额度${renderQuotaWithPrompt(remain_quota)}`}
