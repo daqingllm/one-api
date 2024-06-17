@@ -8,6 +8,8 @@ import (
 	"github.com/songquanpeng/one-api/relay/meta"
 	"io"
 	"net/http"
+	"net/url"
+	"strings"
 )
 
 func SetupCommonRequestHeader(c *gin.Context, req *http.Request, meta *meta.Meta) {
@@ -33,9 +35,18 @@ func DoRequestHelper(a Adaptor, c *gin.Context, meta *meta.Meta, requestBody io.
 	}
 	resp, err := DoRequest(c, req)
 	if err != nil {
-		return nil, fmt.Errorf("do request failed: %w", err)
+		return nil, fmt.Errorf("do request failed: %s", maskBaseURL(err.Error(), meta.BaseURL))
 	}
 	return resp, nil
+}
+
+func maskBaseURL(errStr string, baseURL string) string {
+	u, err := url.Parse(baseURL)
+	if err != nil {
+		return errStr
+	}
+	domain := strings.Split(u.Host, ":")[0]
+	return strings.Replace(errStr, domain, "*****", -1)
 }
 
 func DoRequest(c *gin.Context, req *http.Request) (*http.Response, error) {

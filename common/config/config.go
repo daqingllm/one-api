@@ -11,7 +11,7 @@ import (
 	"github.com/google/uuid"
 )
 
-var SystemName = "One API"
+var SystemName = "AiHubMix"
 var ServerAddress = "http://localhost:3000"
 var Footer = ""
 var Logo = ""
@@ -54,7 +54,6 @@ var EmailDomainWhitelist = []string{
 
 var DebugEnabled = strings.ToLower(os.Getenv("DEBUG")) == "true"
 var DebugSQLEnabled = strings.ToLower(os.Getenv("DEBUG_SQL")) == "true"
-var MemoryCacheEnabled = strings.ToLower(os.Getenv("MEMORY_CACHE_ENABLED")) == "true"
 
 var LogConsumeEnabled = true
 

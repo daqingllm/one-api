@@ -405,6 +405,14 @@ const ChannelsTable = () => {
             >
               优先级
             </Table.HeaderCell>
+            <Table.HeaderCell
+                style={{ cursor: 'pointer' }}
+                onClick={() => {
+                  sortChannel('weight');
+                }}
+            >
+              权重
+            </Table.HeaderCell>
             <Table.HeaderCell>操作</Table.HeaderCell>
           </Table.Row>
         </Table.Header>
@@ -457,6 +465,22 @@ const ChannelsTable = () => {
                       </Input>}
                       content='渠道选择优先级，越高越优先'
                       basic
+                    />
+                  </Table.Cell>
+                  <Table.Cell>
+                    <Popup
+                        trigger={<Input type='number' defaultValue={channel.weight} onBlur={(event) => {
+                          manageChannel(
+                              channel.id,
+                              'weight',
+                              idx,
+                              event.target.value
+                          );
+                        }}>
+                          <input style={{ maxWidth: '60px' }} />
+                        </Input>}
+                        content='渠道选择权重，越高越流量越大'
+                        basic
                     />
                   </Table.Cell>
                   <Table.Cell>

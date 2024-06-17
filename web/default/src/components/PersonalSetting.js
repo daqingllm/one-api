@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useState } from 'react';
-import { Button, Divider, Form, Header, Image, Message, Modal } from 'semantic-ui-react';
+import { Button, Divider, Form, Header, Image, Message, Modal, LabelGroup, Label } from 'semantic-ui-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { API, copy, showError, showInfo, showNotice, showSuccess } from '../helpers';
 import Turnstile from 'react-turnstile';
@@ -28,6 +28,7 @@ const PersonalSetting = () => {
   const [countdown, setCountdown] = useState(30);
   const [affLink, setAffLink] = useState("");
   const [systemToken, setSystemToken] = useState("");
+  const [availableModels, setAvailableModels] = useState([])
 
   useEffect(() => {
     let status = localStorage.getItem('status');
@@ -53,6 +54,10 @@ const PersonalSetting = () => {
     }
     return () => clearInterval(countdownInterval); // Clean up on unmount
   }, [disableButton, countdown]);
+
+  useEffect(() => {
+    loadAvailableModels()
+  });
 
   const handleInputChange = (e, { name, value }) => {
     setInputs((inputs) => ({ ...inputs, [name]: value }));
@@ -167,6 +172,16 @@ const PersonalSetting = () => {
     setLoading(false);
   };
 
+  const loadAvailableModels = async () => {
+    let res = await API.get(`/api/user/available_models`);
+    const { success, message, data } = res.data;
+    if (success) {
+      setAvailableModels(data);
+    } else {
+      showError(message);
+    }
+  };
+
   return (
     <div style={{ lineHeight: '40px' }}>
       <Header as='h3'>通用设置</Header>
@@ -200,6 +215,13 @@ const PersonalSetting = () => {
           style={{ marginTop: '10px' }}
         />
       )}
+      <Divider />
+      <Header as='h3'>可用模型</Header>
+      <LabelGroup size="small" circular>
+        {availableModels.map((label, index) => (
+            <Label>{label}</Label>
+        ))}
+      </LabelGroup>
       <Divider />
       <Header as='h3'>账号绑定</Header>
       {

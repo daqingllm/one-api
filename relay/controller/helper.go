@@ -170,6 +170,9 @@ func postConsumeQuota(ctx context.Context, usage *relaymodel.Usage, meta *meta.M
 	completionRatio := billingratio.GetCompletionRatio(textRequest.Model)
 	promptTokens := usage.PromptTokens
 	completionTokens := usage.CompletionTokens
+	if completionTokens <= 0 {
+		logger.Error(context.Background(), fmt.Sprintf("completionTokens error: %v, request=%+v, usage=%+v", completionTokens, *textRequest, *usage))
+	}
 	quota = int64(math.Ceil((float64(promptTokens) + float64(completionTokens)*completionRatio) * ratio))
 	if ratio != 0 && quota <= 0 {
 		quota = 1
