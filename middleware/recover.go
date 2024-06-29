@@ -21,8 +21,8 @@ func RelayPanicRecover() gin.HandlerFunc {
 				logger.Errorf(ctx, fmt.Sprintf("request body: %s", string(body)))
 				c.JSON(http.StatusInternalServerError, gin.H{
 					"error": gin.H{
-						"message": fmt.Sprintf("Panic detected, error: %v. Please submit an issue with the related log here: https://github.com/songquanpeng/one-api", err),
-						"type":    "one_api_panic",
+						"message": fmt.Sprintf("Panic detected, error: %v. Please submit an issue with the related log here: https://doc.aihubmix.com", err),
+						"type":    "Aihubmix_api_panic",
 					},
 				})
 				c.Abort()
