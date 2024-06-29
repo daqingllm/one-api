@@ -18,7 +18,7 @@ func printHelp() {
 	fmt.Println("Usage: one-api [--port <port>] [--log-dir <log directory>] [--version] [--help]")
 }
 
-func init() {
+func Init() {
 	flag.Parse()
 
 	if *env.PrintVersion {
