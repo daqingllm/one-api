@@ -15,6 +15,7 @@ var (
 	PrintVersion = flag.Bool("version", false, "print version and exit")
 	PrintHelp    = flag.Bool("help", false, "print help and exit")
 	LogDir       = flag.String("log-dir", "./logs", "specify the log directory")
+	EnvFile      = flag.String("env-file", "", "env file dir")
 )
 
 func printHelp() {

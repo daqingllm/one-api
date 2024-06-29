@@ -2,12 +2,13 @@ package env
 
 import (
 	"github.com/joho/godotenv"
+	"github.com/songquanpeng/one-api/common"
 	"os"
 	"strconv"
 )
 
 func init() {
-	godotenv.Load()
+	godotenv.Load(*common.EnvFile)
 }
 
 func Bool(env string, defaultValue bool) bool {
