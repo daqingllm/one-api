@@ -9,6 +9,7 @@ import (
 	"github.com/songquanpeng/one-api/common"
 	"github.com/songquanpeng/one-api/common/client"
 	"github.com/songquanpeng/one-api/common/config"
+	"github.com/songquanpeng/one-api/common/env"
 	"github.com/songquanpeng/one-api/common/logger"
 	"github.com/songquanpeng/one-api/controller"
 	"github.com/songquanpeng/one-api/middleware"
@@ -104,7 +105,7 @@ func main() {
 	router.SetRouter(server, buildFS)
 	var port = os.Getenv("PORT")
 	if port == "" {
-		port = strconv.Itoa(*common.Port)
+		port = strconv.Itoa(*env.Port)
 	}
 	err = server.Run(":" + port)
 	if err != nil {
