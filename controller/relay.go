@@ -89,7 +89,7 @@ func Relay(c *gin.Context) {
 	}
 	if bizErr != nil {
 		if bizErr.StatusCode == http.StatusTooManyRequests {
-			bizErr.Error.Message = "当前分组上游负载已饱和，请稍后再试"
+			bizErr.Error.Message = "当前分组上游负载已饱和，联系客服或请稍后重试"
 		}
 		bizErr.Error.Message = helper.MessageWithRequestId(bizErr.Error.Message, requestId)
 		c.JSON(bizErr.StatusCode, gin.H{
@@ -130,7 +130,7 @@ func processChannelRelayError(ctx context.Context, userId int, channelId int, ch
 func RelayNotImplemented(c *gin.Context) {
 	err := model.Error{
 		Message: "API not implemented",
-		Type:    "one_api_error",
+		Type:    "Aihubmix_api_error",
 		Param:   "",
 		Code:    "api_not_implemented",
 	}

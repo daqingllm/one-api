@@ -6,9 +6,11 @@ import (
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
+	_ "github.com/joho/godotenv/autoload"
 	"github.com/songquanpeng/one-api/common"
 	"github.com/songquanpeng/one-api/common/client"
 	"github.com/songquanpeng/one-api/common/config"
+	"github.com/songquanpeng/one-api/common/env"
 	"github.com/songquanpeng/one-api/common/logger"
 	"github.com/songquanpeng/one-api/controller"
 	"github.com/songquanpeng/one-api/middleware"
@@ -23,6 +25,7 @@ import (
 var buildFS embed.FS
 
 func main() {
+	common.Init()
 	logger.SetupLogger()
 	logger.SysLogf("One API %s started", common.Version)
 	if os.Getenv("GIN_MODE") != "debug" {
@@ -104,8 +107,9 @@ func main() {
 	router.SetRouter(server, buildFS)
 	var port = os.Getenv("PORT")
 	if port == "" {
-		port = strconv.Itoa(*common.Port)
+		port = strconv.Itoa(*env.Port)
 	}
+	logger.SysLogf("server started on http://localhost:%s", port)
 	err = server.Run(":" + port)
 	if err != nil {
 		logger.FatalLog("failed to start HTTP server: " + err.Error())

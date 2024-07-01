@@ -4,17 +4,11 @@ import (
 	"flag"
 	"fmt"
 	"github.com/songquanpeng/one-api/common/config"
+	"github.com/songquanpeng/one-api/common/env"
 	"github.com/songquanpeng/one-api/common/logger"
 	"log"
 	"os"
 	"path/filepath"
-)
-
-var (
-	Port         = flag.Int("port", 3000, "the listening port")
-	PrintVersion = flag.Bool("version", false, "print version and exit")
-	PrintHelp    = flag.Bool("help", false, "print help and exit")
-	LogDir       = flag.String("log-dir", "./logs", "specify the log directory")
 )
 
 func printHelp() {
@@ -24,15 +18,15 @@ func printHelp() {
 	fmt.Println("Usage: one-api [--port <port>] [--log-dir <log directory>] [--version] [--help]")
 }
 
-func init() {
+func Init() {
 	flag.Parse()
 
-	if *PrintVersion {
+	if *env.PrintVersion {
 		fmt.Println(Version)
 		os.Exit(0)
 	}
 
-	if *PrintHelp {
+	if *env.PrintHelp {
 		printHelp()
 		os.Exit(0)
 	}
@@ -44,18 +38,18 @@ func init() {
 			config.SessionSecret = os.Getenv("SESSION_SECRET")
 		}
 	}
-	if *LogDir != "" {
+	if *env.LogDir != "" {
 		var err error
-		*LogDir, err = filepath.Abs(*LogDir)
+		*env.LogDir, err = filepath.Abs(*env.LogDir)
 		if err != nil {
 			log.Fatal(err)
 		}
-		if _, err := os.Stat(*LogDir); os.IsNotExist(err) {
-			err = os.Mkdir(*LogDir, 0777)
+		if _, err := os.Stat(*env.LogDir); os.IsNotExist(err) {
+			err = os.Mkdir(*env.LogDir, 0777)
 			if err != nil {
 				log.Fatal(err)
 			}
 		}
-		logger.LogDir = *LogDir
+		logger.LogDir = *env.LogDir
 	}
 }
