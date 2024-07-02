@@ -144,7 +144,7 @@ func GetModelInfo(c *gin.Context) {
 	for _, m := range models {
 		modelWithRatio = append(modelWithRatio, ModelWithRatio{
 			Model:           m,
-			ModelRatio:      ratio.GetModelRatio(m),
+			ModelRatio:      ratio.GetModelRatio(m) * ratio.GetGroupRatio("default"),
 			CompletionRatio: ratio.GetCompletionRatio(m),
 		})
 	}
