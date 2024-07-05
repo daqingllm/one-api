@@ -168,7 +168,10 @@ func ListModels(c *gin.Context) {
 		availableModels = strings.Split(c.GetString(ctxkey.AvailableModels), ",")
 	} else {
 		userId := c.GetInt(ctxkey.Id)
-		userGroup, _ := model.CacheGetUserGroup(userId)
+		var userGroup = "default"
+		if userId > 0 {
+			userGroup, _ = model.CacheGetUserGroup(userId)
+		}
 		availableModels, _ = model.CacheGetGroupModels(ctx, userGroup)
 	}
 	modelSet := make(map[string]bool)

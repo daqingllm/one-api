@@ -88,6 +88,34 @@ func RootAuth() func(c *gin.Context) {
 	}
 }
 
+func TryTokenAuth() func(c *gin.Context) {
+	return func(c *gin.Context) {
+		key := c.Request.Header.Get("Authorization")
+		key = strings.TrimPrefix(key, "Bearer ")
+		key = strings.TrimPrefix(key, "sk-")
+		parts := strings.Split(key, "-")
+		key = parts[0]
+		token, err := model.ValidateUserToken(key)
+		if err != nil {
+			c.Set(ctxkey.Id, 0)
+			c.Set(ctxkey.TokenId, 0)
+			c.Set(ctxkey.TokenName, "")
+			c.Next()
+			return
+		}
+		c.Set(ctxkey.Id, token.UserId)
+		c.Set(ctxkey.TokenId, token.Id)
+		c.Set(ctxkey.TokenName, token.Name)
+		if token.Models != nil && *token.Models != "" {
+			c.Set(ctxkey.AvailableModels, *token.Models)
+		}
+		if len(parts) > 1 && model.IsAdmin(token.UserId) {
+			c.Set(ctxkey.SpecificChannelId, parts[1])
+		}
+		c.Next()
+	}
+}
+
 func TokenAuth() func(c *gin.Context) {
 	return func(c *gin.Context) {
 		ctx := c.Request.Context()

@@ -30,6 +30,7 @@ func StreamHandler(c *gin.Context, resp *http.Response, relayMode int) (*model.E
 	var usage *model.Usage
 
 	common.SetEventStreamHeaders(c)
+	doneRendered := false
 
 	for scanner.Scan() {
 		data := scanner.Text()
@@ -41,6 +42,7 @@ func StreamHandler(c *gin.Context, resp *http.Response, relayMode int) (*model.E
 		}
 		if strings.HasPrefix(data[dataPrefixLength:], done) {
 			render.StringData(c, data)
+			doneRendered = true
 			continue
 		}
 		switch relayMode {
@@ -81,7 +83,9 @@ func StreamHandler(c *gin.Context, resp *http.Response, relayMode int) (*model.E
 		logger.SysError("error reading stream: " + err.Error())
 	}
 
-	render.Done(c)
+	if !doneRendered {
+		render.Done(c)
+	}
 
 	err := resp.Body.Close()
 	if err != nil {
