@@ -67,6 +67,9 @@ var SMTPToken = ""
 var GitHubClientId = ""
 var GitHubClientSecret = ""
 
+var GoogleClientId = ""
+var GoogleClientSecret = ""
+
 var LarkClientId = ""
 var LarkClientSecret = ""
 
