@@ -106,7 +106,7 @@ func CountTokenMessages(messages []model.Message, model string) int {
 						if imageUrl["detail"] != nil {
 							detail = imageUrl["detail"].(string)
 						}
-						imageTokens, err := countImageTokens(url, detail)
+						imageTokens, err := countImageTokens(url, detail, model)
 						if err != nil {
 							logger.SysError("error counting image tokens: " + err.Error())
 						} else {
@@ -134,7 +134,7 @@ const (
 
 // https://platform.openai.com/docs/guides/vision/calculating-costs
 // https://github.com/openai/openai-cookbook/blob/05e3f9be4c7a2ae7ecf029a7c32065b024730ebe/examples/How_to_count_tokens_with_tiktoken.ipynb
-func countImageTokens(url string, detail string) (_ int, err error) {
+func countImageTokens(url string, detail string, model string) (_ int, err error) {
 	var fetchSize = true
 	var width, height int
 	// Reference: https://platform.openai.com/docs/guides/vision/low-or-high-fidelity-image-understanding
@@ -186,8 +186,14 @@ func countImageTokens(url string, detail string) (_ int, err error) {
 			width = int(float64(width) * ratio)
 			height = int(float64(height) * ratio)
 		}
+		tileCost := highDetailCostPerTile
+		baseCost := additionalCost
+		if strings.HasPrefix(model, "gpt-4o-mini") {
+			tileCost = 5667
+			baseCost = 2833
+		}
 		numSquares := int(math.Ceil(float64(width)/512) * math.Ceil(float64(height)/512))
-		result := numSquares*highDetailCostPerTile + additionalCost
+		result := numSquares*tileCost + baseCost
 		return result, nil
 	default:
 		return 0, errors.New("invalid detail option")

@@ -13,6 +13,7 @@ import (
 	"github.com/songquanpeng/one-api/common/env"
 	"github.com/songquanpeng/one-api/common/logger"
 	"github.com/songquanpeng/one-api/controller"
+	"github.com/songquanpeng/one-api/job"
 	"github.com/songquanpeng/one-api/middleware"
 	"github.com/songquanpeng/one-api/model"
 	"github.com/songquanpeng/one-api/relay/adaptor/openai"
@@ -92,7 +93,8 @@ func main() {
 	}
 	openai.InitTokenEncoders()
 	client.Init()
-
+	job.Init()
+	
 	// Initialize HTTP server
 	server := gin.New()
 	server.Use(gin.Recovery())
