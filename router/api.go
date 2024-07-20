@@ -14,6 +14,9 @@ func SetApiRouter(router *gin.Engine) {
 	apiRouter.Use(gzip.Gzip(gzip.DefaultCompression))
 	apiRouter.Use(middleware.GlobalAPIRateLimit())
 	{
+		apiRouter.GET("/refresh_model_usage", controller.RefreshModelUsage)
+		apiRouter.GET("/model_usage_detail", controller.GetModelUsageDetail)
+		apiRouter.GET("/model_usage_count", controller.GetModelUsageCount)
 		apiRouter.GET("/status", controller.GetStatus)
 		apiRouter.GET("/models", middleware.UserAuth(), controller.DashboardListModels)
 		apiRouter.GET("/model_info", controller.GetModelInfo)

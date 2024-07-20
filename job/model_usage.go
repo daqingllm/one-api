@@ -64,7 +64,7 @@ func dailyTask(ctx context.Context) error {
 	todayTimestamp := today.Unix()
 
 	// 查询log表，统计昨天的模型使用情况，插入模型使用统计表
-	query := "INSERT INTO model_usage (date, model_name, call_count, token_used, created_at) SELECT ?, model_name, count(1), sum(quota), now() FROM main.logs where created_at >? and created_at <? group by model_name"
+	query := "INSERT INTO model_usages (date, model_name, call_count, token_used, created_at) SELECT ?, model_name, count(1), sum(quota), now() FROM logs where created_at >? and created_at <? group by model_name"
 	result := model.DB.Exec(query, yesterdayStr, yesterdayTimestamp, todayTimestamp)
 	if result.Error != nil {
 		_ = model.UpdateScheduleRecordStatus("CalcModelUsage", yesterdayStr, model.SCHEDULE_STATUS_FAILED)
