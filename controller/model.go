@@ -144,8 +144,8 @@ func GetModelInfo(c *gin.Context) {
 	for _, m := range models {
 		modelWithRatio = append(modelWithRatio, ModelWithRatio{
 			Model:           m,
-			ModelRatio:      ratio.GetModelRatio(m) * ratio.GetGroupRatio("default"),
-			CompletionRatio: ratio.GetCompletionRatio(m),
+			ModelRatio:      ratio.GetModelRatio(m, channeltype.OpenAI) * ratio.GetGroupRatio("default"),
+			CompletionRatio: ratio.GetCompletionRatio(m, channeltype.OpenAI),
 		})
 	}
 	c.JSON(http.StatusOK, gin.H{
