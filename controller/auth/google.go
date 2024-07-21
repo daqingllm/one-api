@@ -4,24 +4,22 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
+	"github.com/songquanpeng/one-api/common/client"
 	"github.com/songquanpeng/one-api/common/config"
 	"github.com/songquanpeng/one-api/common/logger"
-	"github.com/songquanpeng/one-api/common/random"
 	"github.com/songquanpeng/one-api/controller"
 	"github.com/songquanpeng/one-api/model"
 	"net/http"
 	"strconv"
-	"time"
 )
 
 type GoogleUser struct {
-	Id string `json:"id"`
-	Name  string `json:"name"`
-	Email  string `json:"email"`
-	Picture	string `json:"picture"`
+	Id      string `json:"id"`
+	Name    string `json:"name"`
+	Email   string `json:"email"`
+	Picture string `json:"picture"`
 }
 
 func getGoogleUserInfoByToken(access_token string) (*GoogleUser, error) {
@@ -30,11 +28,11 @@ func getGoogleUserInfoByToken(access_token string) (*GoogleUser, error) {
 	}
 	params := map[string]string{"access_token": access_token}
 	jsonParams, err := json.Marshal(params)
-	req, err = http.NewRequest("GET", "https://www.googleapis.com/oauth2/v2/userinfo", bytes.NewBuffer(jsonParams))
+	req, err := http.NewRequest("GET", "https://www.googleapis.com/oauth2/v2/userinfo", bytes.NewBuffer(jsonParams))
 	if err != nil {
 		return nil, err
 	}
-	res, err := client.Do(req)
+	res, err := client.HTTPClient.Do(req)
 	if err != nil {
 		logger.SysLog(err.Error())
 		return nil, errors.New("无法连接至 Google 服务器，请稍后重试！")
@@ -128,7 +126,7 @@ func GoogleOAuth(c *gin.Context) {
 
 func GoogleBind(c *gin.Context) {
 	code := c.Query("code")
-	googleUser, err := getGoogleUserInfoByCode(code)
+	googleUser, err := getGoogleUserInfoByToken(code)
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"success": false,
