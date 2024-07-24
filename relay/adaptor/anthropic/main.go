@@ -160,8 +160,9 @@ func StreamResponseClaude2OpenAI(claudeResponse *StreamResponse) (*openai.ChatCo
 			responseText = claudeResponse.ContentBlock.Text
 			if claudeResponse.ContentBlock.Type == "tool_use" {
 				tools = append(tools, model.Tool{
-					Id:   claudeResponse.ContentBlock.Id,
-					Type: "function",
+					Id:    claudeResponse.ContentBlock.Id,
+					Index: claudeResponse.Index,
+					Type:  "function",
 					Function: model.Function{
 						Name:      claudeResponse.ContentBlock.Name,
 						Arguments: "",
@@ -174,6 +175,7 @@ func StreamResponseClaude2OpenAI(claudeResponse *StreamResponse) (*openai.ChatCo
 			responseText = claudeResponse.Delta.Text
 			if claudeResponse.Delta.Type == "input_json_delta" {
 				tools = append(tools, model.Tool{
+					Index: claudeResponse.Index,
 					Function: model.Function{
 						Arguments: claudeResponse.Delta.PartialJson,
 					},
