@@ -98,8 +98,9 @@ func InitDB(envName string) (db *gorm.DB, err error) {
 		if err != nil {
 			return nil, err
 		}
-		sqlDB.SetMaxIdleConns(env.Int("SQL_MAX_IDLE_CONNS", 100))
-		sqlDB.SetMaxOpenConns(env.Int("SQL_MAX_OPEN_CONNS", 1000))
+		sqlDB.SetMaxIdleConns(env.Int("SQL_MAX_IDLE_CONNS", 1000))
+		sqlDB.SetConnMaxIdleTime(time.Second * time.Duration(env.Int("SQL_MAX_LIFETIME", 60)))
+		sqlDB.SetMaxOpenConns(env.Int("SQL_MAX_OPEN_CONNS", 2000))
 		sqlDB.SetConnMaxLifetime(time.Second * time.Duration(env.Int("SQL_MAX_LIFETIME", 60)))
 
 		if !config.IsMasterNode {
