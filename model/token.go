@@ -1,6 +1,7 @@
 package model
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"github.com/songquanpeng/one-api/common"
@@ -57,11 +58,11 @@ func SearchUserTokens(userId int, keyword string) (tokens []*Token, err error) {
 	return tokens, err
 }
 
-func ValidateUserToken(key string) (token *Token, err error) {
+func ValidateUserToken(ctx context.Context, key string) (token *Token, err error) {
 	if key == "" {
 		return nil, errors.New("未提供令牌")
 	}
-	token, err = CacheGetTokenByKey(key)
+	token, err = CacheGetTokenByKey(ctx, key)
 	if err != nil {
 		logger.SysError("CacheGetTokenByKey failed: " + err.Error())
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -115,9 +116,16 @@ func GetTokenById(id int) (*Token, error) {
 	if id == 0 {
 		return nil, errors.New("id 为空！")
 	}
+	ca := GetTokenByIdPool(id)
+	if ca != nil {
+		return ca, nil
+	}
 	token := Token{Id: id}
 	var err error = nil
 	err = DB.First(&token, "id = ?", id).Error
+	if err == nil {
+		SetTokenByIdPool(id, token)
+	}
 	return &token, err
 }
 

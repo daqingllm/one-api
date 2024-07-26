@@ -191,6 +191,8 @@ func StreamResponseClaude2OpenAI(claudeResponse *StreamResponse) (*openai.ChatCo
 		if claudeResponse.Delta != nil && claudeResponse.Delta.StopReason != nil {
 			stopReason = *claudeResponse.Delta.StopReason
 		}
+	case "message_stop":
+		return nil, nil
 	}
 	var choice openai.ChatCompletionsStreamResponseChoice
 	choice.Delta.Content = responseText

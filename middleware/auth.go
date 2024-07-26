@@ -95,7 +95,7 @@ func TryTokenAuth() func(c *gin.Context) {
 		key = strings.TrimPrefix(key, "sk-")
 		parts := strings.Split(key, "-")
 		key = parts[0]
-		token, err := model.ValidateUserToken(key)
+		token, err := model.ValidateUserToken(c.Request.Context(), key)
 		if err != nil {
 			c.Set(ctxkey.Id, 0)
 			c.Set(ctxkey.TokenId, 0)
@@ -124,7 +124,7 @@ func TokenAuth() func(c *gin.Context) {
 		key = strings.TrimPrefix(key, "sk-")
 		parts := strings.Split(key, "-")
 		key = parts[0]
-		token, err := model.ValidateUserToken(key)
+		token, err := model.ValidateUserToken(c.Request.Context(), key)
 		if err != nil {
 			abortWithMessage(c, http.StatusUnauthorized, err.Error())
 			return

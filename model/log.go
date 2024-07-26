@@ -83,10 +83,7 @@ func RecordConsumeLog(ctx context.Context, userId int, channelId int, promptToke
 		Quota:            int(quota),
 		ChannelId:        channelId,
 	}
-	err := LOG_DB.Create(log).Error
-	if err != nil {
-		logger.Error(ctx, "failed to record log: "+err.Error())
-	}
+	addNewLog(log)
 }
 
 func GetAllLogs(logType int, startTimestamp int64, endTimestamp int64, modelName string, username string, tokenName string, startIdx int, num int, channel int) (logs []*Log, err error) {

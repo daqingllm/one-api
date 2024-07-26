@@ -18,12 +18,15 @@ const (
 
 var batchUpdateStores []map[int]int64
 var batchUpdateLocks []sync.Mutex
+var batchLogs []*Log
+var batchLogsLock sync.Mutex
 
 func init() {
 	for i := 0; i < BatchUpdateTypeCount; i++ {
 		batchUpdateStores = append(batchUpdateStores, make(map[int]int64))
 		batchUpdateLocks = append(batchUpdateLocks, sync.Mutex{})
 	}
+	batchLogs = make([]*Log, 0)
 }
 
 func InitBatchUpdater() {
@@ -31,6 +34,7 @@ func InitBatchUpdater() {
 		for {
 			time.Sleep(time.Duration(config.BatchUpdateInterval) * time.Second)
 			batchUpdate()
+			batchInsert()
 		}
 	}()
 }
@@ -42,6 +46,24 @@ func addNewRecord(type_ int, id int, value int64) {
 		batchUpdateStores[type_][id] = value
 	} else {
 		batchUpdateStores[type_][id] += value
+	}
+}
+
+func addNewLog(log *Log) {
+	batchLogsLock.Lock()
+	defer batchLogsLock.Unlock()
+	batchLogs = append(batchLogs, log)
+}
+
+func batchInsert() {
+	logger.SysLog("batch insert started")
+	batchLogsLock.Lock()
+	logs := batchLogs
+	batchLogs = make([]*Log, 0)
+	batchLogsLock.Unlock()
+	err := LOG_DB.CreateInBatches(logs, 100).Error
+	if err != nil {
+		logger.SysError("failed to batch insert logs: " + err.Error())
 	}
 }
 

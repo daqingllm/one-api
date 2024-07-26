@@ -18,7 +18,7 @@ type ModelRequest struct {
 func Distribute() func(c *gin.Context) {
 	return func(c *gin.Context) {
 		userId := c.GetInt(ctxkey.Id)
-		userGroup, _ := model.CacheGetUserGroup(userId)
+		userGroup, _ := model.CacheGetUserGroup(c.Request.Context(), userId)
 		c.Set(ctxkey.Group, userGroup)
 		var requestModel string
 		var channel *model.Channel

@@ -88,6 +88,7 @@ func main() {
 	openai.InitTokenEncoders()
 	client.Init()
 	job.Init()
+	model.Init()
 
 	// Initialize HTTP server
 	server := gin.New()

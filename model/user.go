@@ -447,6 +447,11 @@ func updateUserRequestCount(id int, count int) {
 }
 
 func GetUsernameById(id int) (username string) {
+	username, err := GetUsernamePool(id)
+	if err == nil {
+		return username
+	}
 	DB.Model(&User{}).Where("id = ?", id).Select("username").Find(&username)
+	SetUsernamePool(id, username)
 	return username
 }

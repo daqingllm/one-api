@@ -2,7 +2,6 @@ package model
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/songquanpeng/one-api/common"
@@ -11,7 +10,6 @@ import (
 	"github.com/songquanpeng/one-api/common/random"
 	"math/rand"
 	"sort"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -25,52 +23,32 @@ var (
 	GroupModelsCacheSeconds   = config.SyncFrequency
 )
 
-func CacheGetTokenByKey(key string) (*Token, error) {
-	keyCol := "`key`"
-	if common.UsingPostgreSQL {
-		keyCol = `"key"`
+func CacheGetTokenByKey(ctx context.Context, key string) (*Token, error) {
+	ca := GetTokenByKeyPool(ctx, key)
+	if ca != nil {
+		return ca, nil
 	}
+
 	var token Token
-	if !common.RedisEnabled {
-		err := DB.Where(keyCol+" = ?", key).First(&token).Error
-		return &token, err
-	}
-	tokenObjectString, err := common.RedisGet(fmt.Sprintf("token:%s", key))
+	err := DB.Where("`key` = ?", key).First(&token).Error
 	if err != nil {
-		err := DB.Where(keyCol+" = ?", key).First(&token).Error
-		if err != nil {
-			return nil, err
-		}
-		jsonBytes, err := json.Marshal(token)
-		if err != nil {
-			return nil, err
-		}
-		err = common.RedisSet(fmt.Sprintf("token:%s", key), string(jsonBytes), time.Duration(TokenCacheSeconds)*time.Second)
-		if err != nil {
-			logger.SysError("Redis set token error: " + err.Error())
-		}
-		return &token, nil
+		return nil, err
 	}
-	err = json.Unmarshal([]byte(tokenObjectString), &token)
-	return &token, err
+	SetTokenPool(ctx, key, token)
+	return &token, nil
 }
 
-func CacheGetUserGroup(id int) (group string, err error) {
-	if !common.RedisEnabled {
-		return GetUserGroup(id)
+func CacheGetUserGroup(ctx context.Context, id int) (group string, err error) {
+	ca, err := GetUserGroupPool(ctx, id)
+	if err == nil {
+		return ca, nil
 	}
-	group, err = common.RedisGet(fmt.Sprintf("user_group:%d", id))
+	group, err = GetUserGroup(id)
 	if err != nil {
-		group, err = GetUserGroup(id)
-		if err != nil {
-			return "", err
-		}
-		err = common.RedisSet(fmt.Sprintf("user_group:%d", id), group, time.Duration(UserId2GroupCacheSeconds)*time.Second)
-		if err != nil {
-			logger.SysError("Redis set user group error: " + err.Error())
-		}
+		return "", err
 	}
-	return group, err
+	SetUserGroupPool(ctx, id, group)
+	return group, nil
 }
 
 func fetchAndUpdateUserQuota(ctx context.Context, id int) (quota int64, err error) {
@@ -86,21 +64,16 @@ func fetchAndUpdateUserQuota(ctx context.Context, id int) (quota int64, err erro
 }
 
 func CacheGetUserQuota(ctx context.Context, id int) (quota int64, err error) {
-	if !common.RedisEnabled {
-		return GetUserQuota(id)
+	quota, err = GetUserQuotaPool(ctx, id)
+	if err == nil {
+		return quota, nil
 	}
-	quotaString, err := common.RedisGet(fmt.Sprintf("user_quota:%d", id))
-	if err != nil {
-		return fetchAndUpdateUserQuota(ctx, id)
-	}
-	quota, err = strconv.ParseInt(quotaString, 10, 64)
+
+	quota, err = GetUserQuota(id)
 	if err != nil {
 		return 0, nil
 	}
-	if quota <= config.PreConsumedQuota { // when user's quota is less than pre-consumed quota, we need to fetch from db
-		logger.Infof(ctx, "user %d's cached quota is too low: %d, refreshing from db", quota, id)
-		return fetchAndUpdateUserQuota(ctx, id)
-	}
+	SetUserQuotaPool(ctx, id, quota)
 	return quota, nil
 }
 

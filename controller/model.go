@@ -170,7 +170,7 @@ func ListModels(c *gin.Context) {
 		userId := c.GetInt(ctxkey.Id)
 		var userGroup = "default"
 		if userId > 0 {
-			userGroup, _ = model.CacheGetUserGroup(userId)
+			userGroup, _ = model.CacheGetUserGroup(ctx, userId)
 		}
 		availableModels, _ = model.CacheGetGroupModels(ctx, userGroup)
 	}
@@ -223,7 +223,7 @@ func RetrieveModel(c *gin.Context) {
 func GetUserAvailableModels(c *gin.Context) {
 	ctx := c.Request.Context()
 	id := c.GetInt(ctxkey.Id)
-	userGroup, err := model.CacheGetUserGroup(id)
+	userGroup, err := model.CacheGetUserGroup(ctx, id)
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"success": false,
