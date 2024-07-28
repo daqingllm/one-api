@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	"github.com/songquanpeng/one-api/common/image"
 	"github.com/songquanpeng/one-api/common/render"
 	"io"
 	"net/http"
@@ -12,7 +13,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/songquanpeng/one-api/common"
 	"github.com/songquanpeng/one-api/common/helper"
-	"github.com/songquanpeng/one-api/common/image"
 	"github.com/songquanpeng/one-api/common/logger"
 	"github.com/songquanpeng/one-api/relay/adaptor/openai"
 	"github.com/songquanpeng/one-api/relay/model"
@@ -98,25 +98,29 @@ func ConvertRequest(textRequest model.GeneralOpenAIRequest) *Request {
 		}
 		var content Content
 		if message.IsStringContent() {
-			content.Type = "text"
-			content.Text = message.StringContent()
 			if message.Role == "tool" {
 				claudeMessage.Role = "user"
 				content.Type = "tool_result"
-				content.Content = content.Text
+				content.Content = message.StringContent()
 				content.Text = ""
 				content.ToolUseId = message.ToolCallId
-			}
-			claudeMessage.Content = append(claudeMessage.Content, content)
-			for i := range message.ToolCalls {
-				inputParam := make(map[string]any)
-				_ = json.Unmarshal([]byte(message.ToolCalls[i].Function.Arguments.(string)), &inputParam)
-				claudeMessage.Content = append(claudeMessage.Content, Content{
-					Type:  "tool_use",
-					Id:    message.ToolCalls[i].Id,
-					Name:  message.ToolCalls[i].Function.Name,
-					Input: inputParam,
-				})
+				claudeMessage.Content = append(claudeMessage.Content, content)
+			} else {
+				content.Type = "text"
+				content.Text = message.StringContent()
+				if len(strings.TrimSpace(content.Text)) > 0 {
+					claudeMessage.Content = append(claudeMessage.Content, content)
+				}
+				for i := range message.ToolCalls {
+					inputParam := make(map[string]any)
+					_ = json.Unmarshal([]byte(message.ToolCalls[i].Function.Arguments.(string)), &inputParam)
+					claudeMessage.Content = append(claudeMessage.Content, Content{
+						Type:  "tool_use",
+						Id:    message.ToolCalls[i].Id,
+						Name:  message.ToolCalls[i].Function.Name,
+						Input: inputParam,
+					})
+				}
 			}
 			claudeRequest.Messages = append(claudeRequest.Messages, claudeMessage)
 			continue

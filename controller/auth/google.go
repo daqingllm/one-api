@@ -11,6 +11,7 @@ import (
 	"github.com/songquanpeng/one-api/controller"
 	"github.com/songquanpeng/one-api/model"
 	"net/http"
+	"net/url"
 	"strconv"
 	"time"
 )
@@ -22,7 +23,7 @@ type GoogleUser struct {
 	Picture string `json:"picture"`
 }
 
-func getGoogleUserInfoByToken(access_token string) (*GoogleUser, error) {
+func GetGoogleUserInfoByToken(access_token string) (*GoogleUser, error) {
 	if access_token == "" {
 		return nil, errors.New("无效的参数")
 	}
@@ -34,8 +35,14 @@ func getGoogleUserInfoByToken(access_token string) (*GoogleUser, error) {
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
-	client := http.Client{
-		Timeout: 5 * time.Second,
+
+	proxyURL, err := url.Parse("http://127.0.0.1:8118")
+	transport := &http.Transport{
+		Proxy: http.ProxyURL(proxyURL),
+	}
+	client := &http.Client{
+		Timeout:   10 * time.Second,
+		Transport: transport,
 	}
 	res, err := client.Do(req)
 	if err != nil {
@@ -71,7 +78,7 @@ func GoogleOAuth(c *gin.Context) {
 	}
 
 	code := c.Query("code")
-	googleUser, err := getGoogleUserInfoByToken(code)
+	googleUser, err := GetGoogleUserInfoByToken(code)
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"success": false,
@@ -131,7 +138,7 @@ func GoogleOAuth(c *gin.Context) {
 
 func GoogleBind(c *gin.Context) {
 	code := c.Query("code")
-	googleUser, err := getGoogleUserInfoByToken(code)
+	googleUser, err := GetGoogleUserInfoByToken(code)
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"success": false,
