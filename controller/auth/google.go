@@ -1,19 +1,19 @@
 package auth
 
 import (
-	"bytes"
 	"encoding/json"
 	"errors"
+	"log"
+	"net/http"
+	"strconv"
+	"time"
+
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"github.com/songquanpeng/one-api/common/config"
 	"github.com/songquanpeng/one-api/common/logger"
 	"github.com/songquanpeng/one-api/controller"
 	"github.com/songquanpeng/one-api/model"
-	"net/http"
-	"net/url"
-	"strconv"
-	"time"
 )
 
 type GoogleUser struct {
@@ -27,28 +27,23 @@ func GetGoogleUserInfoByToken(access_token string) (*GoogleUser, error) {
 	if access_token == "" {
 		return nil, errors.New("无效的参数")
 	}
-	params := map[string]string{"access_token": access_token}
-	jsonParams, err := json.Marshal(params)
-	req, err := http.NewRequest("GET", "https://www.googleapis.com/oauth2/v2/userinfo", bytes.NewBuffer(jsonParams))
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Accept", "application/json")
 
-	proxyURL, err := url.Parse("http://127.0.0.1:8118")
-	transport := &http.Transport{
-		Proxy: http.ProxyURL(proxyURL),
-	}
 	client := &http.Client{
-		Timeout:   10 * time.Second,
-		Transport: transport,
+		Timeout: 10 * time.Second,
+	}
+
+	req, err := http.NewRequest("GET", "https://www.googleapis.com/oauth2/v2/userinfo?access_token="+access_token, nil)
+	if err != nil {
+		log.Println("Failed to create request", err)
+		return nil, err
 	}
 	res, err := client.Do(req)
 	if err != nil {
 		logger.SysLog(err.Error())
+		log.Println("异常", err)
 		return nil, errors.New("无法连接至 Google 服务器，请稍后重试！")
 	}
+
 	defer res.Body.Close()
 	var googleUser GoogleUser
 	err = json.NewDecoder(res.Body).Decode(&googleUser)
@@ -86,6 +81,7 @@ func GoogleOAuth(c *gin.Context) {
 		})
 		return
 	}
+	log.Println("googleUser", googleUser)
 	user := model.User{
 		GoogleId: googleUser.Id,
 	}
@@ -106,6 +102,7 @@ func GoogleOAuth(c *gin.Context) {
 			} else {
 				user.DisplayName = "Google User"
 			}
+			user.GoogleId = googleUser.Id
 			user.Email = googleUser.Email
 			user.Role = model.RoleCommonUser
 			user.Status = model.UserStatusEnabled
