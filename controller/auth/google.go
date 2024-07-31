@@ -1,9 +1,10 @@
 package auth
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
-	"log"
+	"io"
 	"net/http"
 	"strconv"
 	"time"
@@ -23,7 +24,7 @@ type GoogleUser struct {
 	Picture string `json:"picture"`
 }
 
-func GetGoogleUserInfoByToken(access_token string) (*GoogleUser, error) {
+func GetGoogleUserInfoByToken(ctx context.Context, access_token string) (*GoogleUser, error) {
 	if access_token == "" {
 		return nil, errors.New("无效的参数")
 	}
@@ -34,17 +35,21 @@ func GetGoogleUserInfoByToken(access_token string) (*GoogleUser, error) {
 
 	req, err := http.NewRequest("GET", "https://www.googleapis.com/oauth2/v2/userinfo?access_token="+access_token, nil)
 	if err != nil {
-		log.Println("Failed to create request", err)
+		logger.Error(ctx, "Failed to create request "+err.Error())
 		return nil, err
 	}
 	res, err := client.Do(req)
 	if err != nil {
-		logger.SysLog(err.Error())
-		log.Println("异常", err)
+		logger.Error(ctx, "Failed to request Google API "+err.Error())
 		return nil, errors.New("无法连接至 Google 服务器，请稍后重试！")
 	}
 
-	defer res.Body.Close()
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+			logger.Error(ctx, "Failed to close response body "+err.Error())
+		}
+	}(res.Body)
 	var googleUser GoogleUser
 	err = json.NewDecoder(res.Body).Decode(&googleUser)
 	if err != nil {
@@ -73,7 +78,7 @@ func GoogleOAuth(c *gin.Context) {
 	}
 
 	code := c.Query("code")
-	googleUser, err := GetGoogleUserInfoByToken(code)
+	googleUser, err := GetGoogleUserInfoByToken(c.Request.Context(), code)
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"success": false,
@@ -81,7 +86,6 @@ func GoogleOAuth(c *gin.Context) {
 		})
 		return
 	}
-	log.Println("googleUser", googleUser)
 	user := model.User{
 		GoogleId: googleUser.Id,
 	}
@@ -135,7 +139,7 @@ func GoogleOAuth(c *gin.Context) {
 
 func GoogleBind(c *gin.Context) {
 	code := c.Query("code")
-	googleUser, err := GetGoogleUserInfoByToken(code)
+	googleUser, err := GetGoogleUserInfoByToken(c.Request.Context(), code)
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"success": false,
