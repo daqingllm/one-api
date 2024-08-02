@@ -3,6 +3,9 @@ package main
 import (
 	"embed"
 	"fmt"
+	"os"
+	"strconv"
+
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
@@ -18,8 +21,6 @@ import (
 	"github.com/songquanpeng/one-api/model"
 	"github.com/songquanpeng/one-api/relay/adaptor/openai"
 	"github.com/songquanpeng/one-api/router"
-	"os"
-	"strconv"
 )
 
 //go:embed web/build/*
@@ -89,6 +90,7 @@ func main() {
 	client.Init()
 	job.Init()
 	model.Init()
+	controller.AlipayInit()
 
 	// Initialize HTTP server
 	server := gin.New()
