@@ -2,6 +2,10 @@ package model
 
 import (
 	"errors"
+	"os"
+	"strings"
+	"time"
+
 	"github.com/songquanpeng/one-api/common"
 	"github.com/songquanpeng/one-api/common/config"
 	"github.com/songquanpeng/one-api/common/env"
@@ -11,9 +15,6 @@ import (
 	"gorm.io/driver/mysql"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
-	"os"
-	"strings"
-	"time"
 )
 
 var DB *gorm.DB
@@ -138,7 +139,7 @@ func InitDB(envName string) (db *gorm.DB, err error) {
 		if err != nil {
 			return nil, err
 		}
-		err = db.AutoMigrate(&QuotaRecord{})
+		err = db.AutoMigrate(&OrderRecord{})
 		if err != nil {
 			return nil, err
 		}

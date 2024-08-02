@@ -121,5 +121,13 @@ func SetApiRouter(router *gin.Engine) {
 		{
 			groupRoute.GET("/", controller.GetGroups)
 		}
+		alipayRoute := apiRouter.Group("/alipay")
+		alipayRoute.Use(middleware.UserAuth())
+		{
+			alipayRoute.POST("/create_order", controller.CreateOrder)
+			alipayRoute.POST("/notify", controller.NotifyOrder)
+			alipayRoute.GET("/query_order", controller.QueryOrderByTradeNo)
+			alipayRoute.GET("/update_order_status", middleware.AdminAuth(), controller.UpdateAllOrderStatus)
+		}
 	}
 }
