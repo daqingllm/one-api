@@ -134,6 +134,10 @@ const (
 	lowDetailCost         = 85
 	highDetailCostPerTile = 170
 	additionalCost        = 85
+	// gpt-4o-mini cost higher than other model
+	gpt4oMiniLowDetailCost  = 2833
+	gpt4oMiniHighDetailCost = 5667
+	gpt4oMiniAdditionalCost = 2833
 )
 
 // https://platform.openai.com/docs/guides/vision/calculating-costs
@@ -172,6 +176,9 @@ func countImageTokens(url string, detail string, model string) (_ int, err error
 	}
 	switch detail {
 	case "low":
+		if strings.HasPrefix(model, "gpt-4o-mini") {
+			return gpt4oMiniLowDetailCost, nil
+		}
 		return lowDetailCost, nil
 	case "high":
 		if fetchSize {
@@ -190,14 +197,11 @@ func countImageTokens(url string, detail string, model string) (_ int, err error
 			width = int(float64(width) * ratio)
 			height = int(float64(height) * ratio)
 		}
-		tileCost := highDetailCostPerTile
-		baseCost := additionalCost
-		if strings.HasPrefix(model, "gpt-4o-mini") {
-			tileCost = 5667
-			baseCost = 2833
-		}
 		numSquares := int(math.Ceil(float64(width)/512) * math.Ceil(float64(height)/512))
-		result := numSquares*tileCost + baseCost
+		if strings.HasPrefix(model, "gpt-4o-mini") {
+			return numSquares*gpt4oMiniHighDetailCost + gpt4oMiniAdditionalCost, nil
+		}
+		result := numSquares*highDetailCostPerTile + additionalCost
 		return result, nil
 	default:
 		return 0, errors.New("invalid detail option")
