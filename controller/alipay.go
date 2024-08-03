@@ -13,6 +13,7 @@ import (
 	"github.com/shopspring/decimal"
 	"github.com/smartwalle/alipay/v3"
 	"github.com/smartwalle/xid"
+	"github.com/songquanpeng/one-api/common"
 	"github.com/songquanpeng/one-api/common/config"
 	"github.com/songquanpeng/one-api/common/ctxkey"
 	"github.com/songquanpeng/one-api/common/logger"
@@ -202,7 +203,7 @@ func QueryAlipayOrder(c *gin.Context, outTradeNo string) (bool, error) {
 			}
 
 			// 添加额度变更记录
-			model.RecordTopupLog(record.UserId, fmt.Sprintf("用户通过支付宝充值额度 %s", strconv.FormatInt(record.Quota, 10)), int(record.Quota))
+			model.RecordTopupLog(record.UserId, fmt.Sprintf("通过 支付宝 充值 %s", common.LogQuota(int64(record.Quota))), 0)
 		}
 	}
 
