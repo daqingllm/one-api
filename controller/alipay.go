@@ -120,8 +120,8 @@ func CreateOrder(c *gin.Context) {
 	}
 
 	// 异步触发轮询
-	val := DoneAsync(c, tradeNo)
-	fmt.Println(<-val)
+	// val := DoneAsync(c, tradeNo)
+	// fmt.Println(<-val)
 
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
