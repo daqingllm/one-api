@@ -18,6 +18,11 @@ import (
 	"github.com/songquanpeng/one-api/relay/model"
 )
 
+type ToolCounter struct {
+	count int
+	inUse bool
+}
+
 func stopReasonClaude2OpenAI(reason *string) string {
 	if reason == nil {
 		return ""
@@ -88,6 +93,7 @@ func ConvertRequest(textRequest model.GeneralOpenAIRequest) *Request {
 	} else if claudeRequest.Model == "claude-2" {
 		claudeRequest.Model = "claude-2.1"
 	}
+	lastRoleUser := false
 	for _, message := range textRequest.Messages {
 		if message.Role == "system" && claudeRequest.System == "" {
 			claudeRequest.System = message.StringContent()
@@ -122,7 +128,15 @@ func ConvertRequest(textRequest model.GeneralOpenAIRequest) *Request {
 					})
 				}
 			}
+			if lastRoleUser && claudeMessage.Role == "user" {
+				claudeRequest.Messages = append(claudeRequest.Messages, defaultAssistantMessage())
+			}
 			claudeRequest.Messages = append(claudeRequest.Messages, claudeMessage)
+			if claudeMessage.Role == "user" {
+				lastRoleUser = true
+			} else {
+				lastRoleUser = false
+			}
 			continue
 		}
 		var contents []Content
@@ -149,8 +163,20 @@ func ConvertRequest(textRequest model.GeneralOpenAIRequest) *Request {
 	return &claudeRequest
 }
 
+func defaultAssistantMessage() Message {
+	return Message{
+		Role: "assistant",
+		Content: []Content{
+			{
+				Type: "text",
+				Text: "I'm here to help. What can I do for you?",
+			},
+		},
+	}
+}
+
 // https://docs.anthropic.com/claude/reference/messages-streaming
-func StreamResponseClaude2OpenAI(claudeResponse *StreamResponse) (*openai.ChatCompletionsStreamResponse, *Response) {
+func StreamResponseClaude2OpenAI(claudeResponse *StreamResponse, toolcounter *ToolCounter) (*openai.ChatCompletionsStreamResponse, *Response) {
 	var response *Response
 	var responseText string
 	var stopReason string
@@ -163,10 +189,11 @@ func StreamResponseClaude2OpenAI(claudeResponse *StreamResponse) (*openai.ChatCo
 		if claudeResponse.ContentBlock != nil {
 			responseText = claudeResponse.ContentBlock.Text
 			if claudeResponse.ContentBlock.Type == "tool_use" {
+				toolcounter.inUse = true
 				tools = append(tools, model.Tool{
-					Id: claudeResponse.ContentBlock.Id,
-					//Index: claudeResponse.Index,
-					Type: "function",
+					Id:    claudeResponse.ContentBlock.Id,
+					Index: &toolcounter.count,
+					Type:  "function",
 					Function: model.Function{
 						Name:      claudeResponse.ContentBlock.Name,
 						Arguments: "",
@@ -179,13 +206,19 @@ func StreamResponseClaude2OpenAI(claudeResponse *StreamResponse) (*openai.ChatCo
 			responseText = claudeResponse.Delta.Text
 			if claudeResponse.Delta.Type == "input_json_delta" {
 				tools = append(tools, model.Tool{
-					//Index: claudeResponse.Index,
+					Index: &toolcounter.count,
 					Function: model.Function{
 						Arguments: claudeResponse.Delta.PartialJson,
 					},
 				})
 			}
 		}
+	case "content_block_stop":
+		if toolcounter.inUse {
+			toolcounter.count++
+			toolcounter.inUse = false
+		}
+		return nil, nil
 	case "message_delta":
 		if claudeResponse.Usage != nil {
 			response = &Response{
@@ -276,6 +309,7 @@ func StreamHandler(c *gin.Context, resp *http.Response) (*model.ErrorWithStatusC
 	var modelName string
 	var id string
 	var lastToolCallChoice openai.ChatCompletionsStreamResponseChoice
+	toolCounter := &ToolCounter{}
 
 	for scanner.Scan() {
 		data := scanner.Text()
@@ -292,7 +326,7 @@ func StreamHandler(c *gin.Context, resp *http.Response) (*model.ErrorWithStatusC
 			continue
 		}
 
-		response, meta := StreamResponseClaude2OpenAI(&claudeResponse)
+		response, meta := StreamResponseClaude2OpenAI(&claudeResponse, toolCounter)
 		if meta != nil {
 			usage.PromptTokens += meta.Usage.InputTokens
 			usage.CompletionTokens += meta.Usage.OutputTokens
@@ -332,6 +366,20 @@ func StreamHandler(c *gin.Context, resp *http.Response) (*model.ErrorWithStatusC
 
 	if err := scanner.Err(); err != nil {
 		logger.SysError("error reading stream: " + err.Error())
+	}
+
+	if usage.PromptTokens != 0 && usage.CompletionTokens != 0 {
+		usage.TotalTokens = usage.PromptTokens + usage.CompletionTokens
+		var usageResponse openai.ChatCompletionsStreamResponse
+		usageResponse.Id = id
+		usageResponse.Model = modelName
+		usageResponse.Created = createdTime
+		usageResponse.Choices = []openai.ChatCompletionsStreamResponseChoice{}
+		usageResponse.Usage = &usage
+		err := render.ObjectData(c, usageResponse)
+		if err != nil {
+			logger.SysError(err.Error())
+		}
 	}
 
 	render.Done(c)

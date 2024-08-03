@@ -137,6 +137,7 @@ func StreamHandler(c *gin.Context, awsCli *bedrockruntime.Client) (*relaymodel.E
 	var usage relaymodel.Usage
 	var id string
 	var lastToolCallChoice openai.ChatCompletionsStreamResponseChoice
+	toolCounter := &anthropic.ToolCounter{}
 
 	c.Stream(func(w io.Writer) bool {
 		event, ok := <-stream.Events()
@@ -154,7 +155,7 @@ func StreamHandler(c *gin.Context, awsCli *bedrockruntime.Client) (*relaymodel.E
 				return false
 			}
 
-			response, meta := anthropic.StreamResponseClaude2OpenAI(claudeResp)
+			response, meta := anthropic.StreamResponseClaude2OpenAI(claudeResp, toolCounter)
 			if meta != nil {
 				usage.PromptTokens += meta.Usage.InputTokens
 				usage.CompletionTokens += meta.Usage.OutputTokens
