@@ -130,6 +130,8 @@ func ConvertRequest(textRequest model.GeneralOpenAIRequest) *Request {
 			}
 			if lastRoleUser && claudeMessage.Role == "user" {
 				claudeRequest.Messages = append(claudeRequest.Messages, defaultAssistantMessage())
+			} else if !lastRoleUser && claudeMessage.Role == "assistant" {
+				claudeRequest.Messages = append(claudeRequest.Messages, defaulUserMessage())
 			}
 			claudeRequest.Messages = append(claudeRequest.Messages, claudeMessage)
 			if claudeMessage.Role == "user" {
@@ -161,6 +163,18 @@ func ConvertRequest(textRequest model.GeneralOpenAIRequest) *Request {
 		claudeRequest.Messages = append(claudeRequest.Messages, claudeMessage)
 	}
 	return &claudeRequest
+}
+
+func defaulUserMessage() Message {
+	return Message{
+		Role: "user",
+		Content: []Content{
+			{
+				Type: "text",
+				Text: "",
+			},
+		},
+	}
 }
 
 func defaultAssistantMessage() Message {
