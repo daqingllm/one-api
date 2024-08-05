@@ -64,6 +64,7 @@ func main() {
 
 	// Initialize options
 	model.InitOptionMap()
+	config.Theme = env.String("THEME", "default")
 	logger.SysLog(fmt.Sprintf("using theme %s", config.Theme))
 
 	logger.SysLog("memory cache enabled")
