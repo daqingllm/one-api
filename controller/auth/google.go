@@ -78,6 +78,7 @@ func GoogleOAuth(c *gin.Context) {
 	}
 
 	code := c.Query("code")
+	affCode := c.Query("aff_code")
 	googleUser, err := GetGoogleUserInfoByToken(c.Request.Context(), code)
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{
@@ -106,12 +107,14 @@ func GoogleOAuth(c *gin.Context) {
 			} else {
 				user.DisplayName = "Google User"
 			}
+			inviterId, _ := model.GetUserIdByAffCode(affCode)
 			user.GoogleId = googleUser.Id
 			user.Email = googleUser.Email
 			user.Role = model.RoleCommonUser
 			user.Status = model.UserStatusEnabled
+			user.InviterId = inviterId
 
-			if err := user.Insert(0); err != nil {
+			if err := user.Insert(inviterId); err != nil {
 				c.JSON(http.StatusOK, gin.H{
 					"success": false,
 					"message": err.Error(),
