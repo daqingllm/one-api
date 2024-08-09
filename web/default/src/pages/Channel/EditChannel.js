@@ -297,6 +297,20 @@ const EditChannel = () => {
               autoComplete='new-password'
             />
           </Form.Field>
+          {
+            inputs.type === 24 && (
+              <Form.Field>
+                <Form.Input
+                  label='版本号'
+                  name='other'
+                  placeholder={'请输入版本号，例如：v1'}
+                  onChange={handleInputChange}
+                  value={inputs.other}
+                  autoComplete='new-password'
+                />
+              </Form.Field>
+            )
+          }
           <Form.Field>
             <Form.Dropdown
               label='分组'
