@@ -128,39 +128,38 @@ func ConvertRequest(textRequest model.GeneralOpenAIRequest) *Request {
 					})
 				}
 			}
-			if lastRoleUser && claudeMessage.Role == "user" {
-				claudeRequest.Messages = append(claudeRequest.Messages, defaultAssistantMessage())
-			} else if !lastRoleUser && claudeMessage.Role == "assistant" {
-				claudeRequest.Messages = append(claudeRequest.Messages, defaulUserMessage())
-			}
-			claudeRequest.Messages = append(claudeRequest.Messages, claudeMessage)
-			if claudeMessage.Role == "user" {
-				lastRoleUser = true
-			} else {
-				lastRoleUser = false
-			}
-			continue
-		}
-		var contents []Content
-		openaiContent := message.ParseContent()
-		for _, part := range openaiContent {
-			var content Content
-			if part.Type == model.ContentTypeText {
-				content.Type = "text"
-				content.Text = part.Text
-			} else if part.Type == model.ContentTypeImageURL {
-				content.Type = "image"
-				content.Source = &ImageSource{
-					Type: "base64",
+		} else {
+			var contents []Content
+			openaiContent := message.ParseContent()
+			for _, part := range openaiContent {
+				var content Content
+				if part.Type == model.ContentTypeText {
+					content.Type = "text"
+					content.Text = part.Text
+				} else if part.Type == model.ContentTypeImageURL {
+					content.Type = "image"
+					content.Source = &ImageSource{
+						Type: "base64",
+					}
+					mimeType, data, _ := image.GetImageFromUrl(part.ImageURL.Url)
+					content.Source.MediaType = mimeType
+					content.Source.Data = data
 				}
-				mimeType, data, _ := image.GetImageFromUrl(part.ImageURL.Url)
-				content.Source.MediaType = mimeType
-				content.Source.Data = data
+				contents = append(contents, content)
 			}
-			contents = append(contents, content)
+			claudeMessage.Content = contents
 		}
-		claudeMessage.Content = contents
+		if lastRoleUser && claudeMessage.Role == "user" {
+			claudeRequest.Messages = append(claudeRequest.Messages, defaultAssistantMessage())
+		} else if !lastRoleUser && claudeMessage.Role == "assistant" {
+			claudeRequest.Messages = append(claudeRequest.Messages, defaulUserMessage())
+		}
 		claudeRequest.Messages = append(claudeRequest.Messages, claudeMessage)
+		if claudeMessage.Role == "user" {
+			lastRoleUser = true
+		} else {
+			lastRoleUser = false
+		}
 	}
 	return &claudeRequest
 }
@@ -171,7 +170,7 @@ func defaulUserMessage() Message {
 		Content: []Content{
 			{
 				Type: "text",
-				Text: "",
+				Text: "hello",
 			},
 		},
 	}
