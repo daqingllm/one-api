@@ -13,7 +13,7 @@ type OrderRecord struct {
 	Id        int    `json:"id"`
 	UserId    int    `json:"user_id" gorm:"index:index_userid_expiredat,priority:1"`
 	GrantType int    `json:"grant_type" gorm:"type:int;default:1"`
-	TradeNo   string `json:"trade_no"`
+	TradeNo   string `json:"trade_no" gorm:"unique"`
 	ExpiredAt int64  `json:"expired_at" gorm:"bigint;index:index_userid_expiredat,priority:2"`
 	CreateAt  int64  `json:"created_at" gorm:"bigint"`
 	Status    string `json:"status"`

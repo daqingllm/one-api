@@ -3,14 +3,15 @@ package controller
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
+	"strconv"
+	"time"
+
 	"github.com/songquanpeng/one-api/common"
 	"github.com/songquanpeng/one-api/common/config"
 	"github.com/songquanpeng/one-api/common/ctxkey"
 	"github.com/songquanpeng/one-api/common/random"
 	"github.com/songquanpeng/one-api/model"
-	"net/http"
-	"strconv"
-	"time"
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
@@ -806,4 +807,46 @@ func AdminTopUp(c *gin.Context) {
 		"message": "",
 	})
 	return
+}
+
+func UpdateRemind(c *gin.Context) {
+	var user model.User
+	err := json.NewDecoder(c.Request.Body).Decode(&user)
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": "无效的参数",
+		})
+		return
+	}
+	if user.Notify && (user.Email == "" || user.QuotaRemindThreshold <= 0) {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": "无效的参数",
+		})
+		return
+	}
+	if user.Notify {
+		// 邮箱格式正确
+		if err := common.Validate.Var(user.Email, "email"); err != nil {
+			c.JSON(http.StatusOK, gin.H{
+				"success": false,
+				"message": "邮箱格式不正确",
+			})
+			return
+		}
+	}
+	user.Id = c.GetInt("id")
+	err = model.UpdateUserRemind(user.Id, user.Notify, user.Email, user.QuotaRemindThreshold)
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": err.Error(),
+		})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "更新成功",
+	})
 }
