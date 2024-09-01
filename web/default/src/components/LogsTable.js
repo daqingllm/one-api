@@ -346,7 +346,7 @@ const LogsTable = () => {
               .map((log, idx) => {
                 if (log.deleted) return <></>;
                 return (
-                  <Table.Row key={log.created_at}>
+                  <Table.Row key={log.id}>
                     {columns.map(item => 
                       <Table.Cell>
                         {item.dataIndex === 'type' ? renderType(log.type) : item.dataIndex === 'quota' ? renderQuota(log.quota, 6) : ''}
