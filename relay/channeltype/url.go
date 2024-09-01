@@ -36,7 +36,7 @@ var ChannelBaseURLs = []string{
 	"https://api.stepfun.com",                   // 32
 	"",                                          // 33
 	"https://api.coze.com",                      // 34
-	"https://api.cohere.ai",                     // 35
+	"https://api.cohere.com",                    // 35
 	"https://api.deepseek.com",                  // 36
 	"https://api.cloudflare.com",                // 37
 	"https://api-free.deepl.com",                // 38
@@ -45,7 +45,7 @@ var ChannelBaseURLs = []string{
 	"https://api.novita.ai/v3/openai",           // 41
 	"",                                          // 42
 	"",                                          // 43
-	"https://api.siliconflow.cn",                 // 44
+	"https://api.siliconflow.cn",                // 44
 }
 
 func init() {

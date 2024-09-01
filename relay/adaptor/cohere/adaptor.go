@@ -3,6 +3,7 @@ package cohere
 import (
 	"errors"
 	"fmt"
+	"github.com/songquanpeng/one-api/relay/relaymode"
 	"io"
 	"net/http"
 
@@ -26,7 +27,12 @@ func (a *Adaptor) Init(meta *meta.Meta) {
 }
 
 func (a *Adaptor) GetRequestURL(meta *meta.Meta) (string, error) {
-	return fmt.Sprintf("%s/v1/chat", meta.BaseURL), nil
+	//return fmt.Sprintf("%s/v1/chat", meta.BaseURL), nil
+	if meta.Mode == relaymode.Rerank {
+		return fmt.Sprintf("%s/v1/rerank", meta.BaseURL), nil
+	} else {
+		return fmt.Sprintf("%s/v1/chat", meta.BaseURL), nil
+	}
 }
 
 func (a *Adaptor) SetupRequestHeader(c *gin.Context, req *http.Request, meta *meta.Meta) error {

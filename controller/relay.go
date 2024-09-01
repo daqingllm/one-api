@@ -26,7 +26,7 @@ import (
 func relayHelper(c *gin.Context, relayMode int) *model.ErrorWithStatusCode {
 	var err *model.ErrorWithStatusCode
 	switch relayMode {
-	case relaymode.ImagesGenerations:
+	case relaymode.ImagesGenerations, relaymode.ImagesEdits, relaymode.ImageVariations:
 		err = controller.RelayImageHelper(c, relayMode)
 	case relaymode.AudioSpeech:
 		fallthrough
@@ -34,6 +34,8 @@ func relayHelper(c *gin.Context, relayMode int) *model.ErrorWithStatusCode {
 		fallthrough
 	case relaymode.AudioTranscription:
 		err = controller.RelayAudioHelper(c, relayMode)
+	case relaymode.Rerank:
+		err = controller.RelayRerankHelper(c, relayMode)
 	case relaymode.Proxy:
 		err = controller.RelayProxyHelper(c, relayMode)
 	default:

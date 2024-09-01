@@ -1,5 +1,5 @@
 package helper
 
 const (
-	RequestIdKey = "X-Oneapi-Request-Id"
+	RequestIdKey = "X-Aihubmix-Request-Id"
 )
