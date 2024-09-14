@@ -1,15 +1,17 @@
 package controller
 
 import (
-	"bufio"
 	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
+	"mime/multipart"
 	"net/http"
+	"regexp"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/songquanpeng/one-api/common"
@@ -141,12 +143,60 @@ func RelayAudioHelper(c *gin.Context, relayMode int) *relaymodel.ErrorWithStatus
 	}
 
 	requestBody := &bytes.Buffer{}
-	_, err = io.Copy(requestBody, c.Request.Body)
-	if err != nil {
-		return openai.ErrorWrapper(err, "new_request_body_failed", http.StatusInternalServerError)
+	var responseFormat string
+	var rewriteFormat string
+	writer := multipart.NewWriter(requestBody)
+
+	if relayMode == relaymode.AudioSpeech {
+		_, err = io.Copy(requestBody, c.Request.Body)
+		if err != nil {
+			return openai.ErrorWrapper(err, "new_request_body_failed", http.StatusInternalServerError)
+		}
+		c.Request.Body = io.NopCloser(bytes.NewBuffer(requestBody.Bytes()))
+	} else {
+		responseFormat = c.DefaultPostForm("response_format", "json")
+		rewriteFormat = transFormat(responseFormat)
+		// 遍历所有表单字段
+		var hasFormat bool
+		for key, values := range c.Request.MultipartForm.Value {
+			if key == "response_format" {
+				hasFormat = true
+				_ = writer.WriteField(key, rewriteFormat)
+				continue
+			}
+			for _, value := range values {
+				_ = writer.WriteField(key, value)
+			}
+		}
+		if !hasFormat {
+			_ = writer.WriteField("response_format", rewriteFormat)
+		}
+		// 遍历所有文件字段
+		for key, files := range c.Request.MultipartForm.File {
+			for _, fileHeader := range files {
+				// 打开文件
+				file, err := fileHeader.Open()
+				if err != nil {
+					return openai.ErrorWrapper(err, "open_file_failed", http.StatusInternalServerError)
+				}
+				defer file.Close()
+
+				// 将文件内容写入到新的 multipart 请求
+				fileWriter, err := writer.CreateFormFile(key, fileHeader.Filename)
+				if err != nil {
+					return openai.ErrorWrapper(err, "create_form_file_failed", http.StatusInternalServerError)
+				}
+				if _, err := io.Copy(fileWriter, file); err != nil {
+					return openai.ErrorWrapper(err, "copy_file_failed", http.StatusInternalServerError)
+				}
+			}
+		}
+
+		// 关闭 writer，写入结束边界
+		if err := writer.Close(); err != nil {
+			return openai.ErrorWrapper(err, "close_writer_failed", http.StatusInternalServerError)
+		}
 	}
-	c.Request.Body = io.NopCloser(bytes.NewBuffer(requestBody.Bytes()))
-	responseFormat := c.DefaultPostForm("response_format", "json")
 
 	req, err := http.NewRequest(c.Request.Method, fullRequestURL, requestBody)
 	if err != nil {
@@ -162,7 +212,11 @@ func RelayAudioHelper(c *gin.Context, relayMode int) *relaymodel.ErrorWithStatus
 	} else {
 		req.Header.Set("Authorization", c.Request.Header.Get("Authorization"))
 	}
-	req.Header.Set("Content-Type", c.Request.Header.Get("Content-Type"))
+	if relayMode == relaymode.AudioSpeech {
+		req.Header.Set("Content-Type", c.Request.Header.Get("Content-Type"))
+	} else {
+		req.Header.Set("Content-Type", writer.FormDataContentType())
+	}
 	req.Header.Set("Accept", c.Request.Header.Get("Accept"))
 
 	resp, err := client.HTTPClient.Do(req)
@@ -195,27 +249,23 @@ func RelayAudioHelper(c *gin.Context, relayMode int) *relaymodel.ErrorWithStatus
 				return openai.ErrorWrapper(fmt.Errorf("type %s, code %v, message %s", openAIErr.Error.Type, openAIErr.Error.Code, openAIErr.Error.Message), "request_error", http.StatusInternalServerError)
 			}
 		}
-
-		var text string
-		switch responseFormat {
-		case "json":
-			text, err = getTextFromJSON(responseBody)
-		case "text":
-			text, err = getTextFromText(responseBody)
+		var seconds int64
+		var finalResp []byte
+		switch rewriteFormat {
 		case "srt":
-			text, err = getTextFromSRT(responseBody)
-		case "verbose_json":
-			text, err = getTextFromVerboseJSON(responseBody)
+			seconds, finalResp = getSecFromSRT(responseBody)
 		case "vtt":
-			text, err = getTextFromVTT(responseBody)
+			seconds, finalResp = getSecFromVTT(responseBody)
+		case "verbose_json":
+			seconds, finalResp, err = getSecFromVerboseJson(responseBody, responseFormat)
+			if err != nil {
+				return openai.ErrorWrapper(err, "get_sec_from_verbose_json_failed", http.StatusInternalServerError)
+			}
 		default:
 			return openai.ErrorWrapper(errors.New("unexpected_response_format"), "unexpected_response_format", http.StatusInternalServerError)
 		}
-		if err != nil {
-			return openai.ErrorWrapper(err, "get_text_from_body_err", http.StatusInternalServerError)
-		}
-		quota = int64(openai.CountTokenText(text, audioModel))
-		resp.Body = io.NopCloser(bytes.NewBuffer(responseBody))
+		quota = int64(float64(seconds) * ratio)
+		resp.Body = io.NopCloser(bytes.NewBuffer(finalResp))
 	}
 	if resp.StatusCode != http.StatusOK {
 		return RelayErrorHandler(resp)
@@ -242,47 +292,73 @@ func RelayAudioHelper(c *gin.Context, relayMode int) *relaymodel.ErrorWithStatus
 	return nil
 }
 
-func getTextFromVTT(body []byte) (string, error) {
-	return getTextFromSRT(body)
+func transFormat(format string) string {
+	if format == "" || format == "json" || format == "text" {
+		return "verbose_json"
+	} else {
+		return format
+	}
 }
 
-func getTextFromVerboseJSON(body []byte) (string, error) {
+func getSecFromVerboseJson(body []byte, format string) (int64, []byte, error) {
 	var whisperResponse openai.WhisperVerboseJSONResponse
 	if err := json.Unmarshal(body, &whisperResponse); err != nil {
-		return "", fmt.Errorf("unmarshal_response_body_failed err :%w", err)
+		return 0, nil, fmt.Errorf("unmarshal_response_body_failed err :%w", err)
 	}
-	return whisperResponse.Text, nil
+	if format == "verbose_json" {
+		return int64(whisperResponse.Duration) + 1, body, nil
+	}
+	if format == "json" {
+		strResp := fmt.Sprintf(
+			`{
+  "text":"%s"
+}`, whisperResponse.Text)
+		return int64(whisperResponse.Duration) + 1, []byte(strResp), nil
+	}
+	if format == "text" {
+		return int64(whisperResponse.Duration) + 1, []byte(whisperResponse.Text), nil
+	}
+	return 0, nil, errors.New("unexpected_response_format")
 }
 
-func getTextFromSRT(body []byte) (string, error) {
-	scanner := bufio.NewScanner(strings.NewReader(string(body)))
-	var builder strings.Builder
-	var textLine bool
-	for scanner.Scan() {
-		line := scanner.Text()
-		if textLine {
-			builder.WriteString(line)
-			textLine = false
-			continue
-		} else if strings.Contains(line, "-->") {
-			textLine = true
-			continue
+func getSecFromVTT(body []byte) (int64, []byte) {
+	return calculateTotalDuration(string(body), "vtt"), body
+}
+
+func getSecFromSRT(body []byte) (int64, []byte) {
+	return calculateTotalDuration(string(body), "srt"), body
+}
+
+func calculateTotalDuration(subtitle string, format string) int64 {
+	// 用正则表达式匹配时间戳
+	var re *regexp.Regexp
+	if format == "vtt" {
+		re = regexp.MustCompile(`(\d{2}:\d{2}:\d{2}\.\d{3}) --> (\d{2}:\d{2}:\d{2}\.\d{3})`)
+	} else {
+		re = regexp.MustCompile(`(\d{2}:\d{2}:\d{2},\d{3}) --> (\d{2}:\d{2}:\d{2},\d{3})`)
+	}
+	matches := re.FindAllStringSubmatch(subtitle, -1)
+
+	// 迭代匹配的时间戳
+	var startTime time.Time
+	var endTime time.Time
+	for i, match := range matches {
+		if i == 0 {
+			startTime = parseTime(match[1])
 		}
+		endTime = parseTime(match[2])
 	}
-	if err := scanner.Err(); err != nil {
-		return "", err
-	}
-	return builder.String(), nil
+	duration := endTime.Sub(startTime)
+
+	// 将总持续时间转换为秒
+	return int64(duration.Seconds() + 1)
 }
 
-func getTextFromText(body []byte) (string, error) {
-	return strings.TrimSuffix(string(body), "\n"), nil
-}
-
-func getTextFromJSON(body []byte) (string, error) {
-	var whisperResponse openai.WhisperJSONResponse
-	if err := json.Unmarshal(body, &whisperResponse); err != nil {
-		return "", fmt.Errorf("unmarshal_response_body_failed err :%w", err)
+func parseTime(timeStr string) time.Time {
+	// 解析时间字符串为 time.Time
+	t, err := time.Parse("15:04:05.000", timeStr)
+	if err != nil {
+		panic(err)
 	}
-	return whisperResponse.Text, nil
+	return t
 }
