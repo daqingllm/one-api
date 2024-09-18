@@ -56,23 +56,25 @@ var ModelRatio = map[string]float64{
 	"text-davinci-edit-001":  10,
 	"code-davinci-edit-001":  10,
 	//"whisper-1":               15,  // $0.006 / minute -> $0.006 / 150 words -> $0.006 / 200 tokens -> $0.03 / 1k tokens
-	"whisper-1":               50,  // $0.1 / 1K sec
-	"tts-1":                   7.5, // $0.015 / 1K characters
-	"tts-1-1106":              7.5,
-	"tts-1-hd":                15, // $0.030 / 1K characters
-	"tts-1-hd-1106":           15,
-	"davinci":                 10,
-	"curie":                   10,
-	"babbage":                 10,
-	"ada":                     10,
-	"text-embedding-ada-002":  0.05,
-	"text-embedding-3-small":  0.01,
-	"text-embedding-3-large":  0.065,
-	"text-search-ada-doc-001": 10,
-	"text-moderation-stable":  0.1,
-	"text-moderation-latest":  0.1,
-	"dall-e-2":                0.02 * USD, // $0.016 - $0.020 / image
-	"dall-e-3":                0.04 * USD, // $0.040 - $0.120 / image
+	"whisper-1":                  50,     // $0.1 / 1K sec
+	"whisper-large-v3":           15.417, // $0.111 / 1h
+	"distil-whisper-large-v3-en": 2.778,  //$0.02 /h
+	"tts-1":                      7.5,    // $0.015 / 1K characters
+	"tts-1-1106":                 7.5,
+	"tts-1-hd":                   15, // $0.030 / 1K characters
+	"tts-1-hd-1106":              15,
+	"davinci":                    10,
+	"curie":                      10,
+	"babbage":                    10,
+	"ada":                        10,
+	"text-embedding-ada-002":     0.05,
+	"text-embedding-3-small":     0.01,
+	"text-embedding-3-large":     0.065,
+	"text-search-ada-doc-001":    10,
+	"text-moderation-stable":     0.1,
+	"text-moderation-latest":     0.1,
+	"dall-e-2":                   0.02 * USD, // $0.016 - $0.020 / image
+	"dall-e-3":                   0.04 * USD, // $0.040 - $0.120 / image
 	// https://www.anthropic.com/api#pricing
 	"claude-instant-1.2":         0.8 / 1000 * USD,
 	"claude-2.0":                 8.0 / 1000 * USD,

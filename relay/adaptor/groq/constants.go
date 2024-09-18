@@ -14,4 +14,5 @@ var ModelList = []string{
 	"llama3-groq-70b-8192-tool-use-preview",
 	"llama3-groq-8b-8192-tool-use-preview",
 	"whisper-large-v3",
+	"distil-whisper-large-v3-en",
 }

@@ -156,6 +156,12 @@ func RelayAudioHelper(c *gin.Context, relayMode int) *relaymodel.ErrorWithStatus
 	} else {
 		responseFormat = c.DefaultPostForm("response_format", "json")
 		rewriteFormat = transFormat(responseFormat)
+		audioModel = c.DefaultPostForm("model", audioModel)
+		if audioModel != "whisper-1" {
+			modelRatio = billingratio.GetModelRatio(audioModel, channelType)
+			groupRatio = billingratio.GetGroupRatio(group)
+			ratio = modelRatio * groupRatio
+		}
 		// 遍历所有表单字段
 		var hasFormat bool
 		for key, values := range c.Request.MultipartForm.Value {
