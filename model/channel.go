@@ -65,9 +65,17 @@ func GetAllChannels(startIdx int, num int, scope string) ([]*Channel, error) {
 	return channels, err
 }
 
-func SearchChannels(keyword string) (channels []*Channel, err error) {
-	err = DB.Omit("key").Where("id = ? or name LIKE ?", helper.String2Int(keyword), keyword+"%").Find(&channels).Error
-	return channels, err
+func SearchChannels(keyword string, channelType int) (channels []*Channel, err error) {
+	if keyword == "" && channelType != 0 {
+		err = DB.Omit("key").Where("type = ?", channelType).Find(&channels).Error
+		return channels, err
+	} else if keyword != "" && channelType == 0 {
+		err = DB.Omit("key").Where("id = ? or name LIKE ?", helper.String2Int(keyword), keyword+"%").Find(&channels).Error
+		return channels, err
+	} else {
+		err = DB.Omit("key").Where("id = ? or name LIKE ? and type = ?", helper.String2Int(keyword), keyword+"%", channelType).Find(&channels).Error
+		return channels, err
+	}
 }
 
 func GetChannelById(id int, selectAll bool) (*Channel, error) {

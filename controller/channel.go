@@ -1,13 +1,14 @@
 package controller
 
 import (
+	"net/http"
+	"strconv"
+	"strings"
+
 	"github.com/gin-gonic/gin"
 	"github.com/songquanpeng/one-api/common/config"
 	"github.com/songquanpeng/one-api/common/helper"
 	"github.com/songquanpeng/one-api/model"
-	"net/http"
-	"strconv"
-	"strings"
 )
 
 func GetAllChannels(c *gin.Context) {
@@ -33,7 +34,8 @@ func GetAllChannels(c *gin.Context) {
 
 func SearchChannels(c *gin.Context) {
 	keyword := c.Query("keyword")
-	channels, err := model.SearchChannels(keyword)
+	channelType, _ := strconv.Atoi(c.Query("type"))
+	channels, err := model.SearchChannels(keyword, channelType)
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"success": false,
