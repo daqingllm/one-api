@@ -13,13 +13,15 @@ var TokenIdCache *freecache.Cache
 var UserGroupCache *freecache.Cache
 var UserQuotaCache *freecache.Cache
 var UsernamesCache *freecache.Cache
+var ModelConfigCache *freecache.Cache
 
-func Init() {
+func InitPool() {
 	TokenKeyCache = freecache.NewCache(10 * 1024 * 1024)
 	TokenIdCache = freecache.NewCache(10 * 1024 * 1024)
 	UserGroupCache = freecache.NewCache(0)
 	UserQuotaCache = freecache.NewCache(0)
 	UsernamesCache = freecache.NewCache(0)
+	ModelConfigCache = freecache.NewCache(1 * 1024 * 1024)
 }
 
 // GetTokenByKey gets token by key

@@ -14,6 +14,7 @@ func SetApiRouter(router *gin.Engine) {
 	apiRouter.Use(gzip.Gzip(gzip.DefaultCompression))
 	apiRouter.Use(middleware.GlobalAPIRateLimit())
 	{
+		apiRouter.GET("/test", controller.Test)
 		apiRouter.GET("/send_email", controller.SendEmail)
 		apiRouter.GET("/refresh_model_usage", controller.RefreshModelUsage)
 		apiRouter.GET("/model_usage_detail", controller.GetModelUsageDetail)
@@ -73,6 +74,9 @@ func SetApiRouter(router *gin.Engine) {
 		{
 			optionRoute.GET("/", controller.GetOptions)
 			optionRoute.PUT("/", controller.UpdateOption)
+			optionRoute.GET("/model", controller.GetModelOptions)
+			optionRoute.PUT("/model", controller.UpsertModelOption)
+			optionRoute.DELETE("/model", controller.DeleteModelOption)
 		}
 		channelRoute := apiRouter.Group("/channel")
 		channelRoute.Use(middleware.AdminAuth())

@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"context"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/songquanpeng/one-api/common/ctxkey"
@@ -54,7 +55,7 @@ var models []OpenAIModels
 var modelsMap map[string]OpenAIModels
 var channelId2Models map[int][]string
 
-func init() {
+func InitModels() {
 	var permission []OpenAIModelPermission
 	permission = append(permission, OpenAIModelPermission{
 		Id:                 "modelperm-LwHkVFn8AcMItP432fKKDIKJ",
@@ -79,6 +80,10 @@ func init() {
 		channelName := adaptor.GetChannelName()
 		modelNames := adaptor.GetModelList()
 		for _, modelName := range modelNames {
+			modelConfig, _ := model.GetModelConfig(context.Background(), modelName)
+			if modelConfig != nil {
+				channelName = modelConfig.Developer
+			}
 			models = append(models, OpenAIModels{
 				Id:         modelName,
 				Object:     "model",

@@ -1,6 +1,7 @@
 package ratio
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -206,6 +207,13 @@ var CompletionRatio = map[string]float64{
 var DefaultModelRatio map[string]float64
 var DefaultCompletionRatio map[string]float64
 
+type ModelRatioConfig struct {
+	ModelRatio      float64
+	CompletionRatio float64
+}
+
+var ModelConfigCache map[string]*ModelRatioConfig
+
 func init() {
 	DefaultModelRatio = make(map[string]float64)
 	for k, v := range ModelRatio {
@@ -214,6 +222,19 @@ func init() {
 	DefaultCompletionRatio = make(map[string]float64)
 	for k, v := range CompletionRatio {
 		DefaultCompletionRatio[k] = v
+	}
+}
+
+func RefreshModelConfigCache(ctx context.Context, model string, modelRatio float64, completionRatio float64) {
+	if ModelConfigCache == nil {
+		ModelConfigCache = make(map[string]*ModelRatioConfig)
+	}
+	if modelRatio <= 0 {
+		ModelConfigCache[model] = nil
+	}
+	ModelConfigCache[model] = &ModelRatioConfig{
+		ModelRatio:      modelRatio,
+		CompletionRatio: completionRatio,
 	}
 }
 
@@ -257,6 +278,10 @@ func GetModelRatio(name string, channelType int) float64 {
 	if strings.HasPrefix(name, "command-") && strings.HasSuffix(name, "-internet") {
 		name = strings.TrimSuffix(name, "-internet")
 	}
+	modelConfig := ModelConfigCache[name]
+	if modelConfig != nil {
+		return modelConfig.ModelRatio
+	}
 	model := fmt.Sprintf("%s(%d)", name, channelType)
 	if ratio, ok := ModelRatio[model]; ok {
 		return ratio
@@ -290,6 +315,10 @@ func UpdateCompletionRatioByJSONString(jsonStr string) error {
 func GetCompletionRatio(name string, channelType int) float64 {
 	if strings.HasPrefix(name, "qwen-") && strings.HasSuffix(name, "-internet") {
 		name = strings.TrimSuffix(name, "-internet")
+	}
+	modelConfig := ModelConfigCache[name]
+	if modelConfig != nil {
+		return modelConfig.CompletionRatio
 	}
 	model := fmt.Sprintf("%s(%d)", name, channelType)
 	if ratio, ok := CompletionRatio[model]; ok {

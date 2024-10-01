@@ -90,7 +90,9 @@ func main() {
 	openai.InitTokenEncoders()
 	client.Init()
 	job.Init()
-	model.Init()
+	model.InitPool()
+	model.InitModelConfig()
+	controller.InitModels()
 	controller.AlipayInit()
 
 	// Initialize HTTP server
