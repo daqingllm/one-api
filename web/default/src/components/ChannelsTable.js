@@ -586,6 +586,13 @@ const ChannelsTable = () => {
                       >
                         编辑
                       </Button>
+                      <Button
+                        size={'small'}
+                        as={Link}
+                        to={'/channel/add/' + channel.id}
+                      >
+                        复制
+                      </Button>
                     </div>
                   </Table.Cell>
                 </Table.Row>

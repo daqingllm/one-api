@@ -30,8 +30,9 @@ const EditChannel = () => {
   const params = useParams();
   const navigate = useNavigate();
   const channelId = params.id;
-  const isEdit = channelId !== undefined;
-  const [loading, setLoading] = useState(isEdit);
+  const isEdit = /\/edit/.test(location.pathname)
+  const isCopy = /\/add/.test(location.pathname) && !!channelId;
+  const [loading, setLoading] = useState(isEdit || isCopy);
   const handleCancel = () => {
     navigate('/channel');
   };
@@ -94,7 +95,7 @@ const EditChannel = () => {
       if (data.model_mapping !== '') {
         data.model_mapping = JSON.stringify(JSON.parse(data.model_mapping), null, 2);
       }
-      setInputs(data);
+      setInputs({ ...data, key: isCopy ? '' : data.key, id: isCopy ? undefined : data.id });
       if (data.config !== '') {
         setConfig(JSON.parse(data.config));
       }
@@ -148,7 +149,7 @@ const EditChannel = () => {
   }, [originModelOptions, inputs.models]);
 
   useEffect(() => {
-    if (isEdit) {
+    if (isEdit || isCopy) {
       loadChannel().then();
     } else {
       let localModels = getChannelModels(inputs.type);

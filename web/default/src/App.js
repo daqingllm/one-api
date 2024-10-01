@@ -113,6 +113,14 @@ function App() {
         }
       />
       <Route
+        path='/channel/add/:id'
+        element={
+          <Suspense fallback={<Loading></Loading>}>
+            <EditChannel />
+          </Suspense>
+        }
+      />
+      <Route
         path='/channel/add'
         element={
           <Suspense fallback={<Loading></Loading>}>
