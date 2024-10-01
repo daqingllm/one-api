@@ -63,37 +63,3 @@ func DeleteModelOption(context *gin.Context) {
 		"message": "",
 	})
 }
-
-func Test(context *gin.Context) {
-	ctx := context.Request.Context()
-	modelConfig := model.ModelConfig{
-		Model:           "gpt-4o-2024-05-13",
-		Developer:       "openai",
-		Provider:        "openai",
-		ModelName:       "gpt4o",
-		ModelRatio:      10,
-		CompletionRatio: 100,
-	}
-
-	err := model.SaveModelConfig(ctx, &modelConfig)
-	if err != nil {
-		context.JSON(200, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
-		return
-	}
-	modelConfigs, err := model.GetAllModelConfig(ctx)
-	if err != nil {
-		context.JSON(200, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
-		return
-	}
-	context.JSON(200, gin.H{
-		"success": true,
-		"message": "",
-		"data":    modelConfigs,
-	})
-}
