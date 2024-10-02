@@ -10,7 +10,7 @@ type ModelConfig struct {
 	Model           string  `json:"model" gorm:"primaryKey"`
 	Developer       string  `json:"developer"`
 	Provider        string  `json:"provider"`
-	ModelName       string  `json:"model_type"`
+	ModelName       string  `json:"model_name"`
 	ModelRatio      float64 `json:"model_ratio"`
 	CompletionRatio float64 `json:"completion_ratio"`
 }
