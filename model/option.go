@@ -1,6 +1,7 @@
 package model
 
 import (
+	"context"
 	"github.com/songquanpeng/one-api/common/config"
 	"github.com/songquanpeng/one-api/common/logger"
 	billingratio "github.com/songquanpeng/one-api/relay/billing/ratio"
@@ -98,6 +99,7 @@ func SyncOptions(frequency int) {
 		time.Sleep(time.Duration(frequency) * time.Second)
 		logger.SysLog("syncing options from database")
 		loadOptionsFromDatabase()
+		RefreshModelConfigCache(context.Background())
 	}
 }
 
