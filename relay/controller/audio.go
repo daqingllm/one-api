@@ -289,7 +289,7 @@ func RelayAudioHelper(c *gin.Context, relayMode int) *relaymodel.ErrorWithStatus
 
 	_, err = io.Copy(c.Writer, resp.Body)
 	if err != nil {
-		return openai.ErrorWrapper(err, "copy_response_body_failed", http.StatusInternalServerError)
+		return openai.ErrorWrapper(err, "copy_response_body_failed", http.StatusRequestTimeout)
 	}
 	err = resp.Body.Close()
 	if err != nil {

@@ -38,7 +38,7 @@ func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, meta *meta.Met
 	c.Writer.WriteHeader(resp.StatusCode)
 	if _, gerr := io.Copy(c.Writer, resp.Body); gerr != nil {
 		return nil, &relaymodel.ErrorWithStatusCode{
-			StatusCode: http.StatusInternalServerError,
+			StatusCode: http.StatusRequestTimeout,
 			Error: relaymodel.Error{
 				Message: gerr.Error(),
 			},

@@ -118,6 +118,9 @@ func shouldRetry(c *gin.Context, statusCode int) bool {
 	if statusCode == http.StatusBadRequest {
 		return false
 	}
+	if statusCode == http.StatusRequestTimeout {
+		return false
+	}
 	if statusCode/100 == 2 {
 		return false
 	}

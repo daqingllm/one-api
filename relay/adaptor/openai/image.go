@@ -34,7 +34,7 @@ func ImageHandler(c *gin.Context, resp *http.Response) (*model.ErrorWithStatusCo
 
 	_, err = io.Copy(c.Writer, resp.Body)
 	if err != nil {
-		return ErrorWrapper(err, "copy_response_body_failed", http.StatusInternalServerError), nil
+		return ErrorWrapper(err, "copy_response_body_failed", http.StatusRequestTimeout), nil
 	}
 	err = resp.Body.Close()
 	if err != nil {
@@ -53,7 +53,7 @@ func ImagesEditsHandler(c *gin.Context, resp *http.Response) (*model.ErrorWithSt
 	}
 
 	if _, err := io.Copy(c.Writer, resp.Body); err != nil {
-		return ErrorWrapper(err, "copy_response_body_failed", http.StatusInternalServerError), nil
+		return ErrorWrapper(err, "copy_response_body_failed", http.StatusRequestTimeout), nil
 	}
 	defer resp.Body.Close()
 	return nil, nil
