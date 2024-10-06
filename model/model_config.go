@@ -16,7 +16,7 @@ type ModelConfig struct {
 }
 
 type ModelProvider struct {
-	ProviderId int32  `json:"provider_id" gorm:"primaryKey,autoIncrement"`
+	ProviderId int32  `json:"provider_id" gorm:"primaryKey;autoIncrement"`
 	Provider   string `json:"provider"`
 	Color      string `json:"color"`
 }
