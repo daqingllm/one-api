@@ -9,7 +9,7 @@ import (
 type ModelConfig struct {
 	Model           string  `json:"model" gorm:"primaryKey"`
 	Developer       string  `json:"developer"`
-	Provider        string  `json:"provider"`
+	ProviderId      int32   `json:"provider_id"`
 	ModelName       string  `json:"model_name"`
 	ModelRatio      float64 `json:"model_ratio"`
 	CompletionRatio float64 `json:"completion_ratio"`
