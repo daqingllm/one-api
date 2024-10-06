@@ -63,3 +63,45 @@ func DeleteModelOption(context *gin.Context) {
 		"message": "",
 	})
 }
+
+func GetChannelProviders(context *gin.Context) {
+	ctx := context.Request.Context()
+	modelProviders, err := model.GetAllModelProvider(ctx)
+	if err != nil {
+		context.JSON(200, gin.H{
+			"success": false,
+			"message": err.Error(),
+		})
+		return
+	}
+	context.JSON(200, gin.H{
+		"success": true,
+		"message": "",
+		"data":    modelProviders,
+	})
+}
+
+func AddChannelProvider(context *gin.Context) {
+	ctx := context.Request.Context()
+	modelProvider := model.ModelProvider{}
+	err := context.BindJSON(&modelProvider)
+	if err != nil {
+		context.JSON(200, gin.H{
+			"success": false,
+			"message": err.Error(),
+		})
+		return
+	}
+	err = model.SaveModelProvider(ctx, &modelProvider)
+	if err != nil {
+		context.JSON(200, gin.H{
+			"success": false,
+			"message": err.Error(),
+		})
+		return
+	}
+	context.JSON(200, gin.H{
+		"success": true,
+		"message": "",
+	})
+}

@@ -15,6 +15,12 @@ type ModelConfig struct {
 	CompletionRatio float64 `json:"completion_ratio"`
 }
 
+type ModelProvider struct {
+	ProviderId int32  `json:"provider_id" gorm:"primaryKey,autoIncrement"`
+	Provider   string `json:"provider"`
+	Color      string `json:"color"`
+}
+
 func InitModelConfig() {
 	RefreshModelConfigCache(context.Background())
 }
@@ -58,5 +64,21 @@ func DeleteModelConfig(ctx context.Context, model string) error {
 		return err
 	}
 	ratio.RefreshModelConfigCache(ctx, model, 0, 0)
+	return err
+}
+
+func GetAllModelProvider(ctx context.Context) ([]*ModelProvider, error) {
+	var modelProviders []*ModelProvider
+	var err error
+	err = DB.Find(&modelProviders).Error
+	return modelProviders, err
+}
+
+func SaveModelProvider(ctx context.Context, modelProvider *ModelProvider) error {
+	if modelProvider.ProviderId == 0 {
+		err := DB.Create(modelProvider).Error
+		return err
+	}
+	err := DB.Save(modelProvider).Error
 	return err
 }
