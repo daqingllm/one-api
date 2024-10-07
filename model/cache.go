@@ -38,6 +38,9 @@ func DeleteExpiredCache() {
 }
 
 func CacheGetRecentChannel(ctx context.Context, userId int, model string) (channelId int) {
+	if config.IsZiai {
+		return 0
+	}
 	key := fmt.Sprintf(RecentChannelKeyPrefix, userId, model)
 	id, err := GetRecentChannelPool(key)
 	if err == nil {
@@ -63,6 +66,9 @@ func CacheGetRecentChannel(ctx context.Context, userId int, model string) (chann
 }
 
 func CacheSetRecentChannel(ctx context.Context, userId int, model string, channelId int) {
+	if config.IsZiai {
+		return
+	}
 	key := fmt.Sprintf(RecentChannelKeyPrefix, userId, model)
 	expireAt := time.Now().Unix() + 3600
 	cache := &Cache{}

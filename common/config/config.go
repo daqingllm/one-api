@@ -57,6 +57,8 @@ var DebugSQLEnabled = strings.ToLower(os.Getenv("DEBUG_SQL")) == "true"
 
 var LogConsumeEnabled = true
 
+var IsZiai = os.Getenv("ZIAI") == "true"
+
 var SMTPServer = ""
 var SMTPPort = 587
 var SMTPAccount = ""
