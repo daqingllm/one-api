@@ -209,6 +209,7 @@ var DefaultCompletionRatio map[string]float64
 
 type ModelRatioConfig struct {
 	ModelRatio      float64
+	CacheRatio      float64
 	CompletionRatio float64
 }
 
@@ -225,7 +226,7 @@ func init() {
 	}
 }
 
-func RefreshModelConfigCache(ctx context.Context, model string, modelRatio float64, completionRatio float64) {
+func RefreshModelConfigCache(ctx context.Context, model string, modelRatio float64, cacheRatio float64, completionRatio float64) {
 	if ModelConfigCache == nil {
 		ModelConfigCache = make(map[string]*ModelRatioConfig)
 	}
@@ -234,6 +235,7 @@ func RefreshModelConfigCache(ctx context.Context, model string, modelRatio float
 	}
 	ModelConfigCache[model] = &ModelRatioConfig{
 		ModelRatio:      modelRatio,
+		CacheRatio:      cacheRatio,
 		CompletionRatio: completionRatio,
 	}
 }
@@ -310,6 +312,17 @@ func CompletionRatio2JSONString() string {
 func UpdateCompletionRatioByJSONString(jsonStr string) error {
 	CompletionRatio = make(map[string]float64)
 	return json.Unmarshal([]byte(jsonStr), &CompletionRatio)
+}
+
+func GetCacheRatio(name string, channelType int) float64 {
+	if strings.HasPrefix(name, "qwen-") && strings.HasSuffix(name, "-internet") {
+		name = strings.TrimSuffix(name, "-internet")
+	}
+	modelConfig := ModelConfigCache[name]
+	if modelConfig != nil {
+		return modelConfig.CacheRatio
+	}
+	return 0
 }
 
 func GetCompletionRatio(name string, channelType int) float64 {

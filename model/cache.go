@@ -10,6 +10,7 @@ import (
 	"github.com/songquanpeng/one-api/common/random"
 	"math/rand"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -21,7 +22,68 @@ var (
 	UserId2QuotaCacheSeconds  = config.SyncFrequency
 	UserId2StatusCacheSeconds = config.SyncFrequency
 	GroupModelsCacheSeconds   = config.SyncFrequency
+
+	RecentChannelKeyPrefix = "recent_channel:%d:%s"
 )
+
+type Cache struct {
+	Id       int64  `json:"id"`
+	Key      string `json:"key" gorm:"type:varchar(255);uniqueIndex"`
+	Value    string `json:"value"`
+	ExpireAt int64  `json:"expire_at"`
+}
+
+func CacheGetRecentChannel(ctx context.Context, userId int, model string) (channelId int) {
+	key := fmt.Sprintf(RecentChannelKeyPrefix, userId, model)
+	id, err := GetRecentChannelPool(key)
+	if err == nil {
+		return id
+	}
+	cache := &Cache{}
+	err = DB.Where("`key` = ?", key).First(cache).Error
+	if err != nil {
+		return 0
+	}
+	if cache.ExpireAt < time.Now().Unix() {
+		return 0
+	}
+	channelId, err = strconv.Atoi(cache.Value)
+	if err != nil {
+		logger.Error(ctx, "convert cache value to int error: "+err.Error())
+		return 0
+	}
+	cache.ExpireAt = time.Now().Unix() + 3600
+	_ = DB.Save(cache).Error
+	SetRecentChannelPool(key, channelId)
+	return channelId
+}
+
+func CacheSetRecentChannel(ctx context.Context, userId int, model string, channelId int) {
+	key := fmt.Sprintf(RecentChannelKeyPrefix, userId, model)
+	expireAt := time.Now().Unix() + 3600
+	cache := &Cache{}
+	err := DB.Where("`key` = ?", key).First(cache).Error
+	if err != nil {
+		cache = &Cache{
+			Key:      key,
+			Value:    strconv.Itoa(channelId),
+			ExpireAt: expireAt,
+		}
+		err = DB.Create(cache).Error
+		if err != nil {
+			logger.Error(ctx, "create cache error: "+err.Error())
+		}
+		return
+	}
+	cache.Value = strconv.Itoa(channelId)
+	cache.ExpireAt = expireAt
+	err = DB.Save(cache).Error
+	if err != nil {
+		logger.Error(ctx, "save cache error: "+err.Error())
+	} else {
+		SetRecentChannelPool(key, channelId)
+	}
+}
 
 func CacheGetTokenByKey(ctx context.Context, key string) (*Token, error) {
 	ca := GetTokenByKeyPool(ctx, key)
@@ -141,6 +203,7 @@ func CacheGetGroupModels(ctx context.Context, group string) ([]string, error) {
 }
 
 var group2model2channels map[string]map[string][]*Channel
+var channelId2channel map[int]*Channel
 var channelSyncLock sync.RWMutex
 
 func InitChannelCache() {
@@ -185,6 +248,7 @@ func InitChannelCache() {
 
 	channelSyncLock.Lock()
 	group2model2channels = newGroup2model2channels
+	channelId2channel = newChannelId2channel
 	channelSyncLock.Unlock()
 	logger.SysLog("channels synced from database")
 }
@@ -195,6 +259,16 @@ func SyncChannelCache(frequency int) {
 		logger.SysLog("syncing channels from database")
 		InitChannelCache()
 	}
+}
+
+func CacheGetChannelById(id int) (*Channel, error) {
+	channelSyncLock.RLock()
+	defer channelSyncLock.RUnlock()
+	channel, ok := channelId2channel[id]
+	if !ok {
+		return nil, errors.New("channel not found")
+	}
+	return channel, nil
 }
 
 func CacheGetRandomSatisfiedChannel(group string, model string, ignoreFirstPriority bool) (*Channel, error) {

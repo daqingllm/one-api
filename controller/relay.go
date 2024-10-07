@@ -41,6 +41,9 @@ func relayHelper(c *gin.Context, relayMode int) *model.ErrorWithStatusCode {
 	default:
 		err = controller.RelayTextHelper(c)
 	}
+	if err == nil {
+		dbmodel.CacheSetRecentChannel(c.Request.Context(), c.GetInt(ctxkey.Id), c.GetString(ctxkey.RequestModel), c.GetInt(ctxkey.ChannelId))
+	}
 	return err
 }
 

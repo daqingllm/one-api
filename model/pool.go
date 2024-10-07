@@ -13,7 +13,7 @@ var TokenIdCache *freecache.Cache
 var UserGroupCache *freecache.Cache
 var UserQuotaCache *freecache.Cache
 var UsernamesCache *freecache.Cache
-var ModelConfigCache *freecache.Cache
+var RecentChannelCache *freecache.Cache
 
 func InitPool() {
 	TokenKeyCache = freecache.NewCache(10 * 1024 * 1024)
@@ -21,7 +21,7 @@ func InitPool() {
 	UserGroupCache = freecache.NewCache(0)
 	UserQuotaCache = freecache.NewCache(0)
 	UsernamesCache = freecache.NewCache(0)
-	ModelConfigCache = freecache.NewCache(1 * 1024 * 1024)
+	RecentChannelCache = freecache.NewCache(1 * 1024 * 1024)
 }
 
 // GetTokenByKey gets token by key
@@ -133,5 +133,27 @@ func SetUsernamePool(userId int, username string) {
 	err := UsernamesCache.Set([]byte(strconv.Itoa(userId)), []byte(username), 60)
 	if err != nil {
 		logger.SysError("set usernames error: " + err.Error())
+	}
+}
+
+// GetRecentChannel gets recent channel
+func GetRecentChannelPool(key string) (int, error) {
+	channelBytes, err := RecentChannelCache.Get([]byte(key))
+	if err != nil {
+		return 0, err
+	}
+	channelId, err := strconv.Atoi(string(channelBytes))
+	if err != nil {
+		logger.SysError("parse recent channel error: " + err.Error())
+		return 0, err
+	}
+	return channelId, nil
+}
+
+// SetRecentChannel sets recent channel
+func SetRecentChannelPool(key string, channelId int) {
+	err := RecentChannelCache.Set([]byte(key), []byte(strconv.Itoa(channelId)), 60)
+	if err != nil {
+		logger.SysError("set recent channel error: " + err.Error())
 	}
 }

@@ -29,18 +29,23 @@ func Distribute() func(c *gin.Context) {
 				abortWithMessage(c, http.StatusBadRequest, "无效的渠道 Id")
 				return
 			}
-			channel, err = model.GetChannelById(id, true)
+			channel, err = model.CacheGetChannelById(id)
 			if err != nil {
 				abortWithMessage(c, http.StatusBadRequest, "无效的渠道 Id")
-				return
-			}
-			if channel.Status != model.ChannelStatusEnabled {
-				abortWithMessage(c, http.StatusForbidden, "该渠道已被禁用")
 				return
 			}
 		} else {
 			requestModel = c.GetString(ctxkey.RequestModel)
 			var err error
+			recentChannelId := model.CacheGetRecentChannel(c.Request.Context(), userId, requestModel)
+			if recentChannelId > 0 {
+				channel, err = model.CacheGetChannelById(recentChannelId)
+				if err == nil {
+					SetupContextForSelectedChannel(c, channel, requestModel)
+					c.Next()
+					return
+				}
+			}
 			channel, err = model.CacheGetRandomSatisfiedChannel(userGroup, requestModel, false)
 			if err != nil {
 				message := fmt.Sprintf("当前分组 %s 下对于模型 %s 无可用渠道", userGroup, requestModel)

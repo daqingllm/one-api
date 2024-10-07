@@ -33,7 +33,7 @@ func RefreshModelConfigCache(ctx context.Context) {
 		return
 	}
 	for _, model := range models {
-		ratio.RefreshModelConfigCache(ctx, model.Model, model.ModelRatio, model.CompletionRatio)
+		ratio.RefreshModelConfigCache(ctx, model.Model, model.ModelRatio, model.CacheRatio, model.CompletionRatio)
 	}
 }
 
@@ -55,7 +55,7 @@ func SaveModelConfig(ctx context.Context, modelConfig *ModelConfig) error {
 	if err != nil {
 		return err
 	}
-	ratio.RefreshModelConfigCache(ctx, modelConfig.Model, modelConfig.ModelRatio, modelConfig.CompletionRatio)
+	ratio.RefreshModelConfigCache(ctx, modelConfig.Model, modelConfig.ModelRatio, modelConfig.CacheRatio, modelConfig.CompletionRatio)
 	return nil
 }
 
@@ -64,7 +64,7 @@ func DeleteModelConfig(ctx context.Context, model string) error {
 	if err != nil {
 		return err
 	}
-	ratio.RefreshModelConfigCache(ctx, model, 0, 0)
+	ratio.RefreshModelConfigCache(ctx, model, 0, 0, 0)
 	return err
 }
 
