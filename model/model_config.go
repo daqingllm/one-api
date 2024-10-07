@@ -12,6 +12,7 @@ type ModelConfig struct {
 	ProviderId      int32   `json:"provider_id"`
 	ModelName       string  `json:"model_name"`
 	ModelRatio      float64 `json:"model_ratio"`
+	CacheRatio      float64 `json:"cache_ratio"`
 	CompletionRatio float64 `json:"completion_ratio"`
 }
 
