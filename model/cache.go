@@ -33,6 +33,10 @@ type Cache struct {
 	ExpireAt int64  `json:"expire_at"`
 }
 
+func DeleteExpiredCache() {
+	DB.Where("expire_at < ?", time.Now().Unix()).Delete(&Cache{})
+}
+
 func CacheGetRecentChannel(ctx context.Context, userId int, model string) (channelId int) {
 	key := fmt.Sprintf(RecentChannelKeyPrefix, userId, model)
 	id, err := GetRecentChannelPool(key)
