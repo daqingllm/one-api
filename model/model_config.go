@@ -17,9 +17,9 @@ type ModelConfig struct {
 }
 
 type ModelProvider struct {
-	ProviderId int32  `json:"provider_id" gorm:"primaryKey;autoIncrement"`
-	Provider   string `json:"provider"`
-	Color      string `json:"color"`
+	Id       int    `json:"id"`
+	Provider string `json:"provider"`
+	Color    string `json:"color"`
 }
 
 func InitModelConfig() {
@@ -76,8 +76,12 @@ func GetAllModelProvider(ctx context.Context) ([]*ModelProvider, error) {
 }
 
 func SaveModelProvider(ctx context.Context, modelProvider *ModelProvider) error {
-	if modelProvider.ProviderId == 0 {
-		err := DB.Create(modelProvider).Error
+	if modelProvider.Id == 0 {
+		create := &ModelProvider{
+			Provider: modelProvider.Provider,
+			Color:    modelProvider.Color,
+		}
+		err := DB.Create(create).Error
 		return err
 	}
 	err := DB.Save(modelProvider).Error
