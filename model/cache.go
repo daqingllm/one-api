@@ -70,9 +70,13 @@ func CacheSetRecentChannel(ctx context.Context, userId int, model string, channe
 		return
 	}
 	key := fmt.Sprintf(RecentChannelKeyPrefix, userId, model)
+	id, err := GetRecentChannelPool(key)
+	if err == nil && channelId == id {
+		return
+	}
 	expireAt := time.Now().Unix() + 3600
 	cache := &Cache{}
-	err := DB.Where("`key` = ?", key).First(cache).Error
+	err = DB.Where("`key` = ?", key).First(cache).Error
 	if err != nil {
 		cache = &Cache{
 			Key:      key,
