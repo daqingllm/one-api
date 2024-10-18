@@ -26,6 +26,7 @@ type Error struct {
 }
 
 type ErrorWithStatusCode struct {
+	IsChannelResponseError bool `json:"is_channel_response_error"`
 	Error
 	StatusCode int `json:"status_code"`
 }

@@ -131,7 +131,7 @@ func shouldRetry(c *gin.Context, statusCode int) bool {
 func processChannelRelayError(ctx context.Context, userId int, channelId int, channelName string, err *model.ErrorWithStatusCode) {
 	logger.Errorf(ctx, "relay error (channel id %d, user id: %d): %s", channelId, userId, err.Message)
 	// https://platform.openai.com/docs/guides/error-codes/api-errors
-	if monitor.ShouldDisableChannel(&err.Error, err.StatusCode) {
+	if monitor.ShouldDisableChannel(err, err.StatusCode) {
 		monitor.DisableChannel(channelId, channelName, err.Message)
 	} else {
 		monitor.Emit(channelId, false)

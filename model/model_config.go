@@ -64,7 +64,7 @@ func DeleteModelConfig(ctx context.Context, model string) error {
 	if err != nil {
 		return err
 	}
-	ratio.RefreshModelConfigCache(ctx, model, 0, 0, 0)
+	ratio.RefreshModelConfigCache(ctx, model, -1, -1, -1)
 	return err
 }
 

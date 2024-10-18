@@ -46,7 +46,7 @@ func buildTestRequest(model string) *relaymodel.GeneralOpenAIRequest {
 	return testRequest
 }
 
-func testChannel(channel *model.Channel, request *relaymodel.GeneralOpenAIRequest) (err error, openaiErr *relaymodel.Error) {
+func testChannel(channel *model.Channel, request *relaymodel.GeneralOpenAIRequest) (err error, openaiErr *relaymodel.ErrorWithStatusCode) {
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
 	c.Request = &http.Request{
@@ -99,11 +99,11 @@ func testChannel(channel *model.Channel, request *relaymodel.GeneralOpenAIReques
 	}
 	if resp != nil && resp.StatusCode != http.StatusOK {
 		err := controller.RelayErrorHandler(resp)
-		return fmt.Errorf("status code %d: %s", resp.StatusCode, err.Error.Message), &err.Error
+		return fmt.Errorf("status code %d: %s", resp.StatusCode, err.Error.Message), err
 	}
 	usage, respErr := adaptor.DoResponse(c, resp, meta)
 	if respErr != nil {
-		return fmt.Errorf("%s", respErr.Error.Message), &respErr.Error
+		return fmt.Errorf("%s", respErr.Error.Message), respErr
 	}
 	if usage == nil {
 		return errors.New("usage is nil"), nil

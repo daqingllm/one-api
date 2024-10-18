@@ -230,7 +230,7 @@ func RefreshModelConfigCache(ctx context.Context, model string, modelRatio float
 	if ModelConfigCache == nil {
 		ModelConfigCache = make(map[string]*ModelRatioConfig)
 	}
-	if modelRatio <= 0 {
+	if modelRatio < 0 {
 		ModelConfigCache[model] = nil
 	}
 	ModelConfigCache[model] = &ModelRatioConfig{
