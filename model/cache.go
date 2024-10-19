@@ -293,20 +293,20 @@ func CacheGetRandomSatisfiedChannel(group string, model string, excludedChannelI
 	validChannels := make([]*Channel, 0)
 	if excludedChannelIds == nil {
 		excludedChannelIds = make([]int, 0)
-	} else {
-		for _, channel := range group2model2channels[group][model] {
-			valid := true
-			for _, excludedChannelId := range excludedChannelIds {
-				if channel.Id == excludedChannelId {
-					valid = false
-					break
-				}
-			}
-			if valid {
-				validChannels = append(validChannels, channel)
+	}
+	for _, channel := range group2model2channels[group][model] {
+		valid := true
+		for _, excludedChannelId := range excludedChannelIds {
+			if channel.Id == excludedChannelId {
+				valid = false
+				break
 			}
 		}
+		if valid {
+			validChannels = append(validChannels, channel)
+		}
 	}
+
 	if len(validChannels) == 0 {
 		return nil, nil
 	}
