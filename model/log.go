@@ -34,6 +34,17 @@ const (
 	LogTypeSystem
 )
 
+type FailedLog struct {
+	Id            int    `json:"id"`
+	UserId        int    `json:"user_id" gorm:"index"`
+	CreatedAt     int64  `json:"created_at" gorm:"bigint"`
+	ModelName     string `json:"model" gorm:"type:varchar(128)"`
+	ChannelsTried string `json:"channels_tried"`
+	StatusCode    int    `json:"status_code"`
+	ErrorResponse string `json:"error_response"`
+	RequestBody   string `json:"request_body"`
+}
+
 func RecordLog(userId int, logType int, content string) {
 	if logType == LogTypeConsume && !config.LogConsumeEnabled {
 		return
@@ -48,6 +59,22 @@ func RecordLog(userId int, logType int, content string) {
 	err := LOG_DB.Create(log).Error
 	if err != nil {
 		logger.SysError("failed to record log: " + err.Error())
+	}
+}
+
+func RecordFailedLog(userId int, modelName string, channelsTried string, statusCode int, errorResponse string, requestBody string) {
+	failedLog := &FailedLog{
+		UserId:        userId,
+		CreatedAt:     helper.GetTimestamp(),
+		ModelName:     modelName,
+		ChannelsTried: channelsTried,
+		StatusCode:    statusCode,
+		ErrorResponse: errorResponse,
+		RequestBody:   requestBody,
+	}
+	err := LOG_DB.Create(failedLog).Error
+	if err != nil {
+		logger.SysError("failed to record failed log: " + err.Error())
 	}
 }
 

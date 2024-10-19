@@ -7,7 +7,6 @@ import (
 	"github.com/songquanpeng/one-api/common"
 	"github.com/songquanpeng/one-api/common/config"
 	"github.com/songquanpeng/one-api/common/logger"
-	"github.com/songquanpeng/one-api/common/random"
 	"math/rand"
 	"sort"
 	"strconv"
@@ -285,31 +284,45 @@ func CacheGetChannelById(id int) (*Channel, error) {
 	return channel, nil
 }
 
-func CacheGetRandomSatisfiedChannel(group string, model string, ignoreFirstPriority bool) (*Channel, error) {
+func CacheGetRandomSatisfiedChannel(group string, model string, excludedChannelIds []int) (*Channel, error) {
 	channelSyncLock.RLock()
 	defer channelSyncLock.RUnlock()
-	channels := group2model2channels[group][model]
-	if len(channels) == 0 {
+	if len(group2model2channels[group][model]) == 0 {
 		return nil, errors.New("channel not found")
 	}
-	endIdx := len(channels)
+	validChannels := make([]*Channel, 0)
+	if excludedChannelIds == nil {
+		excludedChannelIds = make([]int, 0)
+	} else {
+		for _, channel := range group2model2channels[group][model] {
+			valid := true
+			for _, excludedChannelId := range excludedChannelIds {
+				if channel.Id == excludedChannelId {
+					valid = false
+					break
+				}
+			}
+			if valid {
+				validChannels = append(validChannels, channel)
+			}
+		}
+	}
+	if len(validChannels) == 0 {
+		return nil, nil
+	}
+	endIdx := len(validChannels)
 	// choose by priority
-	firstChannel := channels[0]
+	firstChannel := validChannels[0]
 	if firstChannel.GetPriority() > 0 {
-		for i := range channels {
-			if channels[i].GetPriority() != firstChannel.GetPriority() {
+		for i := range validChannels {
+			if validChannels[i].GetPriority() != firstChannel.GetPriority() {
 				endIdx = i
 				break
 			}
 		}
 	}
-	idx := calcIdxByWeight(channels, endIdx)
-	if ignoreFirstPriority {
-		if endIdx < len(channels) { // which means there are more than one priority
-			idx = random.RandRange(endIdx, len(channels))
-		}
-	}
-	return channels[idx], nil
+	idx := calcIdxByWeight(validChannels, endIdx)
+	return validChannels[idx], nil
 }
 
 func calcIdxByWeight(channels []*Channel, endIdx int) int {

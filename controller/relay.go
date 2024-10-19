@@ -3,6 +3,7 @@ package controller
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -59,70 +60,82 @@ func Relay(c *gin.Context) {
 		monitor.Emit(channelId, true)
 		return
 	}
-	lastFailedChannelId := channelId
 	channelName := c.GetString(ctxkey.ChannelName)
 	group := c.GetString(ctxkey.Group)
 	originalModel := c.GetString(ctxkey.OriginalModel)
 	go processChannelRelayError(ctx, userId, channelId, channelName, bizErr)
 	requestId := c.GetString(helper.RequestIdKey)
-	retryTimes := config.RetryTimes
-	if !shouldRetry(c, bizErr.StatusCode) {
+	retry := true
+	if !shouldRetry(c, bizErr) {
 		logger.Errorf(ctx, "relay error happen, status code is %d, won't retry in this case", bizErr.StatusCode)
-		retryTimes = 0
+		retry = false
 	}
-	for i := retryTimes; i > 0; i-- {
-		channel, err := dbmodel.CacheGetRandomSatisfiedChannel(group, originalModel, i != retryTimes)
+	excludedChannels := make([]int, 0)
+	excludedChannels = append(excludedChannels, channelId)
+	for retry {
+		retryChannel, err := dbmodel.CacheGetRandomSatisfiedChannel(group, originalModel, excludedChannels)
 		if err != nil {
 			logger.Errorf(ctx, "CacheGetRandomSatisfiedChannel failed: %+v", err)
 			break
 		}
-		logger.Infof(ctx, "using channel #%d to retry (remain times %d)", channel.Id, i)
-		if channel.Id == lastFailedChannelId {
-			continue
+		if retryChannel == nil {
+			logger.Errorf(ctx, "All channels have been tried, no more channel to try")
+			break
 		}
-		middleware.SetupContextForSelectedChannel(c, channel, originalModel)
+		logger.Infof(ctx, "using channel #%d to retry (remain times %d)", retryChannel.Id, len(excludedChannels))
+		middleware.SetupContextForSelectedChannel(c, retryChannel, originalModel)
 		requestBody, err := common.GetRequestBody(c)
 		c.Request.Body = io.NopCloser(bytes.NewBuffer(requestBody))
 		bizErr = relayHelper(c, relayMode)
 		if bizErr == nil {
 			return
 		}
-		channelId := c.GetInt(ctxkey.ChannelId)
-		lastFailedChannelId = channelId
-		channelName := c.GetString(ctxkey.ChannelName)
-		// BUG: bizErr is in race condition
-		go processChannelRelayError(ctx, userId, channelId, channelName, bizErr)
+		excludedChannels = append(excludedChannels, retryChannel.Id)
+		go processChannelRelayError(ctx, userId, retryChannel.Id, retryChannel.Name, bizErr)
 	}
-	if bizErr != nil {
-		if bizErr.StatusCode == http.StatusTooManyRequests {
-			bizErr.Error.Message = "当前分组上游负载已饱和，联系客服或请稍后重试"
-		}
 
-		// BUG: bizErr is in race condition
-		bizErr.Error.Message = helper.MessageWithRequestId(bizErr.Error.Message, requestId)
-		c.JSON(bizErr.StatusCode, gin.H{
-			"error": bizErr.Error,
-		})
+	requestBody, _ := common.GetRequestBody(c)
+	responseError := model.Error{
+		Message: bizErr.Error.Message,
+		Type:    bizErr.Error.Type,
+		Param:   bizErr.Error.Param,
+		Code:    bizErr.Error.Code,
 	}
+	if bizErr.StatusCode == http.StatusTooManyRequests {
+		responseError.Message = "当前分组上游负载已饱和，联系客服或请稍后重试"
+	}
+	responseError.Message = helper.MessageWithRequestId(responseError.Message, requestId)
+	c.JSON(bizErr.StatusCode, gin.H{
+		"error": responseError,
+	})
+
+	go logRespError(ctx, userId, originalModel, excludedChannels, bizErr.StatusCode, responseError, string(requestBody))
 }
 
-func shouldRetry(c *gin.Context, statusCode int) bool {
+func logRespError(ctx context.Context, userId int, originalModel string, channels []int, statusCode int, responseError model.Error, requestBody string) {
+	logger.Errorf(ctx, "relay error (user id: %d, model: %s, channels: %v): %s", userId, originalModel, channels, responseError.Message)
+	channelsData, _ := json.Marshal(channels)
+	respData, _ := json.Marshal(responseError)
+	dbmodel.RecordFailedLog(userId, originalModel, string(channelsData), statusCode, string(respData), requestBody)
+}
+
+func shouldRetry(c *gin.Context, bizError *model.ErrorWithStatusCode) bool {
 	if _, ok := c.Get(ctxkey.SpecificChannelId); ok {
 		return false
 	}
-	if statusCode == http.StatusTooManyRequests {
-		return true
-	}
-	if statusCode/100 == 5 {
-		return true
-	}
-	if statusCode == http.StatusBadRequest || statusCode == http.StatusForbidden {
+	if !bizError.IsChannelResponseError {
 		return false
 	}
-	if statusCode == http.StatusRequestTimeout {
+	if bizError.StatusCode == http.StatusTooManyRequests {
+		return true
+	}
+	if bizError.StatusCode/100 == 5 {
+		return true
+	}
+	if bizError.StatusCode == http.StatusBadRequest {
 		return false
 	}
-	if statusCode/100 == 2 {
+	if bizError.StatusCode/100 == 2 {
 		return false
 	}
 	return true
