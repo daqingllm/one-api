@@ -109,7 +109,9 @@ func Relay(c *gin.Context) {
 		"error": responseError,
 	})
 
-	go logRespError(ctx, userId, originalModel, excludedChannels, bizErr.StatusCode, responseError, string(requestBody))
+	if bizErr.Code != "insufficient_user_quota" {
+		go logRespError(ctx, userId, originalModel, excludedChannels, bizErr.StatusCode, responseError, string(requestBody))
+	}
 }
 
 func logRespError(ctx context.Context, userId int, originalModel string, channels []int, statusCode int, responseError model.Error, requestBody string) {
