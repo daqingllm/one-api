@@ -95,7 +95,7 @@ const EditChannel = () => {
       if (data.model_mapping !== '') {
         data.model_mapping = JSON.stringify(JSON.parse(data.model_mapping), null, 2);
       }
-      setInputs({ ...data, key: isCopy ? '' : data.key, id: isCopy ? undefined : data.id });
+      setInputs({ ...data, key: isCopy ? '' : data.key, id: isCopy ? undefined : data.id, used_quota: isCopy ? 0 : data.used_quota });
       if (data.config !== '') {
         setConfig(JSON.parse(data.config));
       }

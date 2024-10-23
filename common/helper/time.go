@@ -16,6 +16,12 @@ func GetTimeString() string {
 
 // GetFormattedTimeString 返回当前时间的格式化字符串，格式为 YYYY-MM-DD HH:MM:SS
 func GetFormattedTimeString() string {
-	now := time.Now()
-	return now.Format("2006-01-02 15:04:05")
+	location, err := time.LoadLocation("Asia/Shanghai")
+	if err != nil {
+		fmt.Println("Error loading location:", err)
+	}
+	// 获取当前时间
+	currentTime := time.Now()
+	timeInLocation := currentTime.In(location)
+	return timeInLocation.Format("2006-01-02 15:04:05")
 }
