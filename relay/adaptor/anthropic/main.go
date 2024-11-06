@@ -420,7 +420,7 @@ func Handler(c *gin.Context, resp *http.Response, promptTokens int, modelName st
 	if err != nil {
 		return openai.ErrorWrapper(err, "unmarshal_response_body_failed", http.StatusInternalServerError), nil
 	}
-	if claudeResponse.Error.Type != "" {
+	if claudeResponse.Error != nil && claudeResponse.Error.Type != "" {
 		return &model.ErrorWithStatusCode{
 			Error: model.Error{
 				Message: claudeResponse.Error.Message,

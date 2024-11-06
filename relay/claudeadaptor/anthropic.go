@@ -124,7 +124,7 @@ func Handler(c *gin.Context, resp *http.Response) (*anthropic.Usage, *model.Erro
 	if err != nil {
 		return nil, openai.ErrorWrapper(err, "unmarshal_response_body_failed", http.StatusInternalServerError)
 	}
-	if claudeResponse.Error.Type != "" {
+	if claudeResponse.Error != nil && claudeResponse.Error.Type != "" {
 		return nil, &model.ErrorWithStatusCode{
 			Error: model.Error{
 				Message: claudeResponse.Error.Message,
