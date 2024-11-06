@@ -76,6 +76,7 @@ func RelayErrorHandler(resp *http.Response) (ErrorWithStatusCode *model.ErrorWit
 	}
 	responseBody, err := io.ReadAll(resp.Body)
 	if err != nil {
+		logger.SysError(fmt.Sprintf("read response body failed: %s", err.Error()))
 		return
 	}
 	if config.DebugEnabled {

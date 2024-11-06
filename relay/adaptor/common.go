@@ -36,12 +36,12 @@ func DoRequestHelper(a Adaptor, c *gin.Context, meta *meta.Meta, requestBody io.
 	}
 	resp, err := DoRequest(c, req)
 	if err != nil {
-		return nil, fmt.Errorf("do request failed: %s", maskBaseURL(err.Error(), meta.BaseURL))
+		return nil, fmt.Errorf("do request failed: %s", MaskBaseURL(err.Error(), meta.BaseURL))
 	}
 	return resp, nil
 }
 
-func maskBaseURL(errStr string, baseURL string) string {
+func MaskBaseURL(errStr string, baseURL string) string {
 	u, err := url.Parse(baseURL)
 	if err != nil {
 		return errStr

@@ -16,6 +16,11 @@ func SetRelayRouter(router *gin.Engine) {
 		modelsRouter.GET("", controller.ListModels)
 		modelsRouter.GET("/:model", controller.RetrieveModel)
 	}
+	claudeV1Router := router.Group("/v1")
+	claudeV1Router.Use(middleware.RelayPanicRecover(), middleware.TokenAuthClaude(), middleware.DistributeClaude())
+	{
+		claudeV1Router.POST("/messages", controller.ClaudeMessages)
+	}
 	relayV1Router := router.Group("/v1")
 	relayV1Router.Use(middleware.RelayPanicRecover(), middleware.TokenAuth(), middleware.Distribute())
 	{

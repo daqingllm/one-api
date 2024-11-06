@@ -104,23 +104,24 @@ func ConvertRequest(textRequest model.GeneralOpenAIRequest) *Request {
 		}
 		var content Content
 		if message.IsStringContent() {
+			var contents []Content
 			if message.Role == "tool" {
 				claudeMessage.Role = "user"
 				content.Type = "tool_result"
 				content.Content = message.StringContent()
 				content.Text = ""
 				content.ToolUseId = message.ToolCallId
-				claudeMessage.Content = append(claudeMessage.Content, content)
+				contents = append(contents, content)
 			} else {
 				content.Type = "text"
 				content.Text = message.StringContent()
 				if len(strings.TrimSpace(content.Text)) > 0 {
-					claudeMessage.Content = append(claudeMessage.Content, content)
+					contents = append(contents, content)
 				}
 				for i := range message.ToolCalls {
 					inputParam := make(map[string]any)
 					_ = json.Unmarshal([]byte(message.ToolCalls[i].Function.Arguments.(string)), &inputParam)
-					claudeMessage.Content = append(claudeMessage.Content, Content{
+					contents = append(contents, Content{
 						Type:  "tool_use",
 						Id:    message.ToolCalls[i].Id,
 						Name:  message.ToolCalls[i].Function.Name,
@@ -128,6 +129,7 @@ func ConvertRequest(textRequest model.GeneralOpenAIRequest) *Request {
 					})
 				}
 			}
+			claudeMessage.Content = contents
 		} else {
 			var contents []Content
 			openaiContent := message.ParseContent()
@@ -235,7 +237,7 @@ func StreamResponseClaude2OpenAI(claudeResponse *StreamResponse, toolcounter *To
 	case "message_delta":
 		if claudeResponse.Usage != nil {
 			response = &Response{
-				Usage: *claudeResponse.Usage,
+				Usage: claudeResponse.Usage,
 			}
 		}
 		if claudeResponse.Delta != nil && claudeResponse.Delta.StopReason != nil {

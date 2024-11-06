@@ -20,6 +20,18 @@ func abortWithMessage(c *gin.Context, statusCode int, message string) {
 	logger.Error(c.Request.Context(), message)
 }
 
+func abortWithMessageClaude(c *gin.Context, statusCode int, message string) {
+	c.JSON(statusCode, gin.H{
+		"type": "error",
+		"error": gin.H{
+			"message": helper.MessageWithRequestId(message, c.GetString(helper.RequestIdKey)),
+			"type":    "Aihubmix_api_error",
+		},
+	})
+	c.Abort()
+	logger.Error(c.Request.Context(), message)
+}
+
 func getRequestModel(c *gin.Context) (string, error) {
 	var modelRequest ModelRequest
 	err := common.UnmarshalBodyReusable(c, &modelRequest)

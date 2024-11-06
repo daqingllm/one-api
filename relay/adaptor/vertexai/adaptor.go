@@ -97,7 +97,7 @@ func (a *Adaptor) GetRequestURL(meta *meta.Meta) (string, error) {
 
 func (a *Adaptor) SetupRequestHeader(c *gin.Context, req *http.Request, meta *meta.Meta) error {
 	adaptor.SetupCommonRequestHeader(c, req, meta)
-	token, err := getToken(c, meta.ChannelId, meta.Config.VertexAIADC)
+	token, err := GetToken(c, meta.ChannelId, meta.Config.VertexAIADC)
 	if err != nil {
 		return err
 	}
