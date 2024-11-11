@@ -24,7 +24,7 @@ var aliClient *alipay.Client
 
 // 正式环境
 const (
-	radio = 6.3
+	radio = 7.3
 )
 
 // decimal类型乘法
