@@ -85,7 +85,11 @@ func CreateStripe(c *gin.Context) {
 		return
 	}
 
-	http.Redirect(c.Writer, c.Request, s.URL, http.StatusSeeOther)
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "创建订单成功",
+		"data":    s.URL,
+	})
 }
 
 // Stripe订单支付成功
