@@ -16,6 +16,7 @@ import (
 	"github.com/songquanpeng/one-api/common/env"
 	"github.com/songquanpeng/one-api/common/logger"
 	"github.com/songquanpeng/one-api/controller"
+	"github.com/songquanpeng/one-api/controller/pay"
 	"github.com/songquanpeng/one-api/job"
 	"github.com/songquanpeng/one-api/middleware"
 	"github.com/songquanpeng/one-api/model"
@@ -93,7 +94,8 @@ func main() {
 	model.InitPool()
 	model.InitModelConfig()
 	controller.InitModels()
-	controller.AlipayInit()
+	pay.InitAlipay()
+	pay.InitStripe()
 
 	// Initialize HTTP server
 	server := gin.New()

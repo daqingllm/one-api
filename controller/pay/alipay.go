@@ -1,4 +1,4 @@
-package controller
+package pay
 
 import (
 	"context"
@@ -7,10 +7,11 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/shopspring/decimal"
+
 	"github.com/smartwalle/alipay/v3"
 	"github.com/smartwalle/xid"
 	"github.com/songquanpeng/one-api/common"
@@ -24,19 +25,10 @@ var aliClient *alipay.Client
 
 // 正式环境
 const (
-	radio = 6.3
+	rate = 6.3
 )
 
-// decimal类型乘法
-func MultiplyFloat(d1, d2 float64) float64 {
-	decimalD1 := decimal.NewFromFloat(d1)
-	decimalD2 := decimal.NewFromFloat(d2)
-	decimalResult := decimalD1.Mul(decimalD2)
-	float64Result, _ := decimalResult.Float64()
-	return float64Result
-}
-
-func AlipayInit() {
+func InitAlipay() {
 	var err error
 	ctx := context.Background()
 	// 支付宝初始化
@@ -54,14 +46,9 @@ func AlipayInit() {
 	}
 }
 
-type CreateOrdertRequest struct {
-	Amount      float64 `json:"amount"`
-	TotalAmount float64 `json:"totalAmount"`
-}
-
 // 预下单
-func CreateOrder(c *gin.Context) {
-	var req CreateOrdertRequest
+func CreateAlipay(c *gin.Context) {
+	var req CreateOrderRequest
 	err := json.NewDecoder(c.Request.Body).Decode(&req)
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{
@@ -72,7 +59,7 @@ func CreateOrder(c *gin.Context) {
 	}
 
 	// 确认金额
-	if req.Amount <= 0 || MultiplyFloat(req.Amount, radio) != req.TotalAmount {
+	if req.Amount <= 0 || common.MultiplyFloatUnique(req.Amount, rate) != req.TotalAmount {
 		c.JSON(http.StatusOK, gin.H{
 			"success": false,
 			"message": "金额异常",
@@ -102,13 +89,14 @@ func CreateOrder(c *gin.Context) {
 		return
 	}
 
+	domainURL := os.Getenv("SERVER_DOMAIN")
 	// 创建支付宝订单
 	var p = alipay.TradePreCreate{}
 	p.Subject = "AiHubMix平台 API额度"
 	p.OutTradeNo = tradeNo
 	p.TotalAmount = strconv.FormatFloat(req.TotalAmount, 'f', -1, 64)
 	p.ProductCode = "QR_CODE_OFFLINE"
-	p.NotifyURL = "https://aihubmix.com/api/alipay/notify"
+	p.NotifyURL = domainURL + "/api/pay/alipay_notify"
 	// 二维码有效期 2 小时
 	res, err := aliClient.TradePreCreate(c, p)
 	if err != nil {
@@ -262,54 +250,4 @@ func NotifyOrder(c *gin.Context) {
 	}
 
 	aliClient.ACKNotification(c.Writer)
-}
-
-// 查询订单表所有等待付款的订单 再次查询支付宝订单状态并更新
-func UpdateAllOrderStatus(c *gin.Context) {
-	orders, err := model.GetOrdersByStatus("WAIT_BUYER_PAY")
-	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
-		return
-	}
-
-	// 遍历订单，查询支付宝订单状态并更新
-	for _, order := range orders {
-		// 查询支付宝订单状态
-		_, err := QueryAlipayOrder(c, order.TradeNo)
-		if err != nil {
-			continue
-		}
-	}
-	c.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"message": strconv.Itoa(len(orders)) + "条订单状态更新成功",
-	})
-}
-
-// 查询用户订单状态
-func QueryOrderByTradeNo(c *gin.Context) {
-	tradeNo := c.Query("tradeNo")
-	record, err := model.GetOrderByTradeNo(tradeNo)
-	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
-		return
-	}
-	if record.IsOrderExpired() {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "订单已过期",
-		})
-		return
-	}
-	c.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"message": "订单信息",
-		"data":    record,
-	})
 }

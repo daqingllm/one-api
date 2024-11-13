@@ -3,6 +3,7 @@ package router
 import (
 	"github.com/songquanpeng/one-api/controller"
 	"github.com/songquanpeng/one-api/controller/auth"
+	"github.com/songquanpeng/one-api/controller/pay"
 	"github.com/songquanpeng/one-api/middleware"
 
 	"github.com/gin-contrib/gzip"
@@ -131,10 +132,21 @@ func SetApiRouter(router *gin.Engine) {
 		alipayRoute := apiRouter.Group("/alipay")
 		alipayRoute.Use(middleware.UserAuth())
 		{
-			alipayRoute.POST("/create_order", controller.CreateOrder)
-			alipayRoute.POST("/notify", controller.NotifyOrder)
-			alipayRoute.GET("/query_order", controller.QueryOrderByTradeNo)
-			alipayRoute.GET("/update_order_status", middleware.AdminAuth(), controller.UpdateAllOrderStatus)
+			alipayRoute.POST("/create_order", pay.CreateAlipay)
+			alipayRoute.POST("/notify", pay.NotifyOrder)
+			alipayRoute.GET("/query_order", pay.QueryOrderByTradeNo)
+			alipayRoute.GET("/update_order_status", middleware.AdminAuth(), pay.UpdateAllOrderStatus)
+		}
+		payRoute := apiRouter.Group("/pay")
+		payRoute.Use(middleware.UserAuth())
+		{
+			payRoute.POST("/alipay/create", pay.CreateAlipay)
+			payRoute.POST("/alipay/notify", pay.NotifyOrder)
+			payRoute.POST("/stripe/create", pay.CreateStripe)
+			payRoute.GET("/stripe/success", pay.StripeOrderSuccess)
+			payRoute.GET("/stripe/failed", pay.StripeOrderFailed)
+			payRoute.GET("/query/order", pay.QueryOrderByTradeNo)
+			payRoute.GET("/update_order_status", middleware.AdminAuth(), pay.UpdateAllOrderStatus)
 		}
 	}
 }
