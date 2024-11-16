@@ -14,7 +14,7 @@ type ImageSource struct {
 
 type Content struct {
 	Type   string       `json:"type"`
-	Text   string       `json:"text,omitempty"`
+	Text   string       `json:"text"`
 	Source *ImageSource `json:"source,omitempty"`
 	// tool_calls
 	Id        string `json:"id,omitempty"`
