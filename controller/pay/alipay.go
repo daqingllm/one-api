@@ -25,7 +25,7 @@ var aliClient *alipay.Client
 
 // 正式环境
 const (
-	rate = 6.3
+	rate = 7.3
 )
 
 func InitAlipay() {
