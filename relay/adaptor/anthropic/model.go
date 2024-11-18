@@ -12,6 +12,18 @@ type ImageSource struct {
 	Data      string `json:"data"`
 }
 
+type ContentReq struct {
+	Type   string       `json:"type"`
+	Text   string       `json:"text,omitempty"`
+	Source *ImageSource `json:"source,omitempty"`
+	// tool_calls
+	Id        string `json:"id,omitempty"`
+	Name      string `json:"name,omitempty"`
+	Input     any    `json:"input,omitempty"`
+	Content   string `json:"content,omitempty"`
+	ToolUseId string `json:"tool_use_id,omitempty"`
+}
+
 type Content struct {
 	Type   string       `json:"type"`
 	Text   string       `json:"text"`

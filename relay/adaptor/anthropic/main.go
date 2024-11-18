@@ -102,9 +102,9 @@ func ConvertRequest(textRequest model.GeneralOpenAIRequest) *Request {
 		claudeMessage := Message{
 			Role: message.Role,
 		}
-		var content Content
+		var content ContentReq
 		if message.IsStringContent() {
-			var contents []Content
+			var contents []ContentReq
 			if message.Role == "tool" {
 				claudeMessage.Role = "user"
 				content.Type = "tool_result"
@@ -121,7 +121,7 @@ func ConvertRequest(textRequest model.GeneralOpenAIRequest) *Request {
 				for i := range message.ToolCalls {
 					inputParam := make(map[string]any)
 					_ = json.Unmarshal([]byte(message.ToolCalls[i].Function.Arguments.(string)), &inputParam)
-					contents = append(contents, Content{
+					contents = append(contents, ContentReq{
 						Type:  "tool_use",
 						Id:    message.ToolCalls[i].Id,
 						Name:  message.ToolCalls[i].Function.Name,
@@ -131,10 +131,10 @@ func ConvertRequest(textRequest model.GeneralOpenAIRequest) *Request {
 			}
 			claudeMessage.Content = contents
 		} else {
-			var contents []Content
+			var contents []ContentReq
 			openaiContent := message.ParseContent()
 			for _, part := range openaiContent {
-				var content Content
+				var content ContentReq
 				if part.Type == model.ContentTypeText {
 					content.Type = "text"
 					content.Text = part.Text
@@ -169,7 +169,7 @@ func ConvertRequest(textRequest model.GeneralOpenAIRequest) *Request {
 func defaulUserMessage() Message {
 	return Message{
 		Role: "user",
-		Content: []Content{
+		Content: []ContentReq{
 			{
 				Type: "text",
 				Text: "hello",
@@ -181,7 +181,7 @@ func defaulUserMessage() Message {
 func defaultAssistantMessage() Message {
 	return Message{
 		Role: "assistant",
-		Content: []Content{
+		Content: []ContentReq{
 			{
 				Type: "text",
 				Text: "I'm here to help. What can I do for you?",
