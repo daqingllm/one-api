@@ -257,28 +257,28 @@ func GetUser(c *gin.Context) {
 	return
 }
 
-func GetUserDashboard(c *gin.Context) {
-	id := c.GetInt(ctxkey.Id)
-	now := time.Now()
-	startOfDay := now.Truncate(24*time.Hour).AddDate(0, 0, -6).Unix()
-	endOfDay := now.Truncate(24 * time.Hour).Add(24*time.Hour - time.Second).Unix()
-
-	dashboards, err := model.SearchLogsByDayAndModel(id, int(startOfDay), int(endOfDay))
-	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "无法获取统计信息",
-			"data":    nil,
-		})
-		return
-	}
-	c.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"message": "",
-		"data":    dashboards,
-	})
-	return
-}
+//func GetUserDashboard(c *gin.Context) {
+//	id := c.GetInt(ctxkey.Id)
+//	now := time.Now()
+//	startOfDay := now.Truncate(24*time.Hour).AddDate(0, 0, -6).Unix()
+//	endOfDay := now.Truncate(24 * time.Hour).Add(24*time.Hour - time.Second).Unix()
+//
+//	dashboards, err := model.SearchLogsByDayAndModel(id, int(startOfDay), int(endOfDay))
+//	if err != nil {
+//		c.JSON(http.StatusOK, gin.H{
+//			"success": false,
+//			"message": "无法获取统计信息",
+//			"data":    nil,
+//		})
+//		return
+//	}
+//	c.JSON(http.StatusOK, gin.H{
+//		"success": true,
+//		"message": "",
+//		"data":    dashboards,
+//	})
+//	return
+//}
 
 func GenerateAccessToken(c *gin.Context) {
 	id := c.GetInt(ctxkey.Id)

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/songquanpeng/one-api/common"
@@ -116,6 +117,9 @@ func Relay(c *gin.Context) {
 
 func logRespError(ctx context.Context, userId int, originalModel string, channels []int, statusCode int, responseError model.Error, requestBody string) {
 	logger.Errorf(ctx, "relay error (user id: %d, model: %s, channels: %v): %s", userId, originalModel, channels, responseError.Message)
+	if config.IsZiai {
+		return
+	}
 	channelsData, _ := json.Marshal(channels)
 	respData, _ := json.Marshal(responseError)
 	dbmodel.RecordFailedLog(userId, originalModel, string(channelsData), statusCode, string(respData), requestBody)
@@ -135,6 +139,9 @@ func shouldRetry(c *gin.Context, bizError *model.ErrorWithStatusCode) bool {
 		return true
 	}
 	if bizError.StatusCode == http.StatusBadRequest {
+		if strings.Contains(bizError.Message, "Azure OpenAI's content management policy") {
+			return true
+		}
 		return false
 	}
 	if bizError.StatusCode/100 == 2 {

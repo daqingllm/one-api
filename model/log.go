@@ -3,7 +3,6 @@ package model
 import (
 	"context"
 	"fmt"
-	"github.com/songquanpeng/one-api/common"
 	"github.com/songquanpeng/one-api/common/config"
 	"github.com/songquanpeng/one-api/common/helper"
 	"github.com/songquanpeng/one-api/common/logger"
@@ -177,6 +176,7 @@ func SearchUserLogs(userId int, keyword string) (logs []*Log, err error) {
 	return logs, err
 }
 
+// @deprecated
 func SumUsedQuota(logType int, startTimestamp int64, endTimestamp int64, modelName string, username string, tokenName string, channel int) (quota int64) {
 	tx := LOG_DB.Table("logs").Select("ifnull(sum(quota),0)")
 	if username != "" {
@@ -201,26 +201,26 @@ func SumUsedQuota(logType int, startTimestamp int64, endTimestamp int64, modelNa
 	return quota
 }
 
-func SumUsedToken(logType int, startTimestamp int64, endTimestamp int64, modelName string, username string, tokenName string) (token int) {
-	tx := LOG_DB.Table("logs").Select("ifnull(sum(prompt_tokens),0) + ifnull(sum(completion_tokens),0)")
-	if username != "" {
-		tx = tx.Where("username = ?", username)
-	}
-	if tokenName != "" {
-		tx = tx.Where("token_name = ?", tokenName)
-	}
-	if startTimestamp != 0 {
-		tx = tx.Where("created_at >= ?", startTimestamp)
-	}
-	if endTimestamp != 0 {
-		tx = tx.Where("created_at <= ?", endTimestamp)
-	}
-	if modelName != "" {
-		tx = tx.Where("model_name = ?", modelName)
-	}
-	tx.Where("type = ?", LogTypeConsume).Scan(&token)
-	return token
-}
+//func SumUsedToken(logType int, startTimestamp int64, endTimestamp int64, modelName string, username string, tokenName string) (token int) {
+//	tx := LOG_DB.Table("logs").Select("ifnull(sum(prompt_tokens),0) + ifnull(sum(completion_tokens),0)")
+//	if username != "" {
+//		tx = tx.Where("username = ?", username)
+//	}
+//	if tokenName != "" {
+//		tx = tx.Where("token_name = ?", tokenName)
+//	}
+//	if startTimestamp != 0 {
+//		tx = tx.Where("created_at >= ?", startTimestamp)
+//	}
+//	if endTimestamp != 0 {
+//		tx = tx.Where("created_at <= ?", endTimestamp)
+//	}
+//	if modelName != "" {
+//		tx = tx.Where("model_name = ?", modelName)
+//	}
+//	tx.Where("type = ?", LogTypeConsume).Scan(&token)
+//	return token
+//}
 
 func DeleteOldLog(targetTimestamp int64) (int64, error) {
 	result := LOG_DB.Where("created_at < ?", targetTimestamp).Delete(&Log{})
@@ -236,26 +236,26 @@ type LogStatistic struct {
 	CompletionTokens int    `gorm:"column:completion_tokens"`
 }
 
-func SearchLogsByDayAndModel(userId, start, end int) (LogStatistics []*LogStatistic, err error) {
-	groupSelect := "DATE_FORMAT(FROM_UNIXTIME(created_at), '%Y-%m-%d') as day"
-
-	if common.UsingPostgreSQL {
-		groupSelect = "TO_CHAR(date_trunc('day', to_timestamp(created_at)), 'YYYY-MM-DD') as day"
-	}
-
-	err = LOG_DB.Raw(`
-		SELECT `+groupSelect+`,
-		model_name, count(1) as request_count,
-		sum(quota) as quota,
-		sum(prompt_tokens) as prompt_tokens,
-		sum(completion_tokens) as completion_tokens
-		FROM logs
-		WHERE type=2
-		AND user_id= ?
-		AND created_at BETWEEN ? AND ?
-		GROUP BY day, model_name
-		ORDER BY day, model_name
-	`, userId, start, end).Scan(&LogStatistics).Error
-
-	return LogStatistics, err
-}
+//func SearchLogsByDayAndModel(userId, start, end int) (LogStatistics []*LogStatistic, err error) {
+//	groupSelect := "DATE_FORMAT(FROM_UNIXTIME(created_at), '%Y-%m-%d') as day"
+//
+//	if common.UsingPostgreSQL {
+//		groupSelect = "TO_CHAR(date_trunc('day', to_timestamp(created_at)), 'YYYY-MM-DD') as day"
+//	}
+//
+//	err = LOG_DB.Raw(`
+//		SELECT `+groupSelect+`,
+//		model_name, count(1) as request_count,
+//		sum(quota) as quota,
+//		sum(prompt_tokens) as prompt_tokens,
+//		sum(completion_tokens) as completion_tokens
+//		FROM logs
+//		WHERE type=2
+//		AND user_id= ?
+//		AND created_at BETWEEN ? AND ?
+//		GROUP BY day, model_name
+//		ORDER BY day, model_name
+//	`, userId, start, end).Scan(&LogStatistics).Error
+//
+//	return LogStatistics, err
+//}
