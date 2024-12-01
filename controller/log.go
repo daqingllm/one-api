@@ -183,3 +183,32 @@ func DeleteHistoryLogs(c *gin.Context) {
 	})
 	return
 }
+
+func GetUserUsage(c *gin.Context) {
+	userId := c.GetInt(ctxkey.Id)
+	startTime, _ := strconv.ParseInt(c.Query("start"), 10, 64)
+	endTime, _ := strconv.ParseInt(c.Query("end"), 10, 64)
+	tokenName := c.Query("token_name")
+	modelName := c.Query("model_name")
+	userIdStr := c.Query("user_id")
+	if userIdStr != "" {
+		role := c.GetInt(ctxkey.Role)
+		if role >= model.RoleAdminUser {
+			userId, _ = strconv.Atoi(userIdStr)
+		}
+	}
+	usages, err := model.GetUsage(userId, modelName, tokenName, int(startTime), int(endTime))
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": err.Error(),
+		})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "",
+		"data":    usages,
+	})
+	return
+}
