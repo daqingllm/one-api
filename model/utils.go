@@ -65,7 +65,7 @@ func batchInsert() {
 	err := LOG_DB.CreateInBatches(logs, 100).Error
 
 	location, _ := time.LoadLocation("Asia/Shanghai") // Beijing time zone
-	startTime := time.Date(2024, 12, 1, 20, 40, 0, 0, location)
+	startTime := time.Date(2024, 12, 1, 21, 10, 0, 0, location)
 	if time.Now().Before(startTime) {
 		return
 	}
@@ -81,15 +81,17 @@ func batchInsert() {
 				Count:        0,
 				InputTokens:  0,
 				OutputTokens: 0,
+				Quota:        0,
 			}
 		}
 		usage := usages[key]
 		usage.Count++
 		usage.InputTokens += log.PromptTokens
 		usage.OutputTokens += log.CompletionTokens
+		usage.Quota += log.Quota
 	}
 	for _, usage := range usages {
-		err = AddUsage(usage.UserId, usage.ModelName, usage.TokenName, usage.Count, usage.InputTokens, usage.OutputTokens)
+		err = AddUsage(usage.UserId, usage.ModelName, usage.TokenName, usage.Count, usage.InputTokens, usage.OutputTokens, usage.Quota)
 		if err != nil {
 			logger.SysError("failed to add usage: " + err.Error())
 		}

@@ -14,6 +14,7 @@ type Usage struct {
 	Count        int    `json:"count"`
 	InputTokens  int    `json:"input_tokens"`
 	OutputTokens int    `json:"output_tokens"`
+	Quota        int    `json:"quota" gorm:"default:0"`
 }
 
 func getHour() int {
@@ -23,7 +24,7 @@ func getHour() int {
 	return hour
 }
 
-func AddUsage(userId int, modelName string, tokenName string, count int, inputTokens int, outputTokens int) error {
+func AddUsage(userId int, modelName string, tokenName string, count int, inputTokens int, outputTokens int, quota int) error {
 	// find by userId, modelName, tokenId, hour
 	hour := getHour()
 	var usage Usage
@@ -38,6 +39,7 @@ func AddUsage(userId int, modelName string, tokenName string, count int, inputTo
 			Count:        count,
 			InputTokens:  inputTokens,
 			OutputTokens: outputTokens,
+			Quota:        quota,
 		}
 		err = DB.Create(&usage).Error
 	} else {
@@ -45,6 +47,7 @@ func AddUsage(userId int, modelName string, tokenName string, count int, inputTo
 		usage.Count += count
 		usage.InputTokens += inputTokens
 		usage.OutputTokens += outputTokens
+		usage.Quota += quota
 		err = DB.Save(&usage).Error
 	}
 	return err
