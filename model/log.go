@@ -259,3 +259,8 @@ type LogStatistic struct {
 //
 //	return LogStatistics, err
 //}
+
+func PaginateLogs(startId int, num int) (logs []*Log, err error) {
+	err = LOG_DB.Where("id < ?", startId).Where("type = ?", LogTypeConsume).Order("id desc").Limit(num).Find(&logs).Error
+	return logs, err
+}

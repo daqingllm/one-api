@@ -125,6 +125,7 @@ func SetApiRouter(router *gin.Engine) {
 		logRoute.GET("/self", middleware.UserAuth(), controller.GetUserLogs)
 		logRoute.GET("/self/search", middleware.UserAuth(), controller.SearchUserLogs)
 		logRoute.GET("/usage", middleware.UserAuth(), controller.GetUserUsage)
+		logRoute.GET("/usage/flush", middleware.AdminAuth(), controller.FlushUserUsage)
 		groupRoute := apiRouter.Group("/group")
 		groupRoute.Use(middleware.AdminAuth())
 		{

@@ -4,9 +4,11 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/songquanpeng/one-api/common/config"
 	"github.com/songquanpeng/one-api/common/ctxkey"
+	"github.com/songquanpeng/one-api/common/logger"
 	"github.com/songquanpeng/one-api/model"
 	"net/http"
 	"strconv"
+	"time"
 )
 
 func GetAllLogs(c *gin.Context) {
@@ -211,4 +213,61 @@ func GetUserUsage(c *gin.Context) {
 		"data":    usages,
 	})
 	return
+}
+
+func FlushUserUsage(c *gin.Context) {
+	startId64, _ := strconv.ParseInt(c.Query("start"), 10, 64)
+	startId := int(startId64)
+
+	month64, _ := strconv.ParseInt(c.Query("month"), 10, 64)
+	day64, _ := strconv.ParseInt(c.Query("day"), 10, 64)
+	location, _ := time.LoadLocation("Asia/Shanghai") // Beijing time zone
+	endTime := time.Date(2024, time.Month(int(month64)), int(day64), 0, 0, 0, 0, location)
+
+	for startId > 0 {
+		logs, err := model.PaginateLogs(startId, 1000)
+		if err != nil {
+			c.JSON(http.StatusOK, gin.H{
+				"success": false,
+				"message": err.Error(),
+			})
+			return
+		}
+
+		usages := make(map[string]*model.Usage, 0)
+		for _, log := range logs {
+			key := strconv.Itoa(log.UserId) + log.ModelName + log.TokenName
+			createdAt := time.Unix(log.CreatedAt, 0)
+			if createdAt.Before(endTime) {
+				startId = 0
+				break
+			}
+			hourStr := createdAt.Format("2006010215")
+			hour, _ := strconv.Atoi(hourStr)
+			if _, ok := usages[key]; !ok {
+				usages[key] = &model.Usage{
+					UserId:       log.UserId,
+					Hour:         hour,
+					ModelName:    log.ModelName,
+					TokenName:    log.TokenName,
+					Count:        0,
+					InputTokens:  0,
+					OutputTokens: 0,
+					Quota:        0,
+				}
+			}
+			usage := usages[key]
+			usage.Count++
+			usage.InputTokens += log.PromptTokens
+			usage.OutputTokens += log.CompletionTokens
+			usage.Quota += log.Quota
+		}
+		for _, usage := range usages {
+			err = model.AddUsage(usage.UserId, usage.ModelName, usage.TokenName, usage.Count, usage.InputTokens, usage.OutputTokens, usage.Quota)
+			if err != nil {
+				logger.SysError("failed to add usage: " + err.Error())
+			}
+		}
+		startId = logs[len(logs)-1].Id
+	}
 }
