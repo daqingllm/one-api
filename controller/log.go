@@ -236,7 +236,6 @@ func FlushUserUsage(c *gin.Context) {
 
 		usages := make(map[string]*model.Usage, 0)
 		for _, log := range logs {
-			key := strconv.Itoa(log.UserId) + log.ModelName + log.TokenName
 			createdAt := time.Unix(log.CreatedAt, 0)
 			if createdAt.Before(endTime) {
 				startId = 0
@@ -244,6 +243,7 @@ func FlushUserUsage(c *gin.Context) {
 			}
 			hourStr := createdAt.Format("2006010215")
 			hour, _ := strconv.Atoi(hourStr)
+			key := strconv.Itoa(log.UserId) + log.ModelName + log.TokenName + hourStr
 			if _, ok := usages[key]; !ok {
 				usages[key] = &model.Usage{
 					UserId:       log.UserId,
@@ -263,11 +263,13 @@ func FlushUserUsage(c *gin.Context) {
 			usage.Quota += log.Quota
 		}
 		for _, usage := range usages {
-			err = model.AddUsage(usage.UserId, usage.ModelName, usage.TokenName, usage.Count, usage.InputTokens, usage.OutputTokens, usage.Quota)
+			err = model.AddUsage(usage.UserId, usage.ModelName, usage.Hour, usage.TokenName, usage.Count, usage.InputTokens, usage.OutputTokens, usage.Quota)
 			if err != nil {
 				logger.SysError("failed to add usage: " + err.Error())
 			}
 		}
-		startId = logs[len(logs)-1].Id
+		if startId != 0 {
+			startId = logs[len(logs)-1].Id
+		}
 	}
 }

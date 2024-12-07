@@ -24,9 +24,10 @@ func getHour() int {
 	return hour
 }
 
-func AddUsage(userId int, modelName string, tokenName string, count int, inputTokens int, outputTokens int, quota int) error {
-	// find by userId, modelName, tokenId, hour
-	hour := getHour()
+func AddUsage(userId int, modelName string, hour int, tokenName string, count int, inputTokens int, outputTokens int, quota int) error {
+	if hour == 0 {
+		hour = getHour()
+	}
 	var usage Usage
 	err := DB.Where("user_id = ? AND model_name = ? AND token_name = ? AND hour = ?", userId, modelName, tokenName, hour).First(&usage).Error
 	if err != nil {

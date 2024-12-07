@@ -91,7 +91,7 @@ func batchInsert() {
 		usage.Quota += log.Quota
 	}
 	for _, usage := range usages {
-		err = AddUsage(usage.UserId, usage.ModelName, usage.TokenName, usage.Count, usage.InputTokens, usage.OutputTokens, usage.Quota)
+		err = AddUsage(usage.UserId, usage.ModelName, usage.Hour, usage.TokenName, usage.Count, usage.InputTokens, usage.OutputTokens, usage.Quota)
 		if err != nil {
 			logger.SysError("failed to add usage: " + err.Error())
 		}
