@@ -43,7 +43,7 @@ func ClaudeMessages(c *gin.Context) {
 	requestId := c.GetString(helper.RequestIdKey)
 	retry := true
 	if !shouldRetry(c, bizErr) {
-		logger.Errorf(ctx, "relay error happen, status code is %d, won't retry in this case", bizErr.StatusCode)
+		logger.Errorf(ctx, "relay error happen, won't retry in this case. biz: %+v", bizErr)
 		retry = false
 	}
 	excludedChannels := make([]int, 0)
