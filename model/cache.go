@@ -93,9 +93,8 @@ func CacheSetRecentChannel(ctx context.Context, userId int, model string, channe
 	err = DB.Save(cache).Error
 	if err != nil {
 		logger.Error(ctx, "save cache error: "+err.Error())
-	} else {
-		SetRecentChannelPool(key, channelId)
 	}
+	SetRecentChannelPool(key, channelId)
 }
 
 func CacheGetTokenByKey(ctx context.Context, key string) (*Token, error) {
