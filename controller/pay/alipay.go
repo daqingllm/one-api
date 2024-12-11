@@ -96,7 +96,7 @@ func CreateAlipay(c *gin.Context) {
 	p.OutTradeNo = tradeNo
 	p.TotalAmount = strconv.FormatFloat(req.TotalAmount, 'f', -1, 64)
 	p.ProductCode = "QR_CODE_OFFLINE"
-	p.NotifyURL = domainURL + "/api/pay/alipay_notify"
+	p.NotifyURL = domainURL + "/api/pay/alipay/notify"
 	// 二维码有效期 2 小时
 	res, err := aliClient.TradePreCreate(c, p)
 	if err != nil {

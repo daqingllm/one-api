@@ -71,7 +71,7 @@ func CreateStripe(c *gin.Context) {
 		UserId:    c.GetInt(ctxkey.Id),
 		TradeNo:   s.ID,
 		Quota:     int64(req.Amount * config.QuotaPerUnit),
-		GrantType: 1,
+		GrantType: 2,
 		Status:    "WAIT_BUYER_PAY",
 		CreateAt:  time.Now().Unix(),
 		ExpiredAt: time.Now().Add(time.Minute * 15).Unix(), // 预下单有效时间为15分钟
