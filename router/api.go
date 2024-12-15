@@ -56,6 +56,7 @@ func SetApiRouter(router *gin.Engine) {
 				selfRoute.POST("/remind", controller.UpdateRemind)
 				selfRoute.GET("/available_models", controller.GetUserAvailableModels)
 				selfRoute.GET("/quota_records", controller.GetUserQuotaRecords)
+				// selfRoute.GET("/check_expire", middleware.AdminAuth(), controller.CheckAndUpdateExpiredQuota)
 			}
 
 			adminRoute := userRoute.Group("/")
