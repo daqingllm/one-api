@@ -25,7 +25,7 @@ func AddQuotaRecord(userId int, grantType int, grantId string, quota int64) erro
 		GrantType:   grantType,
 		GrantId:     grantId,
 		CreatedTime: time.Now().Unix(),
-		ExpiredTime: time.Now().Add(time.Hour * 24 * 30 * 6).Unix(),
+		ExpiredTime: time.Now().AddDate(0, 6, 0).Unix(),
 		Quota:       quota,
 		Status:      1,
 	}

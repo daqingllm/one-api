@@ -74,5 +74,4 @@ func QuotaJob() {
 		return
 	}
 	scheduleNextRun(location)
-	select {}
 }
