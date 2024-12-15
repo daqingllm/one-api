@@ -13,7 +13,7 @@ import {
 } from '../helpers';
 
 import { CHANNEL_OPTIONS, ITEMS_PER_PAGE } from '../constants';
-import { renderGroup, renderNumber } from '../helpers/render';
+import { renderGroup, renderNumber, renderQuota } from '../helpers/render';
 
 function renderTimestamp(timestamp) {
   return (
@@ -423,11 +423,8 @@ const ChannelsTable = () => {
             </Table.HeaderCell>
             <Table.HeaderCell
               style={{ cursor: 'pointer' }}
-              onClick={() => {
-                sortChannel('balance');
-              }}
             >
-              余额
+              用量
             </Table.HeaderCell>
             <Table.HeaderCell
               style={{ cursor: 'pointer' }}
@@ -473,17 +470,7 @@ const ChannelsTable = () => {
                       basic
                     />
                   </Table.Cell>
-                  <Table.Cell>
-                    <Popup
-                      trigger={<span onClick={() => {
-                        updateChannelBalance(channel.id, channel.name, idx);
-                      }} style={{ cursor: 'pointer' }}>
-                      {renderBalance(channel.type, channel.balance)}
-                    </span>}
-                      content='点击更新'
-                      basic
-                    />
-                  </Table.Cell>
+                  <Table.Cell>{renderQuota(channel.used_quota)}</Table.Cell>
                   <Table.Cell>
                     <Popup
                       trigger={<Input type='number' defaultValue={channel.priority} onBlur={(event) => {
