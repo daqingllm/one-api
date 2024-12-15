@@ -21,20 +21,12 @@ type OrderRecord struct {
 }
 
 func (record *OrderRecord) Insert() error {
-	var err error
-	err = DB.Create(record).Error
-	if err != nil {
-		return err
-	}
+	err := DB.Create(record).Error
 	return err
 }
 
 func UpdateOrderStatusByTradeNo(tradeNo string, status string) error {
-	var err error
-	err = DB.Model(&OrderRecord{}).Where("trade_no = ?", tradeNo).Update("status", status).Error
-	if err != nil {
-		return err
-	}
+	err := DB.Model(&OrderRecord{}).Where("trade_no = ?", tradeNo).Update("status", status).Error
 	return err
 }
 
@@ -55,11 +47,7 @@ func (record *OrderRecord) IsOrderExpired() bool {
 
 // 更新用户额度
 func UpdateUserQuota(userId int, quota int64) error {
-	var err error
-	err = DB.Model(&User{}).Where("id = ?", userId).Update("quota", gorm.Expr("quota + ?", quota)).Error
-	if err != nil {
-		return err
-	}
+	err := DB.Model(&User{}).Where("id = ?", userId).Update("quota", gorm.Expr("quota + ?", quota)).Error
 	return err
 }
 

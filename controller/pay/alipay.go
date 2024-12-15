@@ -189,6 +189,11 @@ func QueryAlipayOrder(c *gin.Context, outTradeNo string) (bool, error) {
 				logger.Error(ctx, "更新用户额度异常: "+err.Error())
 				return false, err
 			}
+			err = model.AddQuotaRecord(record.UserId, 1, record.TradeNo, record.Quota)
+			if err != nil {
+				logger.Error(ctx, "创建用户额度记录异常: "+err.Error())
+				return false, err
+			}
 
 			// 添加额度变更记录
 			model.RecordTopupLog(record.UserId, fmt.Sprintf("通过 支付宝 充值 %s", common.LogQuota(int64(record.Quota))), 0)

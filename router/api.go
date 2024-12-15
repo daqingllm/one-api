@@ -55,6 +55,7 @@ func SetApiRouter(router *gin.Engine) {
 				selfRoute.POST("/topup", controller.TopUp)
 				selfRoute.POST("/remind", controller.UpdateRemind)
 				selfRoute.GET("/available_models", controller.GetUserAvailableModels)
+				selfRoute.GET("/quota_records", controller.GetUserQuotaRecords)
 			}
 
 			adminRoute := userRoute.Group("/")
@@ -130,14 +131,6 @@ func SetApiRouter(router *gin.Engine) {
 		groupRoute.Use(middleware.AdminAuth())
 		{
 			groupRoute.GET("/", controller.GetGroups)
-		}
-		alipayRoute := apiRouter.Group("/alipay")
-		alipayRoute.Use(middleware.UserAuth())
-		{
-			alipayRoute.POST("/create_order", pay.CreateAlipay)
-			alipayRoute.POST("/notify", pay.NotifyOrder)
-			alipayRoute.GET("/query_order", pay.QueryOrderByTradeNo)
-			alipayRoute.GET("/update_order_status", middleware.AdminAuth(), pay.UpdateAllOrderStatus)
 		}
 		payRoute := apiRouter.Group("/pay")
 		payRoute.Use(middleware.UserAuth())
