@@ -142,6 +142,12 @@ func shouldRetry(c *gin.Context, bizError *model.ErrorWithStatusCode) bool {
 		if strings.Contains(bizError.Message, "Azure OpenAI's content management policy") {
 			return true
 		}
+		if strings.Contains(bizError.Message, "Unsupported value: 'stream' does not support true with this model") {
+			return true
+		}
+		if strings.Contains(bizError.Message, "Missing required parameter: 'response_format.json_schema'") {
+			return true
+		}
 		return false
 	}
 	if bizError.StatusCode/100 == 2 {
