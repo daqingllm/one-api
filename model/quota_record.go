@@ -34,13 +34,7 @@ func AddQuotaRecord(userId int, grantType int, grantId string, quota int64) erro
 
 // GetQuotaRecordsByUserId 根据用户id分页查询所有状态的取额度记录
 func GetQuotaRecordsByUserId(userId int, startIdx int, num int) (records []*QuotaRecord, err error) {
-	err = DB.Where("user_id = ?", userId).Limit(num).Offset(startIdx).Find(&records).Error
-	return records, err
-}
-
-// GetValidQuotaRecordByUserId 根据用户id查询有效额度记录
-func GetValidQuotaRecordsByUserId(userId int) (records []*QuotaRecord, err error) {
-	err = DB.Where("user_id = ? and status = ?", userId, 1).Find(&records).Order("id desc").Error
+	err = DB.Where("user_id = ?", userId).Order("id desc").Limit(num).Offset(startIdx).Find(&records).Error
 	return records, err
 }
 

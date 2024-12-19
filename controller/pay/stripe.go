@@ -123,7 +123,7 @@ func StripeOrderSuccess(c *gin.Context) {
 		// 订单状态为等待付款时更新用户额度
 		if tradeStatus == "WAIT_BUYER_PAY" {
 			// 更新用户额度
-			err = model.UpdateUserQuota(record.UserId, record.Quota)
+			err = model.IncreaseUserQuota(record.UserId, record.Quota)
 			if err != nil {
 				logger.Error(c, "更新用户额度异常: "+err.Error())
 				c.JSON(http.StatusOK, gin.H{
@@ -220,7 +220,7 @@ func QueryStripeOrder(c *gin.Context) {
 		// 订单状态为等待付款时更新用户额度
 		if tradeStatus == "WAIT_BUYER_PAY" {
 			// 更新用户额度
-			err = model.UpdateUserQuota(record.UserId, record.Quota)
+			err = model.IncreaseUserQuota(record.UserId, record.Quota)
 			if err != nil {
 				logger.Error(c, "更新用户额度异常: "+err.Error())
 				c.JSON(http.StatusOK, gin.H{

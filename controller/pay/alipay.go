@@ -184,7 +184,7 @@ func QueryAlipayOrder(c *gin.Context, outTradeNo string) (bool, error) {
 		// 订单状态为等待付款时更新用户额度
 		if record.Status == "WAIT_BUYER_PAY" {
 			// 更新用户额度
-			err = model.UpdateUserQuota(record.UserId, record.Quota)
+			err = model.IncreaseUserQuota(record.UserId, record.Quota)
 			if err != nil {
 				logger.Error(ctx, "更新用户额度异常: "+err.Error())
 				return false, err

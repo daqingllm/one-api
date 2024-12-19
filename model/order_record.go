@@ -2,8 +2,6 @@ package model
 
 import (
 	"time"
-
-	"gorm.io/gorm"
 )
 
 // OrderRecord 订单记录 借用quota_record的表结构
@@ -47,7 +45,7 @@ func (record *OrderRecord) IsOrderExpired() bool {
 
 // 更新用户额度
 func UpdateUserQuota(userId int, quota int64) error {
-	err := DB.Model(&User{}).Where("id = ?", userId).Update("quota", gorm.Expr("quota + ?", quota)).Error
+	err := DB.Model(&User{}).Where("id = ?", userId).Update("quota", quota).Error
 	return err
 }
 
