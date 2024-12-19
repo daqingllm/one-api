@@ -71,7 +71,7 @@ func CreateStripe(c *gin.Context) {
 		UserId:    c.GetInt(ctxkey.Id),
 		TradeNo:   s.ID,
 		Quota:     int64(req.Amount * config.QuotaPerUnit),
-		GrantType: 1,
+		GrantType: 2,
 		Status:    "WAIT_BUYER_PAY",
 		CreateAt:  time.Now().Unix(),
 		ExpiredAt: time.Now().Add(time.Minute * 15).Unix(), // 预下单有效时间为15分钟
@@ -123,12 +123,21 @@ func StripeOrderSuccess(c *gin.Context) {
 		// 订单状态为等待付款时更新用户额度
 		if tradeStatus == "WAIT_BUYER_PAY" {
 			// 更新用户额度
-			err = model.UpdateUserQuota(record.UserId, record.Quota)
+			err = model.IncreaseUserQuota(record.UserId, record.Quota)
 			if err != nil {
 				logger.Error(c, "更新用户额度异常: "+err.Error())
 				c.JSON(http.StatusOK, gin.H{
 					"success": false,
 					"message": "更新用户额度异常",
+				})
+				return
+			}
+			err = model.AddQuotaRecord(record.UserId, 2, record.TradeNo, record.Quota)
+			if err != nil {
+				logger.Error(c, "创建用户额度记录异常: "+err.Error())
+				c.JSON(http.StatusOK, gin.H{
+					"success": false,
+					"message": "创建用户额度记录异常",
 				})
 				return
 			}
@@ -211,12 +220,21 @@ func QueryStripeOrder(c *gin.Context) {
 		// 订单状态为等待付款时更新用户额度
 		if tradeStatus == "WAIT_BUYER_PAY" {
 			// 更新用户额度
-			err = model.UpdateUserQuota(record.UserId, record.Quota)
+			err = model.IncreaseUserQuota(record.UserId, record.Quota)
 			if err != nil {
 				logger.Error(c, "更新用户额度异常: "+err.Error())
 				c.JSON(http.StatusOK, gin.H{
 					"success": false,
 					"message": "更新用户额度异常",
+				})
+				return
+			}
+			err = model.AddQuotaRecord(record.UserId, 2, record.TradeNo, record.Quota)
+			if err != nil {
+				logger.Error(c, "创建用户额度记录异常: "+err.Error())
+				c.JSON(http.StatusOK, gin.H{
+					"success": false,
+					"message": "创建用户额度记录异常",
 				})
 				return
 			}

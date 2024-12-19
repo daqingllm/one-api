@@ -1,8 +1,9 @@
 package model
 
 import (
-	"gorm.io/gorm/clause"
 	"time"
+
+	"gorm.io/gorm/clause"
 )
 
 const (
@@ -18,6 +19,7 @@ type ScheduleRecord struct {
 	Key       string    `json:"key" gorm:"type:varchar(128);uniqueIndex:idx_job,priority:2"`
 	Status    int       `json:"status" gorm:"type:int;default:0"`
 	CreatedAt time.Time `json:"created_at" gorm:"datetime"`
+	Ext       string    `json:"ext" gorm:"type:varchar(128)"`
 }
 
 // insert into ScheduleRecord ignore duplicate key and return affected rows
@@ -33,5 +35,10 @@ func InsertScheduleRecordIgnoreDuplicateKey(job string, key string) (int64, erro
 
 // update ScheduleRecord status by job and key
 func UpdateScheduleRecordStatus(job string, key string, status int) error {
-	return DB.Model(&ScheduleRecord{}).Where("job = ? and key = ?", job, key).Update("status", status).Error
+	return DB.Model(&ScheduleRecord{}).Where("job = ? and `key` = ?", job, key).Update("status", status).Error
+}
+
+// update ScheduleRecord status by job and key
+func UpdateScheduleRecordExt(job string, key string, ext string) error {
+	return DB.Model(&ScheduleRecord{}).Where("job = ? and `key` = ?", job, key).Update("ext", ext).Error
 }

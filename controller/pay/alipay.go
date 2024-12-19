@@ -96,7 +96,7 @@ func CreateAlipay(c *gin.Context) {
 	p.OutTradeNo = tradeNo
 	p.TotalAmount = strconv.FormatFloat(req.TotalAmount, 'f', -1, 64)
 	p.ProductCode = "QR_CODE_OFFLINE"
-	p.NotifyURL = domainURL + "/api/pay/alipay_notify"
+	p.NotifyURL = domainURL + "/api/pay/alipay/notify"
 	// 二维码有效期 2 小时
 	res, err := aliClient.TradePreCreate(c, p)
 	if err != nil {
@@ -184,9 +184,14 @@ func QueryAlipayOrder(c *gin.Context, outTradeNo string) (bool, error) {
 		// 订单状态为等待付款时更新用户额度
 		if record.Status == "WAIT_BUYER_PAY" {
 			// 更新用户额度
-			err = model.UpdateUserQuota(record.UserId, record.Quota)
+			err = model.IncreaseUserQuota(record.UserId, record.Quota)
 			if err != nil {
 				logger.Error(ctx, "更新用户额度异常: "+err.Error())
+				return false, err
+			}
+			err = model.AddQuotaRecord(record.UserId, 1, record.TradeNo, record.Quota)
+			if err != nil {
+				logger.Error(ctx, "创建用户额度记录异常: "+err.Error())
 				return false, err
 			}
 
