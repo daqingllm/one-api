@@ -5,10 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
-	"strings"
-
 	"github.com/gin-gonic/gin"
 	"github.com/songquanpeng/one-api/common"
 	"github.com/songquanpeng/one-api/common/config"
@@ -21,6 +17,8 @@ import (
 	"github.com/songquanpeng/one-api/relay/controller"
 	"github.com/songquanpeng/one-api/relay/model"
 	"github.com/songquanpeng/one-api/relay/relaymode"
+	"io"
+	"net/http"
 )
 
 // https://platform.openai.com/docs/api-reference/chat
@@ -132,27 +130,27 @@ func shouldRetry(c *gin.Context, bizError *model.ErrorWithStatusCode) bool {
 	if !bizError.IsChannelResponseError {
 		return false
 	}
-	if bizError.StatusCode == http.StatusTooManyRequests {
-		return true
-	}
-	if bizError.StatusCode/100 == 5 {
-		return true
-	}
-	if bizError.StatusCode == http.StatusBadRequest {
-		if strings.Contains(bizError.Message, "Azure OpenAI's content management policy") {
-			return true
-		}
-		if strings.Contains(bizError.Message, "Unsupported value: 'stream' does not support true with this model") {
-			return true
-		}
-		if strings.Contains(bizError.Message, "Missing required parameter: 'response_format.json_schema'") {
-			return true
-		}
-		return false
-	}
-	if bizError.StatusCode/100 == 2 {
-		return false
-	}
+	//if bizError.StatusCode == http.StatusTooManyRequests {
+	//	return true
+	//}
+	//if bizError.StatusCode/100 == 5 {
+	//	return true
+	//}
+	//if bizError.StatusCode == http.StatusBadRequest {
+	//	if strings.Contains(bizError.Message, "Azure OpenAI's content management policy") {
+	//		return true
+	//	}
+	//	if strings.Contains(bizError.Message, "Unsupported value: 'stream' does not support true with this model") {
+	//		return true
+	//	}
+	//	if strings.Contains(bizError.Message, "Missing required parameter: 'response_format.json_schema'") {
+	//		return true
+	//	}
+	//	return false
+	//}
+	//if bizError.StatusCode/100 == 2 {
+	//	return false
+	//}
 	return true
 }
 
