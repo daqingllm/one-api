@@ -9,7 +9,6 @@ import (
 	"github.com/songquanpeng/one-api/common/config"
 	"github.com/songquanpeng/one-api/common/helper"
 	"github.com/songquanpeng/one-api/common/logger"
-	"github.com/songquanpeng/one-api/common/message"
 	"gorm.io/gorm"
 )
 
@@ -230,22 +229,9 @@ func PreConsumeTokenQuota(tokenId int, quota int64) (err error) {
 		return errors.New("用户额度不足")
 	}
 	if userInfo.Notify {
-		quotaTooLow := userInfo.Quota >= userInfo.QuotaRemindThreshold && userInfo.Quota-quota < userInfo.QuotaRemindThreshold
-		noMoreQuota := userInfo.Quota-quota <= 0
-		if quotaTooLow || noMoreQuota {
-			go func() {
-				if userInfo.Email != "" {
-					topUpLink := fmt.Sprintf("%s/topup", config.ServerAddress)
-					leftQuota := common.ShowQuota(userInfo.Quota - quota)
-					prompt := "AiHubMix余额提醒，剩余" + leftQuota
-					currentTime := helper.GetFormattedTimeString()
-					err := message.SendEmail(prompt, userInfo.Email,
-						fmt.Sprintf("尊敬的 %s： <br><br>"+"截至 %s，<br>当前账户余额为 %s，请您尽快充值，以免影响使用！<br><a href='%s'>点此充值>></a>", userInfo.Username, currentTime, leftQuota, topUpLink))
-					if err != nil {
-						logger.SysError("failed to send email" + err.Error())
-					}
-				}
-			}()
+		quotaTooLow := userInfo.Quota <= userInfo.QuotaRemindThreshold
+		if quotaTooLow && userInfo.Email != "" {
+			NotifyByEmail(userInfo)
 		}
 	}
 	if !token.UnlimitedQuota {
@@ -260,6 +246,9 @@ func PreConsumeTokenQuota(tokenId int, quota int64) (err error) {
 
 func PostConsumeTokenQuota(tokenId int, quota int64) (err error) {
 	token, err := GetTokenById(tokenId)
+	if err != nil {
+		return err
+	}
 	if quota > 0 {
 		err = DecreaseUserQuota(token.UserId, quota)
 	} else {

@@ -404,6 +404,7 @@ func DecreaseUserQuota(id int, quota int64) (err error) {
 		addNewRecord(BatchUpdateTypeUserQuota, id, -quota)
 		return nil
 	}
+	// 额度检查
 	return decreaseUserQuota(id, quota)
 }
 
@@ -478,11 +479,11 @@ func UpdateUserRemind(id int, notify bool, email string, quotaRemindThreshold in
 		}
 		return err
 	} else {
+		DelUserRemindPool(id)
 		err = DB.Model(&User{}).Where("id = ?", id).Update("notify", notify).Error
 		if err != nil {
 			logger.SysError("failed to update user remind: " + err.Error())
 		}
 		return err
 	}
-
 }

@@ -3,9 +3,10 @@ package model
 import (
 	"context"
 	"encoding/json"
+	"strconv"
+
 	"github.com/coocood/freecache"
 	"github.com/songquanpeng/one-api/common/logger"
-	"strconv"
 )
 
 var TokenKeyCache *freecache.Cache
@@ -14,6 +15,7 @@ var UserGroupCache *freecache.Cache
 var UserQuotaCache *freecache.Cache
 var UsernamesCache *freecache.Cache
 var RecentChannelCache *freecache.Cache
+var UserRemindCache *freecache.Cache
 
 func InitPool() {
 	TokenKeyCache = freecache.NewCache(10 * 1024 * 1024)
@@ -22,6 +24,7 @@ func InitPool() {
 	UserQuotaCache = freecache.NewCache(0)
 	UsernamesCache = freecache.NewCache(0)
 	RecentChannelCache = freecache.NewCache(1 * 1024 * 1024)
+	UserRemindCache = freecache.NewCache(10 * 1024 * 1024)
 }
 
 // GetTokenByKey gets token by key
@@ -156,4 +159,29 @@ func SetRecentChannelPool(key string, channelId int) {
 	if err != nil {
 		logger.SysError("set recent channel error: " + err.Error())
 	}
+}
+
+func GetUserRemindPool(userId int) (string, error) {
+	remindBytes, err := UserRemindCache.Get([]byte(strconv.Itoa(userId)))
+	if err != nil {
+		logger.SysError("get user remind error: " + err.Error())
+		return "", err
+	}
+	return string(remindBytes), nil
+}
+
+func SetUserRemindPool(userId int, email string, time int) error {
+	err := UserRemindCache.Set([]byte(strconv.Itoa(userId)), []byte(email), time)
+	if err != nil {
+		logger.SysError("set user remind error: " + err.Error())
+	}
+	return err
+}
+
+func DelUserRemindPool(userId int) bool {
+	success := UserRemindCache.Del([]byte(strconv.Itoa(userId)))
+	if !success {
+		logger.SysError("del user remind error: deletion failed")
+	}
+	return success
 }
