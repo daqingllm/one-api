@@ -4,10 +4,11 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
-	"github.com/songquanpeng/one-api/common/render"
 	"io"
 	"net/http"
 	"strings"
+
+	"github.com/songquanpeng/one-api/common/render"
 
 	"github.com/songquanpeng/one-api/common"
 	"github.com/songquanpeng/one-api/common/config"
@@ -27,6 +28,11 @@ import (
 const (
 	VisionMaxImageNum = 16
 )
+
+var mimeTypeMap = map[string]string{
+	"json_object": "application/json",
+	"text":        "text/plain",
+}
 
 // Setting safety to the lowest possible values since Gemini is already powerless enough
 func ConvertRequest(textRequest model.GeneralOpenAIRequest) *ChatRequest {
@@ -49,12 +55,25 @@ func ConvertRequest(textRequest model.GeneralOpenAIRequest) *ChatRequest {
 				Category:  "HARM_CATEGORY_DANGEROUS_CONTENT",
 				Threshold: config.GeminiSafetySetting,
 			},
+			{
+				Category:  "HARM_CATEGORY_CIVIC_INTEGRITY",
+				Threshold: config.GeminiSafetySetting,
+			},
 		},
 		GenerationConfig: ChatGenerationConfig{
 			Temperature:     textRequest.Temperature,
 			TopP:            textRequest.TopP,
 			MaxOutputTokens: textRequest.MaxTokens,
 		},
+	}
+	if textRequest.ResponseFormat != nil {
+		if mimeType, ok := mimeTypeMap[textRequest.ResponseFormat.Type]; ok {
+			geminiRequest.GenerationConfig.ResponseMimeType = mimeType
+		}
+		if textRequest.ResponseFormat.JsonSchema != nil {
+			geminiRequest.GenerationConfig.ResponseSchema = textRequest.ResponseFormat.JsonSchema.Schema
+			geminiRequest.GenerationConfig.ResponseMimeType = mimeTypeMap["json_object"]
+		}
 	}
 	if textRequest.Tools != nil {
 		functions := make([]model.Function, 0, len(textRequest.Tools))
@@ -232,7 +251,14 @@ func responseGeminiChat2OpenAI(response *ChatResponse) *openai.TextResponse {
 			if candidate.Content.Parts[0].FunctionCall != nil {
 				choice.Message.ToolCalls = getToolCalls(&candidate)
 			} else {
-				choice.Message.Content = candidate.Content.Parts[0].Text
+				var builder strings.Builder
+				for _, part := range candidate.Content.Parts {
+					if i > 0 {
+						builder.WriteString("\n")
+					}
+					builder.WriteString(part.Text)
+				}
+				choice.Message.Content = builder.String()
 			}
 		} else {
 			choice.Message.Content = ""

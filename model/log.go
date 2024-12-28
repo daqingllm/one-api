@@ -178,7 +178,8 @@ func SearchUserLogs(userId int, keyword string) (logs []*Log, err error) {
 
 // @deprecated
 func SumUsedQuota(logType int, startTimestamp int64, endTimestamp int64, modelName string, username string, tokenName string, channel int) (quota int64) {
-	tx := LOG_DB.Table("logs").Select("ifnull(sum(quota),0)")
+	ifnull := "ifnull"
+	tx := LOG_DB.Table("logs").Select(fmt.Sprintf("%s(sum(quota),0)", ifnull))
 	if username != "" {
 		tx = tx.Where("username = ?", username)
 	}

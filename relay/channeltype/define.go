@@ -46,5 +46,7 @@ const (
 	VertextAI
 	Proxy
 	SiliconFlow
+	XAI
+	Replicate
 	Dummy
 )

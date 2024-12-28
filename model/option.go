@@ -29,6 +29,7 @@ func InitOptionMap() {
 	config.OptionMap["PasswordRegisterEnabled"] = strconv.FormatBool(config.PasswordRegisterEnabled)
 	config.OptionMap["EmailVerificationEnabled"] = strconv.FormatBool(config.EmailVerificationEnabled)
 	config.OptionMap["GitHubOAuthEnabled"] = strconv.FormatBool(config.GitHubOAuthEnabled)
+	config.OptionMap["OidcEnabled"] = strconv.FormatBool(config.OidcEnabled)
 	config.OptionMap["WeChatAuthEnabled"] = strconv.FormatBool(config.WeChatAuthEnabled)
 	config.OptionMap["TurnstileCheckEnabled"] = strconv.FormatBool(config.TurnstileCheckEnabled)
 	config.OptionMap["RegisterEnabled"] = strconv.FormatBool(config.RegisterEnabled)
@@ -134,6 +135,8 @@ func updateOptionMap(key string, value string) (err error) {
 			config.EmailVerificationEnabled = boolValue
 		case "GitHubOAuthEnabled":
 			config.GitHubOAuthEnabled = boolValue
+		case "OidcEnabled":
+			config.OidcEnabled = boolValue
 		case "WeChatAuthEnabled":
 			config.WeChatAuthEnabled = boolValue
 		case "TurnstileCheckEnabled":
@@ -184,6 +187,18 @@ func updateOptionMap(key string, value string) (err error) {
 		config.LarkClientId = value
 	case "LarkClientSecret":
 		config.LarkClientSecret = value
+	case "OidcClientId":
+		config.OidcClientId = value
+	case "OidcClientSecret":
+		config.OidcClientSecret = value
+	case "OidcWellKnown":
+		config.OidcWellKnown = value
+	case "OidcAuthorizationEndpoint":
+		config.OidcAuthorizationEndpoint = value
+	case "OidcTokenEndpoint":
+		config.OidcTokenEndpoint = value
+	case "OidcUserinfoEndpoint":
+		config.OidcUserinfoEndpoint = value
 	case "Footer":
 		config.Footer = value
 	case "SystemName":

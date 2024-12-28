@@ -275,9 +275,9 @@ func xunfeiMakeRequest(textRequest model.GeneralOpenAIRequest, domain, authUrl, 
 }
 
 func parseAPIVersionByModelName(modelName string) string {
-	parts := strings.Split(modelName, "-")
-	if len(parts) == 2 {
-		return parts[1]
+	index := strings.IndexAny(modelName, "-")
+	if index != -1 {
+		return modelName[index+1:]
 	}
 	return ""
 }
@@ -286,13 +286,17 @@ func parseAPIVersionByModelName(modelName string) string {
 func apiVersion2domain(apiVersion string) string {
 	switch apiVersion {
 	case "v1.1":
-		return "general"
+		return "lite"
 	case "v2.1":
 		return "generalv2"
 	case "v3.1":
 		return "generalv3"
+	case "v3.1-128K":
+		return "pro-128k"
 	case "v3.5":
 		return "generalv3.5"
+	case "v3.5-32K":
+		return "max-32k"
 	case "v4.0":
 		return "4.0Ultra"
 	}
@@ -300,7 +304,17 @@ func apiVersion2domain(apiVersion string) string {
 }
 
 func getXunfeiAuthUrl(apiVersion string, apiKey string, apiSecret string) (string, string) {
+	var authUrl string
 	domain := apiVersion2domain(apiVersion)
-	authUrl := buildXunfeiAuthUrl(fmt.Sprintf("wss://spark-api.xf-yun.com/%s/chat", apiVersion), apiKey, apiSecret)
+	switch apiVersion {
+	case "v3.1-128K":
+		authUrl = buildXunfeiAuthUrl(fmt.Sprintf("wss://spark-api.xf-yun.com/chat/pro-128k"), apiKey, apiSecret)
+		break
+	case "v3.5-32K":
+		authUrl = buildXunfeiAuthUrl(fmt.Sprintf("wss://spark-api.xf-yun.com/chat/max-32k"), apiKey, apiSecret)
+		break
+	default:
+		authUrl = buildXunfeiAuthUrl(fmt.Sprintf("wss://spark-api.xf-yun.com/%s/chat", apiVersion), apiKey, apiSecret)
+	}
 	return domain, authUrl
 }
