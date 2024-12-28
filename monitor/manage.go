@@ -38,6 +38,8 @@ func ShouldDisableChannel(err *model.ErrorWithStatusCode, statusCode int) bool {
 		return true
 	} else if strings.HasPrefix(err.Message, "This organization has been disabled.") {
 		return true
+	} else if strings.HasPrefix(err.Message, "您的账户已欠费，请充值后重试") {
+		return true
 	}
 	//if strings.Contains(err.Message, "quota") {
 	//	return true
