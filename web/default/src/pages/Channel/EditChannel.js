@@ -191,6 +191,7 @@ const EditChannel = () => {
     localInputs.group = localInputs.groups.join(',');
     localInputs.config = JSON.stringify(config);
     if (isEdit) {
+      delete localInputs.used_quota;
       res = await API.put(`/api/channel/`, { ...localInputs, id: parseInt(channelId) });
     } else {
       res = await API.post(`/api/channel/`, localInputs);
