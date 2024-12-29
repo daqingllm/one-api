@@ -152,6 +152,10 @@ func GetRecentChannelPool(key string) (int, error) {
 
 // SetRecentChannel sets recent channel
 func SetRecentChannelPool(key string, channelId int) {
+	if channelId == 0 {
+		RecentChannelCache.Del([]byte(key))
+		return
+	}
 	err := RecentChannelCache.Set([]byte(key), []byte(strconv.Itoa(channelId)), 60)
 	if err != nil {
 		logger.SysError("set recent channel error: " + err.Error())

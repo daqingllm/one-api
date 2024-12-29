@@ -59,6 +59,7 @@ func Relay(c *gin.Context) {
 		monitor.Emit(channelId, true)
 		return
 	}
+	dbmodel.CacheSetRecentChannel(ctx, userId, c.GetString(ctxkey.RequestModel), 0)
 	channelName := c.GetString(ctxkey.ChannelName)
 	group := c.GetString(ctxkey.Group)
 	originalModel := c.GetString(ctxkey.OriginalModel)

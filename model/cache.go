@@ -58,7 +58,7 @@ func CacheGetRecentChannel(ctx context.Context, userId int, model string) (chann
 		logger.Error(ctx, "convert cache value to int error: "+err.Error())
 		return 0
 	}
-	cache.ExpireAt = time.Now().Unix() + 3600
+	cache.ExpireAt = time.Now().Unix() + 600
 	_ = DB.Save(cache).Error
 	SetRecentChannelPool(key, channelId)
 	return channelId
@@ -69,11 +69,16 @@ func CacheSetRecentChannel(ctx context.Context, userId int, model string, channe
 		return
 	}
 	key := fmt.Sprintf(RecentChannelKeyPrefix, userId, model)
+	if channelId <= 0 {
+		_ = DB.Where("`key` = ?", key).Delete(&Cache{}).Error
+		SetRecentChannelPool(key, 0)
+		return
+	}
 	id, err := GetRecentChannelPool(key)
 	if err == nil && channelId == id {
 		return
 	}
-	expireAt := time.Now().Unix() + 3600
+	expireAt := time.Now().Unix() + 600
 	cache := &Cache{}
 	err = DB.Where("`key` = ?", key).First(cache).Error
 	if err != nil {
