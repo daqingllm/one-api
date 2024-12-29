@@ -2,10 +2,11 @@ package model
 
 import (
 	"context"
-	"github.com/songquanpeng/one-api/common"
-	"gorm.io/gorm"
 	"sort"
 	"strings"
+
+	"github.com/songquanpeng/one-api/common"
+	"gorm.io/gorm"
 )
 
 type Ability struct {
@@ -105,4 +106,18 @@ func GetGroupModels(ctx context.Context, group string) ([]string, error) {
 	}
 	sort.Strings(models)
 	return models, err
+}
+
+func GetGroupModelInfos(ctx context.Context, group string) ([]ModelConfig, error) {
+	models, err := GetGroupModels(ctx, group)
+	if err != nil {
+		return nil, err
+	}
+	var results []ModelConfig
+	err = DB.Model(&ModelConfig{}).Where("model IN ?", models).Find(&results).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return results, err
 }
