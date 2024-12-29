@@ -13,7 +13,7 @@ import {
 } from '../helpers';
 
 import { CHANNEL_OPTIONS, ITEMS_PER_PAGE } from '../constants';
-import { renderGroup, renderNumber } from '../helpers/render';
+import { renderGroup, renderNumber, renderQuota } from '../helpers/render';
 
 function renderTimestamp(timestamp) {
   return (
@@ -441,12 +441,8 @@ const ChannelsTable = () => {
             </Table.HeaderCell>
             <Table.HeaderCell
               style={{ cursor: 'pointer' }}
-              onClick={() => {
-                sortChannel('balance');
-              }}
-              hidden={!showDetail}
             >
-              余额
+              用量
             </Table.HeaderCell>
             <Table.HeaderCell
               style={{ cursor: 'pointer' }}
@@ -455,6 +451,14 @@ const ChannelsTable = () => {
               }}
             >
               优先级
+            </Table.HeaderCell>
+            <Table.HeaderCell
+                style={{ cursor: 'pointer' }}
+                onClick={() => {
+                  sortChannel('weight');
+                }}
+            >
+              权重
             </Table.HeaderCell>
             <Table.HeaderCell hidden={!showDetail}>测试模型</Table.HeaderCell>
             <Table.HeaderCell>操作</Table.HeaderCell>
@@ -484,17 +488,7 @@ const ChannelsTable = () => {
                       basic
                     />
                   </Table.Cell>
-                  <Table.Cell hidden={!showDetail}>
-                    <Popup
-                      trigger={<span onClick={() => {
-                        updateChannelBalance(channel.id, channel.name, idx);
-                      }} style={{ cursor: 'pointer' }}>
-                      {renderBalance(channel.type, channel.balance)}
-                    </span>}
-                      content='点击更新'
-                      basic
-                    />
-                  </Table.Cell>
+                  <Table.Cell>{renderQuota(channel.used_quota)}</Table.Cell>
                   <Table.Cell>
                     <Popup
                       trigger={<Input type='number' defaultValue={channel.priority} onBlur={(event) => {
@@ -509,6 +503,22 @@ const ChannelsTable = () => {
                       </Input>}
                       content='渠道选择优先级，越高越优先'
                       basic
+                    />
+                  </Table.Cell>
+                  <Table.Cell>
+                    <Popup
+                        trigger={<Input type='number' defaultValue={channel.weight} onBlur={(event) => {
+                          manageChannel(
+                              channel.id,
+                              'weight',
+                              idx,
+                              event.target.value
+                          );
+                        }}>
+                          <input style={{ maxWidth: '60px' }} />
+                        </Input>}
+                        content='渠道选择权重，越高越流量越大'
+                        basic
                     />
                   </Table.Cell>
                   <Table.Cell hidden={!showDetail}>
@@ -580,6 +590,13 @@ const ChannelsTable = () => {
                         to={'/channel/edit/' + channel.id}
                       >
                         编辑
+                      </Button>
+                      <Button
+                        size={'small'}
+                        as={Link}
+                        to={'/channel/add/' + channel.id}
+                      >
+                        复制
                       </Button>
                     </div>
                   </Table.Cell>

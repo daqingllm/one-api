@@ -9,6 +9,11 @@ import (
 	"github.com/songquanpeng/one-api/common"
 )
 
+func RawData(c *gin.Context, str string) {
+	c.Render(-1, common.CustomEvent{Data: str, Raw: true})
+	c.Writer.Flush()
+}
+
 func StringData(c *gin.Context, str string) {
 	str = strings.TrimPrefix(str, "data: ")
 	str = strings.TrimSuffix(str, "\r")

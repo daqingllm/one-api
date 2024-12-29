@@ -8,7 +8,8 @@ import (
 
 func WrapErr(err error) *relaymodel.ErrorWithStatusCode {
 	return &relaymodel.ErrorWithStatusCode{
-		StatusCode: http.StatusInternalServerError,
+		IsChannelResponseError: true,
+		StatusCode:             http.StatusInternalServerError,
 		Error: relaymodel.Error{
 			Message: err.Error(),
 		},

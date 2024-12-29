@@ -52,17 +52,23 @@ type CustomEvent struct {
 	Id    string
 	Retry uint
 	Data  interface{}
+	Raw   bool
 }
 
 func encode(writer io.Writer, event CustomEvent) error {
 	w := checkWriter(writer)
-	return writeData(w, event.Data)
+	return writeData(w, event.Data, event.Raw)
 }
 
-func writeData(w stringWriter, data interface{}) error {
-	dataReplacer.WriteString(w, fmt.Sprint(data))
-	if strings.HasPrefix(data.(string), "data") {
-		w.writeString("\n\n")
+func writeData(w stringWriter, data interface{}, raw bool) error {
+	if raw {
+		fieldReplacer.WriteString(w, fmt.Sprint(data))
+		w.writeString("\n")
+	} else {
+		dataReplacer.WriteString(w, fmt.Sprint(data))
+		if strings.HasPrefix(data.(string), "data") {
+			w.writeString("\n\n")
+		}
 	}
 	return nil
 }

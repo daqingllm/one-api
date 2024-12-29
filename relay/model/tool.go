@@ -4,6 +4,7 @@ type Tool struct {
 	Id       string   `json:"id,omitempty"`
 	Type     string   `json:"type,omitempty"` // when splicing claude tools stream messages, it is empty
 	Function Function `json:"function"`
+	Index    *int     `json:"index,omitempty"`
 }
 
 type Function struct {

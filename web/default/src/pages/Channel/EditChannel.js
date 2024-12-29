@@ -30,8 +30,9 @@ const EditChannel = () => {
   const params = useParams();
   const navigate = useNavigate();
   const channelId = params.id;
-  const isEdit = channelId !== undefined;
-  const [loading, setLoading] = useState(isEdit);
+  const isEdit = /\/edit/.test(location.pathname)
+  const isCopy = /\/add/.test(location.pathname) && !!channelId;
+  const [loading, setLoading] = useState(isEdit || isCopy);
   const handleCancel = () => {
     navigate('/channel');
   };
@@ -95,7 +96,7 @@ const EditChannel = () => {
       if (data.model_mapping !== '') {
         data.model_mapping = JSON.stringify(JSON.parse(data.model_mapping), null, 2);
       }
-      setInputs(data);
+      setInputs({ ...data, key: isCopy ? '' : data.key, id: isCopy ? undefined : data.id, used_quota: isCopy ? 0 : data.used_quota });
       if (data.config !== '') {
         setConfig(JSON.parse(data.config));
       }
@@ -149,7 +150,7 @@ const EditChannel = () => {
   }, [originModelOptions, inputs.models]);
 
   useEffect(() => {
-    if (isEdit) {
+    if (isEdit || isCopy) {
       loadChannel().then();
     } else {
       let localModels = getChannelModels(inputs.type);
@@ -298,6 +299,20 @@ const EditChannel = () => {
               autoComplete='new-password'
             />
           </Form.Field>
+          {
+            inputs.type === 24 && (
+              <Form.Field>
+                <Form.Input
+                  label='版本号'
+                  name='other'
+                  placeholder={'请输入版本号，例如：v1'}
+                  onChange={handleInputChange}
+                  value={inputs.other}
+                  autoComplete='new-password'
+                />
+              </Form.Field>
+            )
+          }
           <Form.Field>
             <Form.Dropdown
               label='分组'

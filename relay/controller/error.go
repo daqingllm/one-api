@@ -55,7 +55,8 @@ func (e GeneralErrorResponse) ToMessage() string {
 func RelayErrorHandler(resp *http.Response) (ErrorWithStatusCode *model.ErrorWithStatusCode) {
 	if resp == nil {
 		return &model.ErrorWithStatusCode{
-			StatusCode: 500,
+			IsChannelResponseError: true,
+			StatusCode:             500,
 			Error: model.Error{
 				Message: "resp is nil",
 				Type:    "upstream_error",
@@ -64,7 +65,8 @@ func RelayErrorHandler(resp *http.Response) (ErrorWithStatusCode *model.ErrorWit
 		}
 	}
 	ErrorWithStatusCode = &model.ErrorWithStatusCode{
-		StatusCode: resp.StatusCode,
+		IsChannelResponseError: true,
+		StatusCode:             resp.StatusCode,
 		Error: model.Error{
 			Message: "",
 			Type:    "upstream_error",
@@ -74,6 +76,7 @@ func RelayErrorHandler(resp *http.Response) (ErrorWithStatusCode *model.ErrorWit
 	}
 	responseBody, err := io.ReadAll(resp.Body)
 	if err != nil {
+		logger.SysError(fmt.Sprintf("read response body failed: %s", err.Error()))
 		return
 	}
 	if config.DebugEnabled {

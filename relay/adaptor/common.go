@@ -5,13 +5,16 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/songquanpeng/one-api/common/client"
+	"github.com/songquanpeng/one-api/common/ctxkey"
 	"github.com/songquanpeng/one-api/relay/meta"
 	"io"
 	"net/http"
+	"net/url"
+	"strings"
 )
 
 func SetupCommonRequestHeader(c *gin.Context, req *http.Request, meta *meta.Meta) {
-	req.Header.Set("Content-Type", c.Request.Header.Get("Content-Type"))
+	req.Header.Set("Content-Type", c.GetString(ctxkey.ContentType))
 	req.Header.Set("Accept", c.Request.Header.Get("Accept"))
 	if meta.IsStream && c.Request.Header.Get("Accept") == "" {
 		req.Header.Set("Accept", "text/event-stream")
@@ -33,9 +36,18 @@ func DoRequestHelper(a Adaptor, c *gin.Context, meta *meta.Meta, requestBody io.
 	}
 	resp, err := DoRequest(c, req)
 	if err != nil {
-		return nil, fmt.Errorf("do request failed: %w", err)
+		return nil, fmt.Errorf("do request failed: %s", MaskBaseURL(err.Error(), meta.BaseURL))
 	}
 	return resp, nil
+}
+
+func MaskBaseURL(errStr string, baseURL string) string {
+	u, err := url.Parse(baseURL)
+	if err != nil {
+		return errStr
+	}
+	domain := strings.Split(u.Host, ":")[0]
+	return strings.Replace(errStr, domain, "*****", -1)
 }
 
 func DoRequest(c *gin.Context, req *http.Request) (*http.Response, error) {

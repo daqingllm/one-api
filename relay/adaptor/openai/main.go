@@ -31,8 +31,8 @@ func StreamHandler(c *gin.Context, resp *http.Response, relayMode int) (*model.E
 	var usage *model.Usage
 
 	common.SetEventStreamHeaders(c)
-
 	doneRendered := false
+
 	for scanner.Scan() {
 		data := scanner.Text()
 		if len(data) < dataPrefixLength { // ignore blank line or wrong format
@@ -129,7 +129,7 @@ func Handler(c *gin.Context, resp *http.Response, promptTokens int, modelName st
 	c.Writer.WriteHeader(resp.StatusCode)
 	_, err = io.Copy(c.Writer, resp.Body)
 	if err != nil {
-		return ErrorWrapper(err, "copy_response_body_failed", http.StatusInternalServerError), nil
+		return ErrorWrapper(err, "copy_response_body_failed", http.StatusRequestTimeout), nil
 	}
 	err = resp.Body.Close()
 	if err != nil {

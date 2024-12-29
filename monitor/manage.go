@@ -8,11 +8,14 @@ import (
 	"github.com/songquanpeng/one-api/relay/model"
 )
 
-func ShouldDisableChannel(err *model.Error, statusCode int) bool {
+func ShouldDisableChannel(err *model.ErrorWithStatusCode, statusCode int) bool {
 	if !config.AutomaticDisableChannelEnabled {
 		return false
 	}
 	if err == nil {
+		return false
+	}
+	if !err.IsChannelResponseError {
 		return false
 	}
 	if statusCode == http.StatusUnauthorized {
@@ -41,7 +44,7 @@ func ShouldDisableChannel(err *model.Error, statusCode int) bool {
 	return false
 }
 
-func ShouldEnableChannel(err error, openAIErr *model.Error) bool {
+func ShouldEnableChannel(err error, openAIErr *model.ErrorWithStatusCode) bool {
 	if !config.AutomaticEnableChannelEnabled {
 		return false
 	}

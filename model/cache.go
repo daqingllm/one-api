@@ -2,13 +2,11 @@ package model
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/songquanpeng/one-api/common"
 	"github.com/songquanpeng/one-api/common/config"
 	"github.com/songquanpeng/one-api/common/logger"
-	"github.com/songquanpeng/one-api/common/random"
 	"math/rand"
 	"sort"
 	"strconv"
@@ -23,54 +21,108 @@ var (
 	UserId2QuotaCacheSeconds  = config.SyncFrequency
 	UserId2StatusCacheSeconds = config.SyncFrequency
 	GroupModelsCacheSeconds   = config.SyncFrequency
+
+	RecentChannelKeyPrefix = "recent_channel:%d:%s"
 )
 
-func CacheGetTokenByKey(key string) (*Token, error) {
-	keyCol := "`key`"
-	if common.UsingPostgreSQL {
-		keyCol = `"key"`
-	}
-	var token Token
-	if !common.RedisEnabled {
-		err := DB.Where(keyCol+" = ?", key).First(&token).Error
-		return &token, err
-	}
-	tokenObjectString, err := common.RedisGet(fmt.Sprintf("token:%s", key))
-	if err != nil {
-		err := DB.Where(keyCol+" = ?", key).First(&token).Error
-		if err != nil {
-			return nil, err
-		}
-		jsonBytes, err := json.Marshal(token)
-		if err != nil {
-			return nil, err
-		}
-		err = common.RedisSet(fmt.Sprintf("token:%s", key), string(jsonBytes), time.Duration(TokenCacheSeconds)*time.Second)
-		if err != nil {
-			logger.SysError("Redis set token error: " + err.Error())
-		}
-		return &token, nil
-	}
-	err = json.Unmarshal([]byte(tokenObjectString), &token)
-	return &token, err
+type Cache struct {
+	Id       int64  `json:"id"`
+	Key      string `json:"key" gorm:"type:varchar(255);uniqueIndex"`
+	Value    string `json:"value"`
+	ExpireAt int64  `json:"expire_at"`
 }
 
-func CacheGetUserGroup(id int) (group string, err error) {
-	if !common.RedisEnabled {
-		return GetUserGroup(id)
+func DeleteExpiredCache() {
+	DB.Where("expire_at < ?", time.Now().Unix()).Delete(&Cache{})
+}
+
+func CacheGetRecentChannel(ctx context.Context, userId int, model string) (channelId int) {
+	if config.IsZiai {
+		return 0
 	}
-	group, err = common.RedisGet(fmt.Sprintf("user_group:%d", id))
+	key := fmt.Sprintf(RecentChannelKeyPrefix, userId, model)
+	id, err := GetRecentChannelPool(key)
+	if err == nil {
+		return id
+	}
+	cache := &Cache{}
+	err = DB.Where("`key` = ?", key).First(cache).Error
 	if err != nil {
-		group, err = GetUserGroup(id)
-		if err != nil {
-			return "", err
-		}
-		err = common.RedisSet(fmt.Sprintf("user_group:%d", id), group, time.Duration(UserId2GroupCacheSeconds)*time.Second)
-		if err != nil {
-			logger.SysError("Redis set user group error: " + err.Error())
-		}
+		return 0
 	}
-	return group, err
+	if cache.ExpireAt < time.Now().Unix() {
+		return 0
+	}
+	channelId, err = strconv.Atoi(cache.Value)
+	if err != nil {
+		logger.Error(ctx, "convert cache value to int error: "+err.Error())
+		return 0
+	}
+	cache.ExpireAt = time.Now().Unix() + 3600
+	_ = DB.Save(cache).Error
+	SetRecentChannelPool(key, channelId)
+	return channelId
+}
+
+func CacheSetRecentChannel(ctx context.Context, userId int, model string, channelId int) {
+	if config.IsZiai {
+		return
+	}
+	key := fmt.Sprintf(RecentChannelKeyPrefix, userId, model)
+	id, err := GetRecentChannelPool(key)
+	if err == nil && channelId == id {
+		return
+	}
+	expireAt := time.Now().Unix() + 3600
+	cache := &Cache{}
+	err = DB.Where("`key` = ?", key).First(cache).Error
+	if err != nil {
+		cache = &Cache{
+			Key:      key,
+			Value:    strconv.Itoa(channelId),
+			ExpireAt: expireAt,
+		}
+		err = DB.Create(cache).Error
+		if err != nil {
+			logger.Error(ctx, "create cache error: "+err.Error())
+		}
+		return
+	}
+	cache.Value = strconv.Itoa(channelId)
+	cache.ExpireAt = expireAt
+	err = DB.Save(cache).Error
+	if err != nil {
+		logger.Error(ctx, "save cache error: "+err.Error())
+	}
+	SetRecentChannelPool(key, channelId)
+}
+
+func CacheGetTokenByKey(ctx context.Context, key string) (*Token, error) {
+	ca := GetTokenByKeyPool(ctx, key)
+	if ca != nil {
+		return ca, nil
+	}
+
+	var token Token
+	err := DB.Where("`key` = ?", key).First(&token).Error
+	if err != nil {
+		return nil, err
+	}
+	SetTokenPool(ctx, key, token)
+	return &token, nil
+}
+
+func CacheGetUserGroup(ctx context.Context, id int) (group string, err error) {
+	ca, err := GetUserGroupPool(ctx, id)
+	if err == nil {
+		return ca, nil
+	}
+	group, err = GetUserGroup(id)
+	if err != nil {
+		return "", err
+	}
+	SetUserGroupPool(ctx, id, group)
+	return group, nil
 }
 
 func fetchAndUpdateUserQuota(ctx context.Context, id int) (quota int64, err error) {
@@ -86,21 +138,16 @@ func fetchAndUpdateUserQuota(ctx context.Context, id int) (quota int64, err erro
 }
 
 func CacheGetUserQuota(ctx context.Context, id int) (quota int64, err error) {
-	if !common.RedisEnabled {
-		return GetUserQuota(id)
+	quota, err = GetUserQuotaPool(ctx, id)
+	if err == nil {
+		return quota, nil
 	}
-	quotaString, err := common.RedisGet(fmt.Sprintf("user_quota:%d", id))
-	if err != nil {
-		return fetchAndUpdateUserQuota(ctx, id)
-	}
-	quota, err = strconv.ParseInt(quotaString, 10, 64)
+
+	quota, err = GetUserQuota(id)
 	if err != nil {
 		return 0, nil
 	}
-	if quota <= config.PreConsumedQuota { // when user's quota is less than pre-consumed quota, we need to fetch from db
-		logger.Infof(ctx, "user %d's cached quota is too low: %d, refreshing from db", quota, id)
-		return fetchAndUpdateUserQuota(ctx, id)
-	}
+	SetUserQuotaPool(ctx, id, quota)
 	return quota, nil
 }
 
@@ -168,6 +215,7 @@ func CacheGetGroupModels(ctx context.Context, group string) ([]string, error) {
 }
 
 var group2model2channels map[string]map[string][]*Channel
+var channelId2channel map[int]*Channel
 var channelSyncLock sync.RWMutex
 
 func InitChannelCache() {
@@ -212,6 +260,7 @@ func InitChannelCache() {
 
 	channelSyncLock.Lock()
 	group2model2channels = newGroup2model2channels
+	channelId2channel = newChannelId2channel
 	channelSyncLock.Unlock()
 	logger.SysLog("channels synced from database")
 }
@@ -224,32 +273,83 @@ func SyncChannelCache(frequency int) {
 	}
 }
 
-func CacheGetRandomSatisfiedChannel(group string, model string, ignoreFirstPriority bool) (*Channel, error) {
-	if !config.MemoryCacheEnabled {
-		return GetRandomSatisfiedChannel(group, model, ignoreFirstPriority)
-	}
+func CacheGetChannelById(id int) (*Channel, error) {
 	channelSyncLock.RLock()
 	defer channelSyncLock.RUnlock()
-	channels := group2model2channels[group][model]
-	if len(channels) == 0 {
+	channel, ok := channelId2channel[id]
+	if !ok {
 		return nil, errors.New("channel not found")
 	}
-	endIdx := len(channels)
+	return channel, nil
+}
+
+func CacheGetRandomSatisfiedChannel(group string, model string, excludedChannelIds []int) (*Channel, error) {
+	channelSyncLock.RLock()
+	defer channelSyncLock.RUnlock()
+	if len(group2model2channels[group][model]) == 0 {
+		return nil, errors.New("channel not found")
+	}
+	validChannels := make([]*Channel, 0)
+	if excludedChannelIds == nil {
+		excludedChannelIds = make([]int, 0)
+	}
+	for _, channel := range group2model2channels[group][model] {
+		valid := true
+		for _, excludedChannelId := range excludedChannelIds {
+			if channel.Id == excludedChannelId {
+				valid = false
+				break
+			}
+		}
+		if valid {
+			validChannels = append(validChannels, channel)
+		}
+	}
+
+	if len(validChannels) == 0 {
+		return nil, nil
+	}
+	endIdx := len(validChannels)
 	// choose by priority
-	firstChannel := channels[0]
+	firstChannel := validChannels[0]
 	if firstChannel.GetPriority() > 0 {
-		for i := range channels {
-			if channels[i].GetPriority() != firstChannel.GetPriority() {
+		for i := range validChannels {
+			if validChannels[i].GetPriority() != firstChannel.GetPriority() {
 				endIdx = i
 				break
 			}
 		}
 	}
-	idx := rand.Intn(endIdx)
-	if ignoreFirstPriority {
-		if endIdx < len(channels) { // which means there are more than one priority
-			idx = random.RandRange(endIdx, len(channels))
+	idx := calcIdxByWeight(validChannels, endIdx)
+	return validChannels[idx], nil
+}
+
+func calcIdxByWeight(channels []*Channel, endIdx int) int {
+	if endIdx == 1 {
+		return 0
+	}
+	totalWeight := 0
+	for i, channel := range channels {
+		if i < endIdx {
+			totalWeight += getChannelWeight(channel)
 		}
 	}
-	return channels[idx], nil
+	randomNum := rand.Intn(totalWeight)
+	index := 0
+	sum := 0
+	for i, channel := range channels {
+		sum += getChannelWeight(channel)
+		if sum > randomNum {
+			index = i
+			break
+		}
+	}
+	return index
+}
+
+func getChannelWeight(channel *Channel) int {
+	if *channel.Weight <= 0 {
+		return 1
+	}
+	return int(*channel.Weight)
 }

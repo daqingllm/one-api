@@ -3,6 +3,9 @@ package main
 import (
 	"embed"
 	"fmt"
+	"os"
+	"strconv"
+
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
@@ -10,14 +13,15 @@ import (
 	"github.com/songquanpeng/one-api/common"
 	"github.com/songquanpeng/one-api/common/client"
 	"github.com/songquanpeng/one-api/common/config"
+	"github.com/songquanpeng/one-api/common/env"
 	"github.com/songquanpeng/one-api/common/logger"
 	"github.com/songquanpeng/one-api/controller"
+	"github.com/songquanpeng/one-api/controller/pay"
+	"github.com/songquanpeng/one-api/job"
 	"github.com/songquanpeng/one-api/middleware"
 	"github.com/songquanpeng/one-api/model"
 	"github.com/songquanpeng/one-api/relay/adaptor/openai"
 	"github.com/songquanpeng/one-api/router"
-	"os"
-	"strconv"
 )
 
 //go:embed web/build/*
@@ -36,10 +40,12 @@ func main() {
 	}
 
 	// Initialize SQL Database
-	model.InitDB()
-	model.InitLogDB()
-
 	var err error
+	model.DB, err = model.InitDB("SQL_DSN")
+	if err != nil {
+		logger.FatalLog("failed to initialize database: " + err.Error())
+	}
+	model.LOG_DB = model.DB
 	err = model.CreateRootAccountIfNeed()
 	if err != nil {
 		logger.FatalLog("database init error: " + err.Error())
@@ -59,20 +65,14 @@ func main() {
 
 	// Initialize options
 	model.InitOptionMap()
+	config.Theme = env.String("THEME", "default")
 	logger.SysLog(fmt.Sprintf("using theme %s", config.Theme))
-	if common.RedisEnabled {
-		// for compatibility with old versions
-		config.MemoryCacheEnabled = true
-	}
-	if config.MemoryCacheEnabled {
-		logger.SysLog("memory cache enabled")
-		logger.SysLog(fmt.Sprintf("sync frequency: %d seconds", config.SyncFrequency))
-		model.InitChannelCache()
-	}
-	if config.MemoryCacheEnabled {
-		go model.SyncOptions(config.SyncFrequency)
-		go model.SyncChannelCache(config.SyncFrequency)
-	}
+
+	logger.SysLog("memory cache enabled")
+	logger.SysLog(fmt.Sprintf("sync frequency: %d seconds", config.SyncFrequency))
+	model.InitChannelCache()
+	go model.SyncOptions(config.SyncFrequency)
+	go model.SyncChannelCache(config.SyncFrequency)
 	if os.Getenv("CHANNEL_TEST_FREQUENCY") != "" {
 		frequency, err := strconv.Atoi(os.Getenv("CHANNEL_TEST_FREQUENCY"))
 		if err != nil {
@@ -90,6 +90,12 @@ func main() {
 	}
 	openai.InitTokenEncoders()
 	client.Init()
+	job.Init()
+	model.InitPool()
+	model.InitModelConfig()
+	controller.InitModels()
+	pay.InitAlipay()
+	pay.InitStripe()
 
 	// Initialize HTTP server
 	server := gin.New()
@@ -105,7 +111,7 @@ func main() {
 	router.SetRouter(server, buildFS)
 	var port = os.Getenv("PORT")
 	if port == "" {
-		port = strconv.Itoa(*common.Port)
+		port = strconv.Itoa(*env.Port)
 	}
 	logger.SysLogf("server started on http://localhost:%s", port)
 	err = server.Run(":" + port)

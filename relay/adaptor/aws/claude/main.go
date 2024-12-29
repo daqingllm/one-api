@@ -38,7 +38,7 @@ var AwsModelIDMap = map[string]string{
 	"claude-3-5-haiku-20241022":  "anthropic.claude-3-5-haiku-20241022-v1:0",
 }
 
-func awsModelID(requestModel string) (string, error) {
+func AwsModelID(requestModel string) (string, error) {
 	if awsModelID, ok := AwsModelIDMap[requestModel]; ok {
 		return awsModelID, nil
 	}
@@ -47,7 +47,7 @@ func awsModelID(requestModel string) (string, error) {
 }
 
 func Handler(c *gin.Context, awsCli *bedrockruntime.Client, modelName string) (*relaymodel.ErrorWithStatusCode, *relaymodel.Usage) {
-	awsModelId, err := awsModelID(c.GetString(ctxkey.RequestModel))
+	awsModelId, err := AwsModelID(c.GetString(ctxkey.RequestModel))
 	if err != nil {
 		return utils.WrapErr(errors.Wrap(err, "awsModelID")), nil
 	}
@@ -101,7 +101,7 @@ func Handler(c *gin.Context, awsCli *bedrockruntime.Client, modelName string) (*
 
 func StreamHandler(c *gin.Context, awsCli *bedrockruntime.Client) (*relaymodel.ErrorWithStatusCode, *relaymodel.Usage) {
 	createdTime := helper.GetTimestamp()
-	awsModelId, err := awsModelID(c.GetString(ctxkey.RequestModel))
+	awsModelId, err := AwsModelID(c.GetString(ctxkey.RequestModel))
 	if err != nil {
 		return utils.WrapErr(errors.Wrap(err, "awsModelID")), nil
 	}
@@ -140,6 +140,7 @@ func StreamHandler(c *gin.Context, awsCli *bedrockruntime.Client) (*relaymodel.E
 	var usage relaymodel.Usage
 	var id string
 	var lastToolCallChoice openai.ChatCompletionsStreamResponseChoice
+	toolCounter := &anthropic.ToolCounter{}
 
 	c.Stream(func(w io.Writer) bool {
 		event, ok := <-stream.Events()
@@ -157,7 +158,7 @@ func StreamHandler(c *gin.Context, awsCli *bedrockruntime.Client) (*relaymodel.E
 				return false
 			}
 
-			response, meta := anthropic.StreamResponseClaude2OpenAI(claudeResp)
+			response, meta := anthropic.StreamResponseClaude2OpenAI(claudeResp, toolCounter)
 			if meta != nil {
 				usage.PromptTokens += meta.Usage.InputTokens
 				usage.CompletionTokens += meta.Usage.OutputTokens

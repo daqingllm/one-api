@@ -12,21 +12,26 @@ func SetRelayRouter(router *gin.Engine) {
 	router.Use(middleware.GzipDecodeMiddleware())
 	// https://platform.openai.com/docs/api-reference/introduction
 	modelsRouter := router.Group("/v1/models")
-	modelsRouter.Use(middleware.TokenAuth())
+	modelsRouter.Use(middleware.TryTokenAuth())
 	{
 		modelsRouter.GET("", controller.ListModels)
 		modelsRouter.GET("/:model", controller.RetrieveModel)
 	}
+	claudeV1Router := router.Group("/v1")
+	claudeV1Router.Use(middleware.RelayPanicRecover(), middleware.TokenAuthClaude(), middleware.DistributeClaude())
+	{
+		claudeV1Router.POST("/messages", controller.ClaudeMessages)
+	}
 	relayV1Router := router.Group("/v1")
 	relayV1Router.Use(middleware.RelayPanicRecover(), middleware.TokenAuth(), middleware.Distribute())
 	{
-		relayV1Router.Any("/oneapi/proxy/:channelid/*target", controller.Relay)
+		relayV1Router.Any("/proxy/:channelid/*target", controller.Relay)
 		relayV1Router.POST("/completions", controller.Relay)
 		relayV1Router.POST("/chat/completions", controller.Relay)
 		relayV1Router.POST("/edits", controller.Relay)
 		relayV1Router.POST("/images/generations", controller.Relay)
-		relayV1Router.POST("/images/edits", controller.RelayNotImplemented)
-		relayV1Router.POST("/images/variations", controller.RelayNotImplemented)
+		relayV1Router.POST("/images/edits", controller.Relay)
+		relayV1Router.POST("/images/variations", controller.Relay)
 		relayV1Router.POST("/embeddings", controller.Relay)
 		relayV1Router.POST("/engines/:model/embeddings", controller.Relay)
 		relayV1Router.POST("/audio/transcriptions", controller.Relay)
@@ -44,6 +49,7 @@ func SetRelayRouter(router *gin.Engine) {
 		relayV1Router.GET("/fine_tuning/jobs/:id/events", controller.RelayNotImplemented)
 		relayV1Router.DELETE("/models/:model", controller.RelayNotImplemented)
 		relayV1Router.POST("/moderations", controller.Relay)
+		//relayV1Router.POST("/rerank", controller.Relay)
 		relayV1Router.POST("/assistants", controller.RelayNotImplemented)
 		relayV1Router.GET("/assistants/:id", controller.RelayNotImplemented)
 		relayV1Router.POST("/assistants/:id", controller.RelayNotImplemented)

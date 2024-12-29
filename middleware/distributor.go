@@ -18,7 +18,7 @@ type ModelRequest struct {
 func Distribute() func(c *gin.Context) {
 	return func(c *gin.Context) {
 		userId := c.GetInt(ctxkey.Id)
-		userGroup, _ := model.CacheGetUserGroup(userId)
+		userGroup, _ := model.CacheGetUserGroup(c.Request.Context(), userId)
 		c.Set(ctxkey.Group, userGroup)
 		var requestModel string
 		var channel *model.Channel
@@ -29,19 +29,24 @@ func Distribute() func(c *gin.Context) {
 				abortWithMessage(c, http.StatusBadRequest, "无效的渠道 Id")
 				return
 			}
-			channel, err = model.GetChannelById(id, true)
+			channel, err = model.CacheGetChannelById(id)
 			if err != nil {
 				abortWithMessage(c, http.StatusBadRequest, "无效的渠道 Id")
-				return
-			}
-			if channel.Status != model.ChannelStatusEnabled {
-				abortWithMessage(c, http.StatusForbidden, "该渠道已被禁用")
 				return
 			}
 		} else {
 			requestModel = c.GetString(ctxkey.RequestModel)
 			var err error
-			channel, err = model.CacheGetRandomSatisfiedChannel(userGroup, requestModel, false)
+			recentChannelId := model.CacheGetRecentChannel(c.Request.Context(), userId, requestModel)
+			if recentChannelId > 0 {
+				channel, err = model.CacheGetChannelById(recentChannelId)
+				if err == nil {
+					SetupContextForSelectedChannel(c, channel, requestModel)
+					c.Next()
+					return
+				}
+			}
+			channel, err = model.CacheGetRandomSatisfiedChannel(userGroup, requestModel, nil)
 			if err != nil {
 				message := fmt.Sprintf("当前分组 %s 下对于模型 %s 无可用渠道", userGroup, requestModel)
 				if channel != nil {
@@ -61,6 +66,7 @@ func SetupContextForSelectedChannel(c *gin.Context, channel *model.Channel, mode
 	c.Set(ctxkey.Channel, channel.Type)
 	c.Set(ctxkey.ChannelId, channel.Id)
 	c.Set(ctxkey.ChannelName, channel.Name)
+	c.Set(ctxkey.ContentType, c.Request.Header.Get("Content-Type"))
 	if channel.SystemPrompt != nil && *channel.SystemPrompt != "" {
 		c.Set(ctxkey.SystemPrompt, *channel.SystemPrompt)
 	}

@@ -77,7 +77,7 @@ func GetUsage(c *gin.Context) {
 	if err != nil {
 		Error := relaymodel.Error{
 			Message: err.Error(),
-			Type:    "one_api_error",
+			Type:    "Aihubmix_api_error",
 		}
 		c.JSON(200, gin.H{
 			"error": Error,

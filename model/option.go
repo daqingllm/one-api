@@ -1,6 +1,7 @@
 package model
 
 import (
+	"context"
 	"github.com/songquanpeng/one-api/common/config"
 	"github.com/songquanpeng/one-api/common/logger"
 	billingratio "github.com/songquanpeng/one-api/relay/billing/ratio"
@@ -55,6 +56,8 @@ func InitOptionMap() {
 	config.OptionMap["ServerAddress"] = ""
 	config.OptionMap["GitHubClientId"] = ""
 	config.OptionMap["GitHubClientSecret"] = ""
+	config.OptionMap["GoogleClientId"] = ""
+	config.OptionMap["GoogleClientSecret"] = ""
 	config.OptionMap["WeChatServerAddress"] = ""
 	config.OptionMap["WeChatServerToken"] = ""
 	config.OptionMap["WeChatAccountQRCodeImageURL"] = ""
@@ -97,6 +100,7 @@ func SyncOptions(frequency int) {
 		time.Sleep(time.Duration(frequency) * time.Second)
 		logger.SysLog("syncing options from database")
 		loadOptionsFromDatabase()
+		RefreshModelConfigCache(context.Background())
 	}
 }
 
@@ -175,6 +179,10 @@ func updateOptionMap(key string, value string) (err error) {
 		config.GitHubClientId = value
 	case "GitHubClientSecret":
 		config.GitHubClientSecret = value
+	case "GoogleClientId":
+		config.GoogleClientId = value
+	case "GoogleClientSecret":
+		config.GoogleClientSecret = value
 	case "LarkClientId":
 		config.LarkClientId = value
 	case "LarkClientSecret":

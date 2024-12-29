@@ -5,6 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
+	"strconv"
+	"time"
+
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"github.com/songquanpeng/one-api/common/config"
@@ -12,9 +16,6 @@ import (
 	"github.com/songquanpeng/one-api/common/random"
 	"github.com/songquanpeng/one-api/controller"
 	"github.com/songquanpeng/one-api/model"
-	"net/http"
-	"strconv"
-	"time"
 )
 
 type GitHubOAuthResponse struct {
@@ -104,6 +105,7 @@ func GitHubOAuth(c *gin.Context) {
 		return
 	}
 	code := c.Query("code")
+	affCode := c.Query("aff_code")
 	githubUser, err := getGitHubUserInfoByCode(code)
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{
@@ -132,11 +134,13 @@ func GitHubOAuth(c *gin.Context) {
 			} else {
 				user.DisplayName = "GitHub User"
 			}
+			inviterId, _ := model.GetUserIdByAffCode(affCode)
 			user.Email = githubUser.Email
 			user.Role = model.RoleCommonUser
 			user.Status = model.UserStatusEnabled
+			user.InviterId = inviterId
 
-			if err := user.Insert(0); err != nil {
+			if err := user.Insert(inviterId); err != nil {
 				c.JSON(http.StatusOK, gin.H{
 					"success": false,
 					"message": err.Error(),

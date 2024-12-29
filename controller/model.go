@@ -1,13 +1,16 @@
 package controller
 
 import (
+	"context"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/songquanpeng/one-api/common/ctxkey"
+	"github.com/songquanpeng/one-api/common/logger"
 	"github.com/songquanpeng/one-api/model"
 	relay "github.com/songquanpeng/one-api/relay"
 	"github.com/songquanpeng/one-api/relay/adaptor/openai"
 	"github.com/songquanpeng/one-api/relay/apitype"
+	"github.com/songquanpeng/one-api/relay/billing/ratio"
 	"github.com/songquanpeng/one-api/relay/channeltype"
 	"github.com/songquanpeng/one-api/relay/meta"
 	relaymodel "github.com/songquanpeng/one-api/relay/model"
@@ -42,11 +45,17 @@ type OpenAIModels struct {
 	Parent     *string                 `json:"parent"`
 }
 
+type ModelWithRatio struct {
+	Model           string  `json:"model"`
+	ModelRatio      float64 `json:"model_ratio"`
+	CompletionRatio float64 `json:"completion_ratio"`
+}
+
 var models []OpenAIModels
 var modelsMap map[string]OpenAIModels
 var channelId2Models map[int][]string
 
-func init() {
+func InitModels() {
 	var permission []OpenAIModelPermission
 	permission = append(permission, OpenAIModelPermission{
 		Id:                 "modelperm-LwHkVFn8AcMItP432fKKDIKJ",
@@ -71,6 +80,10 @@ func init() {
 		channelName := adaptor.GetChannelName()
 		modelNames := adaptor.GetModelList()
 		for _, modelName := range modelNames {
+			modelConfig, _ := model.GetModelConfig(context.Background(), modelName)
+			if modelConfig != nil {
+				channelName = modelConfig.Developer
+			}
 			models = append(models, OpenAIModels{
 				Id:         modelName,
 				Object:     "model",
@@ -122,6 +135,30 @@ func DashboardListModels(c *gin.Context) {
 	})
 }
 
+func GetModelInfo(c *gin.Context) {
+	ctx := c.Request.Context()
+	models, err := model.GetGroupModels(ctx, "default")
+	if err != nil {
+		logger.Error(ctx, err.Error())
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": err.Error(),
+		})
+	}
+	modelWithRatio := make([]ModelWithRatio, 0, len(models))
+	for _, m := range models {
+		modelWithRatio = append(modelWithRatio, ModelWithRatio{
+			Model:           m,
+			ModelRatio:      ratio.GetModelRatio(m, channeltype.OpenAI) * ratio.GetGroupRatio("default"),
+			CompletionRatio: ratio.GetCompletionRatio(m, channeltype.OpenAI),
+		})
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"data":    modelWithRatio,
+	})
+}
+
 func ListAllModels(c *gin.Context) {
 	c.JSON(200, gin.H{
 		"object": "list",
@@ -136,7 +173,10 @@ func ListModels(c *gin.Context) {
 		availableModels = strings.Split(c.GetString(ctxkey.AvailableModels), ",")
 	} else {
 		userId := c.GetInt(ctxkey.Id)
-		userGroup, _ := model.CacheGetUserGroup(userId)
+		var userGroup = "default"
+		if userId > 0 {
+			userGroup, _ = model.CacheGetUserGroup(ctx, userId)
+		}
 		availableModels, _ = model.CacheGetGroupModels(ctx, userGroup)
 	}
 	modelSet := make(map[string]bool)
@@ -188,7 +228,7 @@ func RetrieveModel(c *gin.Context) {
 func GetUserAvailableModels(c *gin.Context) {
 	ctx := c.Request.Context()
 	id := c.GetInt(ctxkey.Id)
-	userGroup, err := model.CacheGetUserGroup(id)
+	userGroup, err := model.CacheGetUserGroup(ctx, id)
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"success": false,

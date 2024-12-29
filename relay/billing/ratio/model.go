@@ -1,6 +1,7 @@
 package ratio
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -64,7 +65,10 @@ var ModelRatio = map[string]float64{
 	"text-davinci-003":        10,
 	"text-davinci-edit-001":   10,
 	"code-davinci-edit-001":   10,
-	"whisper-1":               15,  // $0.006 / minute -> $0.006 / 150 words -> $0.006 / 200 tokens -> $0.03 / 1k tokens
+	//"whisper-1":               15,  // $0.006 / minute -> $0.006 / 150 words -> $0.006 / 200 tokens -> $0.03 / 1k tokens
+	"whisper-1":                  50,     // $0.1 / 1K sec
+	"whisper-large-v3":           15.417, // $0.111 / 1h
+	"distil-whisper-large-v3-en": 2.778,  //$0.02 /h
 	"tts-1":                   7.5, // $0.015 / 1K characters
 	"tts-1-1106":              7.5,
 	"tts-1-hd":                15, // $0.030 / 1K characters
@@ -344,6 +348,14 @@ var (
 	DefaultCompletionRatio map[string]float64
 )
 
+type ModelRatioConfig struct {
+	ModelRatio      float64
+	CacheRatio      float64
+	CompletionRatio float64
+}
+
+var ModelConfigCache map[string]*ModelRatioConfig
+
 func init() {
 	DefaultModelRatio = make(map[string]float64)
 	for k, v := range ModelRatio {
@@ -352,6 +364,20 @@ func init() {
 	DefaultCompletionRatio = make(map[string]float64)
 	for k, v := range CompletionRatio {
 		DefaultCompletionRatio[k] = v
+	}
+}
+
+func RefreshModelConfigCache(ctx context.Context, model string, modelRatio float64, cacheRatio float64, completionRatio float64) {
+	if ModelConfigCache == nil {
+		ModelConfigCache = make(map[string]*ModelRatioConfig)
+	}
+	if modelRatio < 0 {
+		ModelConfigCache[model] = nil
+	}
+	ModelConfigCache[model] = &ModelRatioConfig{
+		ModelRatio:      modelRatio,
+		CacheRatio:      cacheRatio,
+		CompletionRatio: completionRatio,
 	}
 }
 
@@ -395,6 +421,10 @@ func GetModelRatio(name string, channelType int) float64 {
 	if strings.HasPrefix(name, "command-") && strings.HasSuffix(name, "-internet") {
 		name = strings.TrimSuffix(name, "-internet")
 	}
+	modelConfig := ModelConfigCache[name]
+	if modelConfig != nil {
+		return modelConfig.ModelRatio
+	}
 	model := fmt.Sprintf("%s(%d)", name, channelType)
 	if ratio, ok := ModelRatio[model]; ok {
 		return ratio
@@ -425,9 +455,24 @@ func UpdateCompletionRatioByJSONString(jsonStr string) error {
 	return json.Unmarshal([]byte(jsonStr), &CompletionRatio)
 }
 
+func GetCacheRatio(name string, channelType int) float64 {
+	if strings.HasPrefix(name, "qwen-") && strings.HasSuffix(name, "-internet") {
+		name = strings.TrimSuffix(name, "-internet")
+	}
+	modelConfig := ModelConfigCache[name]
+	if modelConfig != nil {
+		return modelConfig.CacheRatio
+	}
+	return 0
+}
+
 func GetCompletionRatio(name string, channelType int) float64 {
 	if strings.HasPrefix(name, "qwen-") && strings.HasSuffix(name, "-internet") {
 		name = strings.TrimSuffix(name, "-internet")
+	}
+	modelConfig := ModelConfigCache[name]
+	if modelConfig != nil {
+		return modelConfig.CompletionRatio
 	}
 	model := fmt.Sprintf("%s(%d)", name, channelType)
 	if ratio, ok := CompletionRatio[model]; ok {

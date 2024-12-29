@@ -1,8 +1,10 @@
 package model
 
 import (
+	"context"
 	"errors"
 	"fmt"
+
 	"github.com/songquanpeng/one-api/common"
 	"github.com/songquanpeng/one-api/common/config"
 	"github.com/songquanpeng/one-api/common/helper"
@@ -57,11 +59,11 @@ func SearchUserTokens(userId int, keyword string) (tokens []*Token, err error) {
 	return tokens, err
 }
 
-func ValidateUserToken(key string) (token *Token, err error) {
+func ValidateUserToken(ctx context.Context, key string) (token *Token, err error) {
 	if key == "" {
 		return nil, errors.New("未提供令牌")
 	}
-	token, err = CacheGetTokenByKey(key)
+	token, err = CacheGetTokenByKey(ctx, key)
 	if err != nil {
 		logger.SysError("CacheGetTokenByKey failed: " + err.Error())
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -115,9 +117,16 @@ func GetTokenById(id int) (*Token, error) {
 	if id == 0 {
 		return nil, errors.New("id 为空！")
 	}
+	ca := GetTokenByIdPool(id)
+	if ca != nil {
+		return ca, nil
+	}
 	token := Token{Id: id}
 	var err error = nil
 	err = DB.First(&token, "id = ?", id).Error
+	if err == nil {
+		SetTokenByIdPool(id, token)
+	}
 	return &token, err
 }
 
@@ -223,34 +232,31 @@ func PreConsumeTokenQuota(tokenId int, quota int64) (err error) {
 	if !token.UnlimitedQuota && token.RemainQuota < quota {
 		return errors.New("令牌额度不足")
 	}
-	userQuota, err := GetUserQuota(token.UserId)
+	userInfo, err := GetUserInfo(token.UserId)
 	if err != nil {
 		return err
 	}
-	if userQuota < quota {
+	if userInfo.Quota < quota {
 		return errors.New("用户额度不足")
 	}
-	quotaTooLow := userQuota >= config.QuotaRemindThreshold && userQuota-quota < config.QuotaRemindThreshold
-	noMoreQuota := userQuota-quota <= 0
-	if quotaTooLow || noMoreQuota {
-		go func() {
-			email, err := GetUserEmail(token.UserId)
-			if err != nil {
-				logger.SysError("failed to fetch user email: " + err.Error())
-			}
-			prompt := "您的额度即将用尽"
-			if noMoreQuota {
-				prompt = "您的额度已用尽"
-			}
-			if email != "" {
-				topUpLink := fmt.Sprintf("%s/topup", config.ServerAddress)
-				err = message.SendEmail(prompt, email,
-					fmt.Sprintf("%s，当前剩余额度为 %d，为了不影响您的使用，请及时充值。<br/>充值链接：<a href='%s'>%s</a>", prompt, userQuota, topUpLink, topUpLink))
-				if err != nil {
-					logger.SysError("failed to send email" + err.Error())
+	if userInfo.Notify {
+		quotaTooLow := userInfo.Quota >= userInfo.QuotaRemindThreshold && userInfo.Quota-quota < userInfo.QuotaRemindThreshold
+		noMoreQuota := userInfo.Quota-quota <= 0
+		if quotaTooLow || noMoreQuota {
+			go func() {
+				if userInfo.Email != "" {
+					topUpLink := fmt.Sprintf("%s/topup", config.ServerAddress)
+					leftQuota := common.ShowQuota(userInfo.Quota - quota)
+					prompt := "AiHubMix余额提醒，剩余" + leftQuota
+					currentTime := helper.GetFormattedTimeString()
+					err := message.SendEmail(prompt, userInfo.Email,
+						fmt.Sprintf("尊敬的 %s： <br><br>"+"截至 %s，<br>当前账户余额为 %s，请您尽快充值，以免影响使用！<br><a href='%s'>点此充值>></a>", userInfo.Username, currentTime, leftQuota, topUpLink))
+					if err != nil {
+						logger.SysError("failed to send email" + err.Error())
+					}
 				}
-			}
-		}()
+			}()
+		}
 	}
 	if !token.UnlimitedQuota {
 		err = DecreaseTokenQuota(tokenId, quota)

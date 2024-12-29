@@ -12,7 +12,7 @@ type ImageSource struct {
 	Data      string `json:"data"`
 }
 
-type Content struct {
+type ContentReq struct {
 	Type   string       `json:"type"`
 	Text   string       `json:"text,omitempty"`
 	Source *ImageSource `json:"source,omitempty"`
@@ -24,9 +24,21 @@ type Content struct {
 	ToolUseId string `json:"tool_use_id,omitempty"`
 }
 
+type Content struct {
+	Type   string       `json:"type"`
+	Text   string       `json:"text"`
+	Source *ImageSource `json:"source,omitempty"`
+	// tool_calls
+	Id        string `json:"id,omitempty"`
+	Name      string `json:"name,omitempty"`
+	Input     any    `json:"input,omitempty"`
+	Content   string `json:"content,omitempty"`
+	ToolUseId string `json:"tool_use_id,omitempty"`
+}
+
 type Message struct {
-	Role    string    `json:"role"`
-	Content []Content `json:"content"`
+	Role    string `json:"role"`
+	Content any    `json:"content"`
 }
 
 type Tool struct {
@@ -69,28 +81,28 @@ type Error struct {
 type Response struct {
 	Id           string    `json:"id"`
 	Type         string    `json:"type"`
-	Role         string    `json:"role"`
-	Content      []Content `json:"content"`
-	Model        string    `json:"model"`
-	StopReason   *string   `json:"stop_reason"`
-	StopSequence *string   `json:"stop_sequence"`
-	Usage        Usage     `json:"usage"`
-	Error        Error     `json:"error"`
+	Role         string    `json:"role,omitempty"`
+	Content      []Content `json:"content,omitempty"`
+	Model        string    `json:"model,omitempty"`
+	StopReason   *string   `json:"stop_reason,omitempty"`
+	StopSequence *string   `json:"stop_sequence,omitempty"`
+	Usage        *Usage    `json:"usage,omitempty"`
+	Error        *Error    `json:"error,omitempty"`
 }
 
 type Delta struct {
 	Type         string  `json:"type"`
 	Text         string  `json:"text"`
 	PartialJson  string  `json:"partial_json,omitempty"`
-	StopReason   *string `json:"stop_reason"`
-	StopSequence *string `json:"stop_sequence"`
+	StopReason   *string `json:"stop_reason,omitempty"`
+	StopSequence *string `json:"stop_sequence,omitempty"`
 }
 
 type StreamResponse struct {
 	Type         string    `json:"type"`
-	Message      *Response `json:"message"`
-	Index        int       `json:"index"`
-	ContentBlock *Content  `json:"content_block"`
-	Delta        *Delta    `json:"delta"`
-	Usage        *Usage    `json:"usage"`
+	Message      *Response `json:"message,omitempty"`
+	Index        *int      `json:"index,omitempty"`
+	ContentBlock *Content  `json:"content_block,omitempty"`
+	Delta        *Delta    `json:"delta,omitempty"`
+	Usage        *Usage    `json:"usage,omitempty"`
 }

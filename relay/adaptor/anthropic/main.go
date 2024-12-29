@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	"github.com/songquanpeng/one-api/common/image"
 	"github.com/songquanpeng/one-api/common/render"
 	"io"
 	"net/http"
@@ -12,11 +13,15 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/songquanpeng/one-api/common"
 	"github.com/songquanpeng/one-api/common/helper"
-	"github.com/songquanpeng/one-api/common/image"
 	"github.com/songquanpeng/one-api/common/logger"
 	"github.com/songquanpeng/one-api/relay/adaptor/openai"
 	"github.com/songquanpeng/one-api/relay/model"
 )
+
+type ToolCounter struct {
+	count int
+	inUse bool
+}
 
 func stopReasonClaude2OpenAI(reason *string) string {
 	if reason == nil {
@@ -88,6 +93,7 @@ func ConvertRequest(textRequest model.GeneralOpenAIRequest) *Request {
 	} else if claudeRequest.Model == "claude-2" {
 		claudeRequest.Model = "claude-2.1"
 	}
+	lastRoleUser := false
 	for _, message := range textRequest.Messages {
 		if message.Role == "system" && claudeRequest.System == "" {
 			claudeRequest.System = message.StringContent()
@@ -96,57 +102,96 @@ func ConvertRequest(textRequest model.GeneralOpenAIRequest) *Request {
 		claudeMessage := Message{
 			Role: message.Role,
 		}
-		var content Content
+		var content ContentReq
 		if message.IsStringContent() {
-			content.Type = "text"
-			content.Text = message.StringContent()
+			var contents []ContentReq
 			if message.Role == "tool" {
 				claudeMessage.Role = "user"
 				content.Type = "tool_result"
-				content.Content = content.Text
+				content.Content = message.StringContent()
 				content.Text = ""
 				content.ToolUseId = message.ToolCallId
-			}
-			claudeMessage.Content = append(claudeMessage.Content, content)
-			for i := range message.ToolCalls {
-				inputParam := make(map[string]any)
-				_ = json.Unmarshal([]byte(message.ToolCalls[i].Function.Arguments.(string)), &inputParam)
-				claudeMessage.Content = append(claudeMessage.Content, Content{
-					Type:  "tool_use",
-					Id:    message.ToolCalls[i].Id,
-					Name:  message.ToolCalls[i].Function.Name,
-					Input: inputParam,
-				})
-			}
-			claudeRequest.Messages = append(claudeRequest.Messages, claudeMessage)
-			continue
-		}
-		var contents []Content
-		openaiContent := message.ParseContent()
-		for _, part := range openaiContent {
-			var content Content
-			if part.Type == model.ContentTypeText {
+				contents = append(contents, content)
+			} else {
 				content.Type = "text"
-				content.Text = part.Text
-			} else if part.Type == model.ContentTypeImageURL {
-				content.Type = "image"
-				content.Source = &ImageSource{
-					Type: "base64",
+				content.Text = message.StringContent()
+				if len(strings.TrimSpace(content.Text)) > 0 {
+					contents = append(contents, content)
 				}
-				mimeType, data, _ := image.GetImageFromUrl(part.ImageURL.Url)
-				content.Source.MediaType = mimeType
-				content.Source.Data = data
+				for i := range message.ToolCalls {
+					inputParam := make(map[string]any)
+					_ = json.Unmarshal([]byte(message.ToolCalls[i].Function.Arguments.(string)), &inputParam)
+					contents = append(contents, ContentReq{
+						Type:  "tool_use",
+						Id:    message.ToolCalls[i].Id,
+						Name:  message.ToolCalls[i].Function.Name,
+						Input: inputParam,
+					})
+				}
 			}
-			contents = append(contents, content)
+			claudeMessage.Content = contents
+		} else {
+			var contents []ContentReq
+			openaiContent := message.ParseContent()
+			for _, part := range openaiContent {
+				var content ContentReq
+				if part.Type == model.ContentTypeText {
+					content.Type = "text"
+					content.Text = part.Text
+				} else if part.Type == model.ContentTypeImageURL {
+					content.Type = "image"
+					content.Source = &ImageSource{
+						Type: "base64",
+					}
+					mimeType, data, _ := image.GetImageFromUrl(part.ImageURL.Url)
+					content.Source.MediaType = mimeType
+					content.Source.Data = data
+				}
+				contents = append(contents, content)
+			}
+			claudeMessage.Content = contents
 		}
-		claudeMessage.Content = contents
+		if lastRoleUser && claudeMessage.Role == "user" {
+			claudeRequest.Messages = append(claudeRequest.Messages, defaultAssistantMessage())
+		} else if !lastRoleUser && claudeMessage.Role == "assistant" {
+			claudeRequest.Messages = append(claudeRequest.Messages, defaulUserMessage())
+		}
 		claudeRequest.Messages = append(claudeRequest.Messages, claudeMessage)
+		if claudeMessage.Role == "user" {
+			lastRoleUser = true
+		} else {
+			lastRoleUser = false
+		}
 	}
 	return &claudeRequest
 }
 
+func defaulUserMessage() Message {
+	return Message{
+		Role: "user",
+		Content: []ContentReq{
+			{
+				Type: "text",
+				Text: "hello",
+			},
+		},
+	}
+}
+
+func defaultAssistantMessage() Message {
+	return Message{
+		Role: "assistant",
+		Content: []ContentReq{
+			{
+				Type: "text",
+				Text: "I'm here to help. What can I do for you?",
+			},
+		},
+	}
+}
+
 // https://docs.anthropic.com/claude/reference/messages-streaming
-func StreamResponseClaude2OpenAI(claudeResponse *StreamResponse) (*openai.ChatCompletionsStreamResponse, *Response) {
+func StreamResponseClaude2OpenAI(claudeResponse *StreamResponse, toolcounter *ToolCounter) (*openai.ChatCompletionsStreamResponse, *Response) {
 	var response *Response
 	var responseText string
 	var stopReason string
@@ -159,9 +204,11 @@ func StreamResponseClaude2OpenAI(claudeResponse *StreamResponse) (*openai.ChatCo
 		if claudeResponse.ContentBlock != nil {
 			responseText = claudeResponse.ContentBlock.Text
 			if claudeResponse.ContentBlock.Type == "tool_use" {
+				toolcounter.inUse = true
 				tools = append(tools, model.Tool{
-					Id:   claudeResponse.ContentBlock.Id,
-					Type: "function",
+					Id:    claudeResponse.ContentBlock.Id,
+					Index: &toolcounter.count,
+					Type:  "function",
 					Function: model.Function{
 						Name:      claudeResponse.ContentBlock.Name,
 						Arguments: "",
@@ -174,21 +221,30 @@ func StreamResponseClaude2OpenAI(claudeResponse *StreamResponse) (*openai.ChatCo
 			responseText = claudeResponse.Delta.Text
 			if claudeResponse.Delta.Type == "input_json_delta" {
 				tools = append(tools, model.Tool{
+					Index: &toolcounter.count,
 					Function: model.Function{
 						Arguments: claudeResponse.Delta.PartialJson,
 					},
 				})
 			}
 		}
+	case "content_block_stop":
+		if toolcounter.inUse {
+			toolcounter.count++
+			toolcounter.inUse = false
+		}
+		return nil, nil
 	case "message_delta":
 		if claudeResponse.Usage != nil {
 			response = &Response{
-				Usage: *claudeResponse.Usage,
+				Usage: claudeResponse.Usage,
 			}
 		}
 		if claudeResponse.Delta != nil && claudeResponse.Delta.StopReason != nil {
 			stopReason = *claudeResponse.Delta.StopReason
 		}
+	case "message_stop":
+		return nil, nil
 	}
 	var choice openai.ChatCompletionsStreamResponseChoice
 	choice.Delta.Content = responseText
@@ -268,6 +324,7 @@ func StreamHandler(c *gin.Context, resp *http.Response) (*model.ErrorWithStatusC
 	var modelName string
 	var id string
 	var lastToolCallChoice openai.ChatCompletionsStreamResponseChoice
+	toolCounter := &ToolCounter{}
 
 	for scanner.Scan() {
 		data := scanner.Text()
@@ -284,7 +341,7 @@ func StreamHandler(c *gin.Context, resp *http.Response) (*model.ErrorWithStatusC
 			continue
 		}
 
-		response, meta := StreamResponseClaude2OpenAI(&claudeResponse)
+		response, meta := StreamResponseClaude2OpenAI(&claudeResponse, toolCounter)
 		if meta != nil {
 			usage.PromptTokens += meta.Usage.InputTokens
 			usage.CompletionTokens += meta.Usage.OutputTokens
@@ -326,6 +383,20 @@ func StreamHandler(c *gin.Context, resp *http.Response) (*model.ErrorWithStatusC
 		logger.SysError("error reading stream: " + err.Error())
 	}
 
+	if usage.PromptTokens != 0 && usage.CompletionTokens != 0 {
+		usage.TotalTokens = usage.PromptTokens + usage.CompletionTokens
+		var usageResponse openai.ChatCompletionsStreamResponse
+		usageResponse.Id = id
+		usageResponse.Model = modelName
+		usageResponse.Created = createdTime
+		usageResponse.Choices = []openai.ChatCompletionsStreamResponseChoice{}
+		usageResponse.Usage = &usage
+		err := render.ObjectData(c, usageResponse)
+		if err != nil {
+			logger.SysError(err.Error())
+		}
+	}
+
 	render.Done(c)
 
 	err := resp.Body.Close()
@@ -349,7 +420,7 @@ func Handler(c *gin.Context, resp *http.Response, promptTokens int, modelName st
 	if err != nil {
 		return openai.ErrorWrapper(err, "unmarshal_response_body_failed", http.StatusInternalServerError), nil
 	}
-	if claudeResponse.Error.Type != "" {
+	if claudeResponse.Error != nil && claudeResponse.Error.Type != "" {
 		return &model.ErrorWithStatusCode{
 			Error: model.Error{
 				Message: claudeResponse.Error.Message,
@@ -375,5 +446,8 @@ func Handler(c *gin.Context, resp *http.Response, promptTokens int, modelName st
 	c.Writer.Header().Set("Content-Type", "application/json")
 	c.Writer.WriteHeader(resp.StatusCode)
 	_, err = c.Writer.Write(jsonResponse)
+	if err != nil {
+		return openai.ErrorWrapper(err, "write_response_body_failed", http.StatusRequestTimeout), nil
+	}
 	return nil, &usage
 }

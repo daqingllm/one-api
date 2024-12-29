@@ -3,6 +3,7 @@ package router
 import (
 	"github.com/songquanpeng/one-api/controller"
 	"github.com/songquanpeng/one-api/controller/auth"
+	"github.com/songquanpeng/one-api/controller/pay"
 	"github.com/songquanpeng/one-api/middleware"
 
 	"github.com/gin-contrib/gzip"
@@ -14,8 +15,13 @@ func SetApiRouter(router *gin.Engine) {
 	apiRouter.Use(gzip.Gzip(gzip.DefaultCompression))
 	apiRouter.Use(middleware.GlobalAPIRateLimit())
 	{
+		apiRouter.GET("/send_email", controller.SendEmail)
+		apiRouter.GET("/refresh_model_usage", controller.RefreshModelUsage)
+		apiRouter.GET("/model_usage_detail", controller.GetModelUsageDetail)
+		apiRouter.GET("/model_usage_count", controller.GetModelUsageCount)
 		apiRouter.GET("/status", controller.GetStatus)
 		apiRouter.GET("/models", middleware.UserAuth(), controller.DashboardListModels)
+		apiRouter.GET("/model_info", controller.GetModelInfo)
 		apiRouter.GET("/notice", controller.GetNotice)
 		apiRouter.GET("/about", controller.GetAbout)
 		apiRouter.GET("/home_page_content", controller.GetHomePageContent)
@@ -23,6 +29,7 @@ func SetApiRouter(router *gin.Engine) {
 		apiRouter.GET("/reset_password", middleware.CriticalRateLimit(), middleware.TurnstileCheck(), controller.SendPasswordResetEmail)
 		apiRouter.POST("/user/reset", middleware.CriticalRateLimit(), controller.ResetPassword)
 		apiRouter.GET("/oauth/github", middleware.CriticalRateLimit(), auth.GitHubOAuth)
+		apiRouter.GET("/oauth/google", middleware.CriticalRateLimit(), auth.GoogleOAuth)
 		apiRouter.GET("/oauth/oidc", middleware.CriticalRateLimit(), auth.OidcAuth)
 		apiRouter.GET("/oauth/lark", middleware.CriticalRateLimit(), auth.LarkOAuth)
 		apiRouter.GET("/oauth/state", middleware.CriticalRateLimit(), auth.GenerateOAuthCode)
@@ -40,14 +47,16 @@ func SetApiRouter(router *gin.Engine) {
 			selfRoute := userRoute.Group("/")
 			selfRoute.Use(middleware.UserAuth())
 			{
-				selfRoute.GET("/dashboard", controller.GetUserDashboard)
+				//selfRoute.GET("/dashboard", controller.GetUserDashboard)
 				selfRoute.GET("/self", controller.GetSelf)
 				selfRoute.PUT("/self", controller.UpdateSelf)
 				selfRoute.DELETE("/self", controller.DeleteSelf)
 				selfRoute.GET("/token", controller.GenerateAccessToken)
 				selfRoute.GET("/aff", controller.GetAffCode)
 				selfRoute.POST("/topup", controller.TopUp)
+				selfRoute.POST("/remind", controller.UpdateRemind)
 				selfRoute.GET("/available_models", controller.GetUserAvailableModels)
+				selfRoute.GET("/quota_records", controller.GetUserQuotaRecords)
 			}
 
 			adminRoute := userRoute.Group("/")
@@ -67,6 +76,9 @@ func SetApiRouter(router *gin.Engine) {
 		{
 			optionRoute.GET("/", controller.GetOptions)
 			optionRoute.PUT("/", controller.UpdateOption)
+			optionRoute.GET("/model", controller.GetModelOptions)
+			optionRoute.PUT("/model", controller.UpsertModelOption)
+			optionRoute.DELETE("/model", controller.DeleteModelOption)
 		}
 		channelRoute := apiRouter.Group("/channel")
 		channelRoute.Use(middleware.AdminAuth())
@@ -83,6 +95,8 @@ func SetApiRouter(router *gin.Engine) {
 			channelRoute.PUT("/", controller.UpdateChannel)
 			channelRoute.DELETE("/disabled", controller.DeleteDisabledChannel)
 			channelRoute.DELETE("/:id", controller.DeleteChannel)
+			channelRoute.GET("/providers", controller.GetChannelProviders)
+			channelRoute.POST("/providers", controller.AddChannelProvider)
 		}
 		tokenRoute := apiRouter.Group("/token")
 		tokenRoute.Use(middleware.UserAuth())
@@ -107,15 +121,28 @@ func SetApiRouter(router *gin.Engine) {
 		logRoute := apiRouter.Group("/log")
 		logRoute.GET("/", middleware.AdminAuth(), controller.GetAllLogs)
 		logRoute.DELETE("/", middleware.AdminAuth(), controller.DeleteHistoryLogs)
-		logRoute.GET("/stat", middleware.AdminAuth(), controller.GetLogsStat)
-		logRoute.GET("/self/stat", middleware.UserAuth(), controller.GetLogsSelfStat)
+		//logRoute.GET("/stat", middleware.AdminAuth(), controller.GetLogsStat)
+		//logRoute.GET("/self/stat", middleware.UserAuth(), controller.GetLogsSelfStat)
 		logRoute.GET("/search", middleware.AdminAuth(), controller.SearchAllLogs)
 		logRoute.GET("/self", middleware.UserAuth(), controller.GetUserLogs)
 		logRoute.GET("/self/search", middleware.UserAuth(), controller.SearchUserLogs)
+		logRoute.GET("/usage", middleware.UserAuth(), controller.GetUserUsage)
+		logRoute.GET("/usage/flush", middleware.AdminAuth(), controller.FlushUserUsage)
 		groupRoute := apiRouter.Group("/group")
 		groupRoute.Use(middleware.AdminAuth())
 		{
 			groupRoute.GET("/", controller.GetGroups)
+		}
+		payRoute := apiRouter.Group("/pay")
+		payRoute.Use(middleware.UserAuth())
+		{
+			payRoute.POST("/alipay/create", pay.CreateAlipay)
+			payRoute.POST("/alipay/notify", pay.NotifyOrder)
+			payRoute.POST("/stripe/create", pay.CreateStripe)
+			payRoute.GET("/stripe/success", pay.StripeOrderSuccess)
+			payRoute.GET("/stripe/failed", pay.StripeOrderFailed)
+			payRoute.GET("/query/order", pay.QueryOrderByTradeNo)
+			payRoute.GET("/update_order_status", middleware.AdminAuth(), pay.UpdateAllOrderStatus)
 		}
 	}
 }
