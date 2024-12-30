@@ -14,7 +14,6 @@ import (
 	"github.com/songquanpeng/one-api/relay/adaptor/siliconflow"
 	"github.com/songquanpeng/one-api/relay/adaptor/stepfun"
 	"github.com/songquanpeng/one-api/relay/adaptor/togetherai"
-	"github.com/songquanpeng/one-api/relay/adaptor/xai"
 	"github.com/songquanpeng/one-api/relay/channeltype"
 )
 
@@ -33,7 +32,7 @@ var CompatibleChannels = []int{
 	channeltype.TogetherAI,
 	channeltype.Novita,
 	channeltype.SiliconFlow,
-	channeltype.XAI,
+	//channeltype.XAI,
 }
 
 func GetCompatibleChannelMeta(channelType int) (string, []string) {
@@ -66,8 +65,8 @@ func GetCompatibleChannelMeta(channelType int) (string, []string) {
 		return "novita", novita.ModelList
 	case channeltype.SiliconFlow:
 		return "siliconflow", siliconflow.ModelList
-	case channeltype.XAI:
-		return "xai", xai.ModelList
+	//case channeltype.XAI:
+	//	return "xai", xai.ModelList
 	default:
 		return "openai", ModelList
 	}

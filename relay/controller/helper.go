@@ -159,10 +159,11 @@ func isErrorHappened(meta *meta.Meta, resp *http.Response) bool {
 		return false
 	}
 
-	if meta.IsStream && strings.HasPrefix(resp.Header.Get("Content-Type"), "application/json") &&
-		// Even if stream mode is enabled, replicate will first return a task info in JSON format,
-		// requiring the client to request the stream endpoint in the task info
-		meta.ChannelType != channeltype.Replicate {
+	//if meta.IsStream && strings.HasPrefix(resp.Header.Get("Content-Type"), "application/json") &&
+	//	// Even if stream mode is enabled, replicate will first return a task info in JSON format,
+	//	// requiring the client to request the stream endpoint in the task info
+	//	meta.ChannelType != channeltype.Replicate {
+	if meta.IsStream && strings.HasPrefix(resp.Header.Get("Content-Type"), "application/json") {
 		return true
 	}
 	return false
