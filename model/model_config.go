@@ -17,6 +17,8 @@ type ModelConfig struct {
 	CacheRatio      float64 `json:"cache_ratio"`
 	CompletionRatio float64 `json:"completion_ratio"`
 	Desc            string  `json:"desc"`
+	Order           int     `json:"order"`
+	Flag            int     `json:"flag"`
 }
 
 type ModelProvider struct {
@@ -29,8 +31,6 @@ type ModelProvider struct {
 type ModelDeveloper struct {
 	Id        int    `json:"id"`
 	Developer string `json:"developer"`
-	Order     int    `json:"order"`
-	Flag      int    `json:"flag"`
 	Icon      string `json:"icon"`
 	Desc      string `json:"desc"`
 }
@@ -109,8 +109,6 @@ func SaveModelDeveloper(ctx context.Context, modelDeveloper *ModelDeveloper) err
 	if modelDeveloper.Id == 0 {
 		create := &ModelDeveloper{
 			Developer: modelDeveloper.Developer,
-			Order:     modelDeveloper.Order,
-			Flag:      modelDeveloper.Flag,
 			Icon:      modelDeveloper.Icon,
 			Desc:      modelDeveloper.Desc,
 		}

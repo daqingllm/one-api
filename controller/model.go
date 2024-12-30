@@ -46,14 +46,6 @@ type OpenAIModels struct {
 	Parent     *string                 `json:"parent"`
 }
 
-type ModelWithRatio struct {
-	Model           string  `json:"model"`
-	ModelRatio      float64 `json:"model_ratio"`
-	CompletionRatio float64 `json:"completion_ratio"`
-	DeveloperId     int32   `json:"developer_id"`
-	ProviderId      int32   `json:"provider_id"`
-}
-
 var models []OpenAIModels
 var modelsMap map[string]OpenAIModels
 var channelId2Models map[int][]string
@@ -148,19 +140,13 @@ func GetModelInfo(c *gin.Context) {
 			"message": err.Error(),
 		})
 	}
-	modelWithRatio := make([]ModelWithRatio, 0, len(models))
 	for _, m := range models {
-		modelWithRatio = append(modelWithRatio, ModelWithRatio{
-			Model:           m.Model,
-			ModelRatio:      ratio.GetModelRatio(m.Model, channeltype.OpenAI) * ratio.GetGroupRatio("default"),
-			CompletionRatio: ratio.GetCompletionRatio(m.Model, channeltype.OpenAI),
-			DeveloperId:     m.DeveloperId,
-			ProviderId:      m.ProviderId,
-		})
+		m.ModelRatio = ratio.GetModelRatio(m.Model, channeltype.OpenAI) * ratio.GetGroupRatio("default")
+		m.CompletionRatio = ratio.GetCompletionRatio(m.Model, channeltype.OpenAI)
 	}
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
-		"data":    modelWithRatio,
+		"data":    models,
 	})
 }
 
