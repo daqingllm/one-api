@@ -3,6 +3,9 @@ package controller
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"strings"
+
 	"github.com/gin-gonic/gin"
 	"github.com/songquanpeng/one-api/common/ctxkey"
 	"github.com/songquanpeng/one-api/common/logger"
@@ -14,8 +17,6 @@ import (
 	"github.com/songquanpeng/one-api/relay/channeltype"
 	"github.com/songquanpeng/one-api/relay/meta"
 	relaymodel "github.com/songquanpeng/one-api/relay/model"
-	"net/http"
-	"strings"
 )
 
 // https://platform.openai.com/docs/api-reference/models/list
@@ -43,12 +44,6 @@ type OpenAIModels struct {
 	Permission []OpenAIModelPermission `json:"permission"`
 	Root       string                  `json:"root"`
 	Parent     *string                 `json:"parent"`
-}
-
-type ModelWithRatio struct {
-	Model           string  `json:"model"`
-	ModelRatio      float64 `json:"model_ratio"`
-	CompletionRatio float64 `json:"completion_ratio"`
 }
 
 var models []OpenAIModels
@@ -137,7 +132,7 @@ func DashboardListModels(c *gin.Context) {
 
 func GetModelInfo(c *gin.Context) {
 	ctx := c.Request.Context()
-	models, err := model.GetGroupModels(ctx, "default")
+	models, err := model.GetGroupModelInfos(ctx, "default")
 	if err != nil {
 		logger.Error(ctx, err.Error())
 		c.JSON(http.StatusOK, gin.H{
@@ -145,17 +140,13 @@ func GetModelInfo(c *gin.Context) {
 			"message": err.Error(),
 		})
 	}
-	modelWithRatio := make([]ModelWithRatio, 0, len(models))
 	for _, m := range models {
-		modelWithRatio = append(modelWithRatio, ModelWithRatio{
-			Model:           m,
-			ModelRatio:      ratio.GetModelRatio(m, channeltype.OpenAI) * ratio.GetGroupRatio("default"),
-			CompletionRatio: ratio.GetCompletionRatio(m, channeltype.OpenAI),
-		})
+		m.ModelRatio = ratio.GetModelRatio(m.Model, channeltype.OpenAI) * ratio.GetGroupRatio("default")
+		m.CompletionRatio = ratio.GetCompletionRatio(m.Model, channeltype.OpenAI)
 	}
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
-		"data":    modelWithRatio,
+		"data":    models,
 	})
 }
 
@@ -236,7 +227,7 @@ func GetUserAvailableModels(c *gin.Context) {
 		})
 		return
 	}
-	models, err := model.CacheGetGroupModels(ctx, userGroup)
+	models, err := model.GetGroupModelInfos(ctx, userGroup)
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"success": false,
@@ -249,5 +240,21 @@ func GetUserAvailableModels(c *gin.Context) {
 		"message": "",
 		"data":    models,
 	})
-	return
+}
+
+func GetModelDevelopers(context *gin.Context) {
+	ctx := context.Request.Context()
+	modelDevelopers, err := model.GetAllModelDeveloper(ctx)
+	if err != nil {
+		context.JSON(200, gin.H{
+			"success": false,
+			"message": err.Error(),
+		})
+		return
+	}
+	context.JSON(200, gin.H{
+		"success": true,
+		"message": "",
+		"data":    modelDevelopers,
+	})
 }
