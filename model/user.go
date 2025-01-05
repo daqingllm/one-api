@@ -41,7 +41,7 @@ type User struct {
 	GoogleId             string `json:"google_id" gorm:"column:google_id;index"`
 	WeChatId             string `json:"wechat_id" gorm:"column:wechat_id;index"`
 	LarkId               string `json:"lark_id" gorm:"column:lark_id;index"`
-	OidcId           string `json:"oidc_id" gorm:"column:oidc_id;index"`
+	OidcId               string `json:"oidc_id" gorm:"column:oidc_id;index"`
 	VerificationCode     string `json:"verification_code" gorm:"-:all"`                                    // this field is only for Email verification, don't save it to database!
 	AccessToken          string `json:"access_token" gorm:"type:char(32);column:access_token;uniqueIndex"` // this token is for system management
 	Quota                int64  `json:"quota" gorm:"bigint;default:0"`
@@ -491,6 +491,7 @@ func UpdateUserRemind(id int, notify bool, email string, quotaRemindThreshold in
 		}
 		return err
 	} else {
+		DelUserRemindPool(id)
 		err = DB.Model(&User{}).Where("id = ?", id).Update("notify", notify).Error
 		if err != nil {
 			logger.SysError("failed to update user remind: " + err.Error())

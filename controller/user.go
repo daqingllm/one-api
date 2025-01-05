@@ -857,3 +857,28 @@ func UpdateRemind(c *gin.Context) {
 		"message": "更新成功",
 	})
 }
+
+func QuotaUseTest(c *gin.Context) {
+	id := c.GetInt("id")
+	quotaStr := c.Query("quota")
+	quota, err := strconv.ParseInt(quotaStr, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": "无效的参数",
+		})
+		return
+	}
+	err = model.QuotaUseTest(id, quota)
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": err.Error(),
+		})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "扣除成功",
+	})
+}
