@@ -21,8 +21,8 @@ func QuotaJob() {
 	// 获取当前时间
 	now := time.Now().In(location)
 	// 计算下一个任务执行时间 0点1分
-	// next := time.Date(now.Year(), now.Month(), now.Day(), 0, 1, 0, 0, location).Add(24 * time.Hour)
-	next := now.Add(5 * time.Minute)
+	next := time.Date(now.Year(), now.Month(), now.Day(), 0, 1, 0, 0, location).Add(24 * time.Hour)
+	// next := now.Add(5 * time.Minute)
 	// 计算当前时间到下一个执行时间的等待时间
 	duration := next.Sub(now)
 
