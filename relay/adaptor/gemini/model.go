@@ -60,8 +60,11 @@ type ChatSafetySettings struct {
 	Threshold string `json:"threshold"`
 }
 
+type Empty struct{}
+
 type ChatTools struct {
-	FunctionDeclarations any `json:"function_declarations,omitempty"`
+	FunctionDeclarations any    `json:"function_declarations,omitempty"`
+	GoogleSearch         *Empty `json:"google_search,omitempty"`
 }
 
 type ChatGenerationConfig struct {

@@ -38,7 +38,7 @@ func (*Adaptor) ConvertImageRequest(request *model.ImageRequest) (any, error) {
 	}, nil
 }
 
-func (a *Adaptor) ConvertRequest(c *gin.Context, relayMode int, request *model.GeneralOpenAIRequest) (any, error) {
+func (a *Adaptor) ConvertRequest(c *gin.Context, meta *meta.Meta, request *model.GeneralOpenAIRequest) (any, error) {
 	if !request.Stream {
 		// TODO: support non-stream mode
 		return nil, errors.Errorf("replicate models only support stream mode now, please set stream=true")

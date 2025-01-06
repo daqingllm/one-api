@@ -27,7 +27,6 @@ import (
 	"github.com/songquanpeng/one-api/relay/controller"
 	"github.com/songquanpeng/one-api/relay/meta"
 	relaymodel "github.com/songquanpeng/one-api/relay/model"
-	"github.com/songquanpeng/one-api/relay/relaymode"
 )
 
 func buildTestRequest(model string) *relaymodel.GeneralOpenAIRequest {
@@ -82,7 +81,7 @@ func testChannel(channel *model.Channel, request *relaymodel.GeneralOpenAIReques
 	}
 	meta.OriginModelName, meta.ActualModelName = request.Model, modelName
 	request.Model = modelName
-	convertedRequest, err := adaptor.ConvertRequest(c, relaymode.ChatCompletions, request)
+	convertedRequest, err := adaptor.ConvertRequest(c, meta, request)
 	if err != nil {
 		return err, nil
 	}

@@ -51,16 +51,29 @@ func (a *Adaptor) SetupRequestHeader(c *gin.Context, req *http.Request, meta *me
 	return nil
 }
 
-func (a *Adaptor) ConvertRequest(c *gin.Context, relayMode int, request *model.GeneralOpenAIRequest) (any, error) {
+func (a *Adaptor) ConvertRequest(c *gin.Context, meta *meta.Meta, request *model.GeneralOpenAIRequest) (any, error) {
 	if request == nil {
 		return nil, errors.New("request is nil")
 	}
-	switch relayMode {
+	switch meta.Mode {
 	case relaymode.Embeddings:
 		geminiEmbeddingRequest := ConvertEmbeddingRequest(*request)
 		return geminiEmbeddingRequest, nil
 	default:
 		geminiRequest := ConvertRequest(*request)
+		if meta.OriginModelName == "gemini-2.0-flash-exp-search" {
+			if geminiRequest.Tools == nil {
+				geminiRequest.Tools = []ChatTools{
+					{
+						GoogleSearch: &Empty{},
+					},
+				}
+			} else {
+				geminiRequest.Tools = append(geminiRequest.Tools, ChatTools{
+					GoogleSearch: &Empty{},
+				})
+			}
+		}
 		return geminiRequest, nil
 	}
 }

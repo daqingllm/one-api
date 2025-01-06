@@ -24,7 +24,7 @@ type Adaptor struct{}
 func (a *Adaptor) Init(meta *meta.Meta) {
 }
 
-func (a *Adaptor) ConvertRequest(c *gin.Context, relayMode int, request *model.GeneralOpenAIRequest) (any, error) {
+func (a *Adaptor) ConvertRequest(c *gin.Context, meta *meta.Meta, request *model.GeneralOpenAIRequest) (any, error) {
 	return nil, errors.New("notimplement")
 }
 

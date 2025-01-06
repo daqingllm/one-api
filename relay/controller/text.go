@@ -97,7 +97,7 @@ func getRequestBody(c *gin.Context, meta *meta.Meta, textRequest *model.GeneralO
 
 	// get request body
 	var requestBody io.Reader
-	convertedRequest, err := adaptor.ConvertRequest(c, meta.Mode, textRequest)
+	convertedRequest, err := adaptor.ConvertRequest(c, meta, textRequest)
 	if err != nil {
 		logger.Debugf(c.Request.Context(), "converted request failed: %s\n", err.Error())
 		return nil, err
