@@ -193,7 +193,7 @@ func RelayImageHelper(c *gin.Context, relayMode int) *relaymodel.ErrorWithStatus
 	resp, err := adaptor.DoRequest(c, meta, requestBody)
 	if err != nil {
 		logger.Errorf(ctx, "DoRequest failed: %s", err.Error())
-		return openai.ErrorWrapper(err, "do_request_failed", http.StatusInternalServerError)
+		return openai.ChannelErrorWrapper(err, "do_request_failed", http.StatusInternalServerError)
 	}
 
 	defer func(ctx context.Context) {

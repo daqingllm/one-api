@@ -7,6 +7,7 @@ import (
 	"github.com/songquanpeng/one-api/common/helper"
 	"github.com/songquanpeng/one-api/common/logger"
 	"gorm.io/gorm"
+	"time"
 )
 
 type Log struct {
@@ -23,6 +24,7 @@ type Log struct {
 	CachedTokens     int    `json:"cached_tokens" gorm:"default:0"`
 	CompletionTokens int    `json:"completion_tokens" gorm:"default:0"`
 	ChannelId        int    `json:"channel" gorm:"index"`
+	Duration         int64  `json:"duration" gorm:"default:0"`
 }
 
 const (
@@ -42,6 +44,7 @@ type FailedLog struct {
 	StatusCode    int    `json:"status_code"`
 	ErrorResponse string `json:"error_response"`
 	RequestBody   string `json:"request_body"`
+	Duration      int64  `json:"duration"`
 }
 
 func RecordLog(userId int, logType int, content string) {
@@ -61,7 +64,8 @@ func RecordLog(userId int, logType int, content string) {
 	}
 }
 
-func RecordFailedLog(userId int, modelName string, channelsTried string, statusCode int, errorResponse string, requestBody string) {
+func RecordFailedLog(ctx context.Context, userId int, modelName string, channelsTried string, statusCode int, errorResponse string, requestBody string) {
+	logger.Error(ctx, fmt.Sprintf("record failed log: userId=%d, modelName=%s, channelsTried=%s, statusCode=%d, errorResponse=%s, requestBody=%s", userId, modelName, channelsTried, statusCode, errorResponse, requestBody))
 	failedLog := &FailedLog{
 		UserId:        userId,
 		CreatedAt:     helper.GetTimestamp(),
@@ -70,6 +74,10 @@ func RecordFailedLog(userId int, modelName string, channelsTried string, statusC
 		StatusCode:    statusCode,
 		ErrorResponse: errorResponse,
 		RequestBody:   requestBody,
+	}
+	st := ctx.Value(helper.StartTimeKey)
+	if st != nil {
+		failedLog.Duration = time.Now().UnixMilli() - st.(int64)
 	}
 	err := LOG_DB.Create(failedLog).Error
 	if err != nil {
@@ -110,6 +118,10 @@ func RecordConsumeLog(ctx context.Context, userId int, channelId int, promptToke
 		ModelName:        modelName,
 		Quota:            int(quota),
 		ChannelId:        channelId,
+	}
+	st := ctx.Value(helper.StartTimeKey)
+	if st != nil {
+		log.Duration = time.Now().UnixMilli() - st.(int64)
 	}
 	addNewLog(log)
 }

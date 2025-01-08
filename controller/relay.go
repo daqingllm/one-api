@@ -121,7 +121,7 @@ func logRespError(ctx context.Context, userId int, originalModel string, channel
 	}
 	channelsData, _ := json.Marshal(channels)
 	respData, _ := json.Marshal(responseError)
-	dbmodel.RecordFailedLog(userId, originalModel, string(channelsData), statusCode, string(respData), requestBody)
+	dbmodel.RecordFailedLog(ctx, userId, originalModel, string(channelsData), statusCode, string(respData), requestBody)
 }
 
 func shouldRetry(c *gin.Context, bizError *model.ErrorWithStatusCode) bool {

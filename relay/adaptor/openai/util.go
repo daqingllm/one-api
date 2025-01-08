@@ -21,3 +21,16 @@ func ErrorWrapper(err error, code string, statusCode int) *model.ErrorWithStatus
 		StatusCode: statusCode,
 	}
 }
+
+func ChannelErrorWrapper(err error, code string, statusCode int) *model.ErrorWithStatusCode {
+	Error := model.Error{
+		Message: err.Error(),
+		Type:    "Aihubmix_api_error",
+		Code:    code,
+	}
+	return &model.ErrorWithStatusCode{
+		IsChannelResponseError: true,
+		Error:                  Error,
+		StatusCode:             statusCode,
+	}
+}
