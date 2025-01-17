@@ -88,15 +88,19 @@ type TextResponseChoice struct {
 	Index         int `json:"index"`
 	model.Message `json:"message"`
 	FinishReason  string `json:"finish_reason"`
+	Logprobs      any    `json:"logprobs,omitempty"`
 }
 
 type TextResponse struct {
-	Id          string               `json:"id"`
-	Model       string               `json:"model,omitempty"`
-	Object      string               `json:"object"`
-	Created     int64                `json:"created"`
-	Choices     []TextResponseChoice `json:"choices"`
-	model.Usage `json:"usage"`
+	Id                string               `json:"id"`
+	Model             string               `json:"model,omitempty"`
+	Object            string               `json:"object"`
+	Created           int64                `json:"created"`
+	Choices           []TextResponseChoice `json:"choices"`
+	ServiceTier       string               `json:"service_tier,omitempty"`
+	SystemFingerprint string               `json:"system_fingerprint,omitempty"`
+	model.Usage       `json:"usage"`
+	Error             *model.Error `json:"error,omitempty"`
 }
 
 type EmbeddingResponseItem struct {
@@ -127,16 +131,19 @@ type ImageResponse struct {
 type ChatCompletionsStreamResponseChoice struct {
 	Index        int           `json:"index"`
 	Delta        model.Message `json:"delta"`
+	Logprobs     any           `json:"logprobs,omitempty"`
 	FinishReason *string       `json:"finish_reason,omitempty"`
 }
 
 type ChatCompletionsStreamResponse struct {
-	Id      string                                `json:"id"`
-	Object  string                                `json:"object"`
-	Created int64                                 `json:"created"`
-	Model   string                                `json:"model"`
-	Choices []ChatCompletionsStreamResponseChoice `json:"choices"`
-	Usage   *model.Usage                          `json:"usage,omitempty"`
+	Id                string                                `json:"id"`
+	Object            string                                `json:"object"`
+	Created           int64                                 `json:"created"`
+	Model             string                                `json:"model"`
+	Choices           []ChatCompletionsStreamResponseChoice `json:"choices"`
+	ServiceTier       string                                `json:"service_tier,omitempty"`
+	SystemFingerprint string                                `json:"system_fingerprint,omitempty"`
+	Usage             *model.Usage                          `json:"usage,omitempty"`
 }
 
 type CompletionsStreamResponse struct {

@@ -65,6 +65,10 @@ func RecordLog(userId int, logType int, content string) {
 }
 
 func RecordFailedLog(ctx context.Context, userId int, modelName string, channelsTried string, statusCode int, errorResponse string, requestBody string) {
+	// requestBody may be too long, so only log the first 1000 characters
+	if len(requestBody) > 1000 {
+		requestBody = requestBody[:1000] + "..."
+	}
 	logger.Error(ctx, fmt.Sprintf("record failed log: userId=%d, modelName=%s, channelsTried=%s, statusCode=%d, errorResponse=%s, requestBody=%s", userId, modelName, channelsTried, statusCode, errorResponse, requestBody))
 	failedLog := &FailedLog{
 		UserId:        userId,

@@ -59,7 +59,7 @@ func StreamHandler(c *gin.Context, resp *http.Response, relayMode int) (*model.E
 				// but for empty choice and no usage, we should not pass it to client, this is for azure
 				continue // just ignore empty choice
 			}
-			render.StringData(c, data)
+			_ = render.ObjectData(c, streamResponse)
 			for _, choice := range streamResponse.Choices {
 				responseText += conv.AsString(choice.Delta.Content)
 			}
@@ -97,7 +97,7 @@ func StreamHandler(c *gin.Context, resp *http.Response, relayMode int) (*model.E
 }
 
 func Handler(c *gin.Context, resp *http.Response, promptTokens int, modelName string) (*model.ErrorWithStatusCode, *model.Usage) {
-	var textResponse SlimTextResponse
+	var textResponse TextResponse
 	responseBody, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return ErrorWrapper(err, "read_response_body_failed", http.StatusInternalServerError), nil
@@ -110,12 +110,13 @@ func Handler(c *gin.Context, resp *http.Response, promptTokens int, modelName st
 	if err != nil {
 		return ErrorWrapper(err, "unmarshal_response_body_failed", http.StatusInternalServerError), nil
 	}
-	if textResponse.Error.Type != "" {
+	if textResponse.Error != nil {
 		return &model.ErrorWithStatusCode{
-			Error:      textResponse.Error,
+			Error:      *textResponse.Error,
 			StatusCode: resp.StatusCode,
 		}, nil
 	}
+	jsonResponse, err := json.Marshal(textResponse)
 	// Reset response body
 	resp.Body = io.NopCloser(bytes.NewBuffer(responseBody))
 
@@ -127,7 +128,8 @@ func Handler(c *gin.Context, resp *http.Response, promptTokens int, modelName st
 		c.Writer.Header().Set(k, v[0])
 	}
 	c.Writer.WriteHeader(resp.StatusCode)
-	_, err = io.Copy(c.Writer, resp.Body)
+	//_, err = io.Copy(c.Writer, resp.Body)
+	_, err = c.Writer.Write(jsonResponse)
 	if err != nil {
 		return ErrorWrapper(err, "copy_response_body_failed", http.StatusRequestTimeout), nil
 	}

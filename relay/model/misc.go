@@ -1,21 +1,23 @@
 package model
 
 type Usage struct {
-	PromptTokens            int `json:"prompt_tokens"`
-	CompletionTokens        int `json:"completion_tokens"`
-	TotalTokens             int `json:"total_tokens"`
-	PromptTokensDetails     `json:"prompt_tokens_details,omitempty"`
-	CompletionTokensDetails `json:"completion_tokens_details,omitempty"`
+	PromptTokens            int                      `json:"prompt_tokens"`
+	CompletionTokens        int                      `json:"completion_tokens"`
+	TotalTokens             int                      `json:"total_tokens"`
+	PromptTokensDetails     *PromptTokensDetails     `json:"prompt_tokens_details,omitempty"`
+	CompletionTokensDetails *CompletionTokensDetails `json:"completion_tokens_details,omitempty"`
 }
 
 type PromptTokensDetails struct {
-	AudioTokens  int `json:"audio_tokens"`
-	CachedTokens int `json:"cached_tokens"`
+	AudioTokens  *int `json:"audio_tokens,omitempty"`
+	CachedTokens *int `json:"cached_tokens,omitempty"`
 }
 
 type CompletionTokensDetails struct {
-	AudioTokens     int `json:"audio_tokens"`
-	ReasoningTokens int `json:"reasoning_tokens"`
+	AcceptedPredictionTokens *int `json:"accepted_prediction_tokens,omitempty"`
+	AudioTokens              *int `json:"audio_tokens,omitempty"`
+	ReasoningTokens          *int `json:"reasoning_tokens,omitempty"`
+	RejectedPredictionTokens *int `json:"rejected_prediction_tokens,omitempty"`
 }
 
 type Error struct {

@@ -88,6 +88,11 @@ func preConsumeQuota(ctx context.Context, textRequest *relaymodel.GeneralOpenAIR
 }
 
 func postConsumeQuota(ctx context.Context, usage *relaymodel.Usage, meta *meta.Meta, textRequest *relaymodel.GeneralOpenAIRequest, ratio float64, preConsumedQuota int64, modelRatio float64, groupRatio float64, systemPromptReset bool) {
+	defer func() {
+		if r := recover(); r != nil {
+			logger.Error(ctx, fmt.Sprintf("panic in postConsumeQuota: %v", r))
+		}
+	}()
 	if usage == nil {
 		logger.Error(ctx, "usage is nil, which is unexpected")
 		return
@@ -97,7 +102,10 @@ func postConsumeQuota(ctx context.Context, usage *relaymodel.Usage, meta *meta.M
 	cacheRatio := billingratio.GetCacheRatio(textRequest.Model, meta.ChannelType)
 	promptTokens := usage.PromptTokens
 	completionTokens := usage.CompletionTokens
-	cachedTokens := usage.PromptTokensDetails.CachedTokens
+	cachedTokens := 0
+	if usage.PromptTokensDetails != nil && usage.PromptTokensDetails.CachedTokens != nil {
+		cachedTokens = *usage.PromptTokensDetails.CachedTokens
+	}
 	if cacheRatio > 0 && cachedTokens > 0 {
 		quota = int64(math.Ceil((float64(promptTokens-cachedTokens) + float64(cachedTokens)*cacheRatio + float64(completionTokens)*completionRatio) * ratio))
 	} else {
