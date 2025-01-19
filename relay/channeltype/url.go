@@ -48,10 +48,8 @@ var ChannelBaseURLs = []string{
 	"https://api.siliconflow.cn",                // 44
 	//"https://api.x.ai",                          // 45
 	//"https://api.replicate.com/v1/models/",      // 46
-}
-
-func init() {
-	if len(ChannelBaseURLs) != Dummy {
-		panic("channel base urls length not match")
-	}
+	"",                          // 45
+	"https://api.x.ai",          // 46
+	"",                          // 47
+	"https://api.perplexity.ai", // 48
 }

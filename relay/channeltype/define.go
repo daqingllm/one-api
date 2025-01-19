@@ -48,6 +48,5 @@ const (
 	SiliconFlow
 	//XAI
 	//Replicate
-	Dummy
 	Perplexity = 48
 )
