@@ -11,6 +11,7 @@ import (
 	"github.com/songquanpeng/one-api/relay/adaptor/mistral"
 	"github.com/songquanpeng/one-api/relay/adaptor/moonshot"
 	"github.com/songquanpeng/one-api/relay/adaptor/novita"
+	"github.com/songquanpeng/one-api/relay/adaptor/perplexity"
 	"github.com/songquanpeng/one-api/relay/adaptor/siliconflow"
 	"github.com/songquanpeng/one-api/relay/adaptor/stepfun"
 	"github.com/songquanpeng/one-api/relay/adaptor/togetherai"
@@ -33,6 +34,7 @@ var CompatibleChannels = []int{
 	channeltype.Novita,
 	channeltype.SiliconFlow,
 	//channeltype.XAI,
+	channeltype.Perplexity,
 }
 
 func GetCompatibleChannelMeta(channelType int) (string, []string) {
@@ -67,6 +69,8 @@ func GetCompatibleChannelMeta(channelType int) (string, []string) {
 		return "siliconflow", siliconflow.ModelList
 	//case channeltype.XAI:
 	//	return "xai", xai.ModelList
+	case channeltype.Perplexity:
+		return "perplexity", perplexity.ModelList
 	default:
 		return "openai", ModelList
 	}
