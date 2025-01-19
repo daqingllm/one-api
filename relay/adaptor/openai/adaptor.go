@@ -116,8 +116,10 @@ func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, meta *meta.Met
 			err, _ = ImageHandler(c, resp)
 		case relaymode.ImagesEdits:
 			err, _ = ImagesEditsHandler(c, resp)
+		case relaymode.ChatCompletions:
+			err, usage = ChatHandler(c, resp, meta.PromptTokens, meta.ActualModelName)
 		default:
-			err, usage = Handler(c, resp, meta.PromptTokens, meta.ActualModelName)
+			err, usage = HandlerWithRawResp(c, resp, meta.PromptTokens, meta.ActualModelName)
 		}
 	}
 	return
