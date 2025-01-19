@@ -112,7 +112,7 @@ func InitModels() {
 		modelsMap[model.Id] = model
 	}
 	channelId2Models = make(map[int][]string)
-	for i := 1; i < channeltype.Dummy; i++ {
+	for i := 1; i < channeltype.Perplexity; i++ {
 		adaptor := relay.GetAdaptor(channeltype.ToAPIType(i))
 		meta := &meta.Meta{
 			ChannelType: i,
