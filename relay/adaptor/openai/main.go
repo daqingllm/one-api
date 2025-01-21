@@ -120,6 +120,7 @@ func ChatHandler(c *gin.Context, resp *http.Response, promptTokens int, modelNam
 	// Reset response body
 	resp.Body = io.NopCloser(bytes.NewBuffer(responseBody))
 
+	c.Writer.Header().Set("Content-Type", "application/json")
 	c.Writer.WriteHeader(resp.StatusCode)
 	//_, err = io.Copy(c.Writer, resp.Body)
 	_, err = c.Writer.Write(jsonResponse)
