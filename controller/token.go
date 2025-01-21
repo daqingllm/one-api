@@ -2,6 +2,9 @@ package controller
 
 import (
 	"fmt"
+	"net/http"
+	"strconv"
+
 	"github.com/gin-gonic/gin"
 	"github.com/songquanpeng/one-api/common/config"
 	"github.com/songquanpeng/one-api/common/ctxkey"
@@ -9,8 +12,6 @@ import (
 	"github.com/songquanpeng/one-api/common/network"
 	"github.com/songquanpeng/one-api/common/random"
 	"github.com/songquanpeng/one-api/model"
-	"net/http"
-	"strconv"
 )
 
 func GetAllTokens(c *gin.Context) {
@@ -19,9 +20,17 @@ func GetAllTokens(c *gin.Context) {
 	if p < 0 {
 		p = 0
 	}
+	num := config.ItemsPerPage
+	var err error
+	if c.Query("num") != "" {
+		num, err = strconv.Atoi(c.Query("num"))
+		if err != nil {
+			num = config.ItemsPerPage
+		}
+	}
 
 	order := c.Query("order")
-	tokens, err := model.GetAllUserTokens(userId, p*config.ItemsPerPage, config.ItemsPerPage, order)
+	tokens, err := model.GetAllUserTokens(userId, p*config.ItemsPerPage, num, order)
 
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{
