@@ -89,7 +89,7 @@ const Header = () => {
 
   const renderButtons = (isMobile) => {
     return headerButtons.map((button) => {
-      if (button.admin && !isAdmin()) return <></>;
+      if (button.admin && !isAdmin()) return null;
       if (isMobile) {
         return (
           <Menu.Item
@@ -97,6 +97,7 @@ const Header = () => {
               navigate(button.to);
               setShowSidebar(false);
             }}
+            key={button.name}
           >
             {button.name}
           </Menu.Item>

@@ -24,6 +24,11 @@ const adminColumns = [
     title: '详情',
     dataIndex: 'content',
     width: 4,
+  },
+  {
+    title: '类型',
+    dataIndex: 'type',
+    width: 1,
   }
 ]
 
@@ -34,11 +39,6 @@ const defaultColumns = [
     width: 1,
     label: true,
     basic: true,
-  },
-  {
-    title: '类型',
-    dataIndex: 'type',
-    width: 1,
   },
   {
     title: '模型',
@@ -201,7 +201,7 @@ const LogsTable = () => {
   const refresh = async () => {
     setLoading(true);
     setActivePage(1);
-    handleLogStat()
+    // handleLogStat()
     await loadLogs(0);
   };
 
@@ -309,7 +309,7 @@ const LogsTable = () => {
         </Form>
         <Segment clearing textAlign='left' basic style={{ padding: 0 }}>
           <Header as='h4' floated='left' style={{ marginBottom: 0, lineHeight: '33px' }}>
-            使用明细（总消耗额度：{renderQuota(stat.quota)}）
+            使用明细
           </Header>
           <Button as='div' labelPosition='left' floated='right' onClick={batchExport} loading={downloadLoading}>
             <Label as='span' basic>
@@ -330,6 +330,7 @@ const LogsTable = () => {
                     sortLog(item.dataIndex);
                   }}
                   width={item.width}
+                  key={item.dataIndex}
                 >
                   {item.title}
                 </Table.HeaderCell>

@@ -218,8 +218,8 @@ const PersonalSetting = () => {
       <Divider />
       <Header as='h3'>可用模型</Header>
       <LabelGroup size="small" circular>
-        {availableModels.map((label, index) => (
-            <Label>{label}</Label>
+        {availableModels.map((model) => (
+            <Label key={model.model}>{model.model}</Label>
         ))}
       </LabelGroup>
       <Divider />
