@@ -80,6 +80,10 @@ func Debugf(ctx context.Context, format string, a ...any) {
 	Debug(ctx, fmt.Sprintf(format, a...))
 }
 
+func DebugForcef(ctx context.Context, format string, a ...any) {
+	logHelper(ctx, loggerDEBUG, fmt.Sprintf(format, a...))
+}
+
 func Infof(ctx context.Context, format string, a ...any) {
 	Info(ctx, fmt.Sprintf(format, a...))
 }

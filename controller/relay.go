@@ -56,7 +56,7 @@ func Relay(c *gin.Context) {
 	if config.DebugUserIds[userId] {
 		requestBody, _ := common.GetRequestBody(c)
 		c.Request.Body = io.NopCloser(bytes.NewBuffer(requestBody))
-		logger.Debugf(ctx, "user id %d, request body: %s", userId, string(requestBody))
+		logger.DebugForcef(ctx, "user id %d, request body: %s", userId, string(requestBody))
 	}
 	bizErr := relayHelper(c, relayMode)
 	if bizErr == nil {
