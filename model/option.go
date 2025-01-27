@@ -247,6 +247,12 @@ func updateOptionMap(key string, value string) (err error) {
 		config.QuotaPerUnit, _ = strconv.ParseFloat(value, 64)
 	case "Theme":
 		config.Theme = value
+	case "DebugUserIds":
+		config.DebugUserIds = make(map[int]bool)
+		for _, v := range strings.Split(value, ",") {
+			i, _ := strconv.Atoi(v)
+			config.DebugUserIds[i] = true
+		}
 	}
 	return err
 }

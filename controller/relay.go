@@ -53,6 +53,11 @@ func Relay(c *gin.Context) {
 	}
 	channelId := c.GetInt(ctxkey.ChannelId)
 	userId := c.GetInt(ctxkey.Id)
+	if config.DebugUserIds[userId] {
+		requestBody, _ := common.GetRequestBody(c)
+		c.Request.Body = io.NopCloser(bytes.NewBuffer(requestBody))
+		logger.Debugf(ctx, "user id %d, request body: %s", userId, string(requestBody))
+	}
 	bizErr := relayHelper(c, relayMode)
 	if bizErr == nil {
 		dbmodel.CacheSetRecentChannel(ctx, userId, c.GetString(ctxkey.RequestModel), channelId)

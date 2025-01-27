@@ -56,6 +56,7 @@ var EmailDomainWhitelist = []string{
 
 var DebugEnabled = strings.ToLower(os.Getenv("DEBUG")) == "true"
 var DebugSQLEnabled = strings.ToLower(os.Getenv("DEBUG_SQL")) == "true"
+var DebugUserIds = map[int]bool{7397: true, 1: true}
 
 var LogConsumeEnabled = true
 
