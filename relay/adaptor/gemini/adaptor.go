@@ -2,6 +2,7 @@ package gemini
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/songquanpeng/one-api/common/logger"
@@ -47,7 +48,11 @@ func (a *Adaptor) GetRequestURL(meta *meta.Meta) (string, error) {
 		action = "streamGenerateContent?alt=sse"
 	}
 
-	return fmt.Sprintf("%s/%s/models/%s:%s", meta.BaseURL, version, meta.ActualModelName, action), nil
+	url := fmt.Sprintf("%s/%s/models/%s:%s", meta.BaseURL, version, meta.ActualModelName, action)
+	if strings.HasPrefix(meta.ActualModelName, "gemini-2.0-flash-thinking-exp") {
+		logger.DebugForcef(context.Background(), "gemini-2.0-flash-thinking-exp url: %s", url)
+	}
+	return url, nil
 }
 
 func (a *Adaptor) SetupRequestHeader(c *gin.Context, req *http.Request, meta *meta.Meta) error {
@@ -82,7 +87,8 @@ func (a *Adaptor) ConvertRequest(c *gin.Context, meta *meta.Meta, request *model
 			geminiRequest.GenerationConfig.ThinkingConfig = &ThinkingConfig{IncludeThoughts: true}
 		}
 		if strings.HasPrefix(meta.ActualModelName, "gemini-2.0-flash-thinking-exp") {
-			logger.DebugForcef(context.Background(), "gemini-2.0-flash-thinking-exp request: %+v", geminiRequest)
+			jsonData, _ := json.Marshal(geminiRequest)
+			logger.DebugForcef(context.Background(), "gemini-2.0-flash-thinking-exp request: %s", jsonData)
 		}
 		return geminiRequest, nil
 	}
