@@ -1,11 +1,8 @@
 package gemini
 
 import (
-	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/songquanpeng/one-api/common/logger"
 	"io"
 	"net/http"
 	"strings"
@@ -31,11 +28,12 @@ func (a *Adaptor) GetRequestURL(meta *meta.Meta) (string, error) {
 	defaultVersion := config.GeminiVersion
 	if strings.HasPrefix(meta.ActualModelName, "gemini-2.0-flash-exp") {
 		defaultVersion = "v1beta"
-	} else if strings.HasPrefix(meta.ActualModelName, "gemini-2.0-flash-thinking-exp") {
-		defaultVersion = "v1alpha"
 	}
 
 	version := helper.AssignOrDefault(meta.Config.APIVersion, defaultVersion)
+	if strings.HasPrefix(meta.ActualModelName, "gemini-2.0-flash-thinking-exp") {
+		version = "v1alpha"
+	}
 	action := ""
 	switch meta.Mode {
 	case relaymode.Embeddings:
@@ -49,9 +47,6 @@ func (a *Adaptor) GetRequestURL(meta *meta.Meta) (string, error) {
 	}
 
 	url := fmt.Sprintf("%s/%s/models/%s:%s", meta.BaseURL, version, meta.ActualModelName, action)
-	if strings.HasPrefix(meta.ActualModelName, "gemini-2.0-flash-thinking-exp") {
-		logger.DebugForcef(context.Background(), "gemini-2.0-flash-thinking-exp url: %s", url)
-	}
 	return url, nil
 }
 
@@ -85,10 +80,6 @@ func (a *Adaptor) ConvertRequest(c *gin.Context, meta *meta.Meta, request *model
 			}
 		} else if strings.HasPrefix(meta.ActualModelName, "gemini-2.0-flash-thinking-exp") {
 			geminiRequest.GenerationConfig.ThinkingConfig = &ThinkingConfig{IncludeThoughts: true}
-		}
-		if strings.HasPrefix(meta.ActualModelName, "gemini-2.0-flash-thinking-exp") {
-			jsonData, _ := json.Marshal(geminiRequest)
-			logger.DebugForcef(context.Background(), "gemini-2.0-flash-thinking-exp request: %s", jsonData)
 		}
 		return geminiRequest, nil
 	}

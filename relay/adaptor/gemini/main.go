@@ -2,7 +2,6 @@ package gemini
 
 import (
 	"bufio"
-	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -328,9 +327,6 @@ func StreamHandler(c *gin.Context, resp *http.Response, modelName string) (*mode
 
 	for scanner.Scan() {
 		data := scanner.Text()
-		if modelName == "gemini-2.0-flash-thinking-exp-1219" {
-			logger.DebugForcef(context.Background(), "gemini-2.0-flash-thinking-exp-1219 data: %s", data)
-		}
 		data = strings.TrimSpace(data)
 		if !strings.HasPrefix(data, "data: ") {
 			continue
@@ -380,9 +376,6 @@ func Handler(c *gin.Context, resp *http.Response, promptTokens int, modelName st
 	err = resp.Body.Close()
 	if err != nil {
 		return openai.ErrorWrapper(err, "close_response_body_failed", http.StatusInternalServerError), nil
-	}
-	if modelName == "gemini-2.0-flash-thinking-exp-1219" {
-		logger.DebugForcef(context.Background(), "gemini-2.0-flash-thinking-exp-1219 responseBody: %s", responseBody)
 	}
 	var geminiResponse ChatResponse
 	err = json.Unmarshal(responseBody, &geminiResponse)
