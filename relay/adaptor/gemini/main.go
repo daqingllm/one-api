@@ -2,6 +2,7 @@ package gemini
 
 import (
 	"bufio"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -270,7 +271,10 @@ func responseGeminiChat2OpenAI(response *ChatResponse) *openai.TextResponse {
 					}
 				}
 				choice.Message.Content = strings.TrimSpace(builder.String())
-				choice.Message.ReasoningContent = strings.TrimSpace(thoughtBuilder.String())
+				thoughtContent := strings.TrimSpace(thoughtBuilder.String())
+				if thoughtContent != "" {
+					choice.Message.ReasoningContent = thoughtContent
+				}
 			}
 		} else {
 			choice.Message.Content = ""
@@ -373,6 +377,9 @@ func Handler(c *gin.Context, resp *http.Response, promptTokens int, modelName st
 	err = resp.Body.Close()
 	if err != nil {
 		return openai.ErrorWrapper(err, "close_response_body_failed", http.StatusInternalServerError), nil
+	}
+	if modelName == "gemini-2.0-flash-thinking-exp-1219" {
+		logger.DebugForcef(context.Background(), "gemini-2.0-flash-thinking-exp-1219 responseBody: %s", responseBody)
 	}
 	var geminiResponse ChatResponse
 	err = json.Unmarshal(responseBody, &geminiResponse)
