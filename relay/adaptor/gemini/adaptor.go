@@ -81,7 +81,7 @@ func (a *Adaptor) ConvertRequest(c *gin.Context, meta *meta.Meta, request *model
 		} else if strings.HasPrefix(meta.ActualModelName, "gemini-2.0-flash-thinking-exp") {
 			geminiRequest.GenerationConfig.ThinkingConfig = &ThinkingConfig{IncludeThoughts: true}
 		}
-		if meta.ActualModelName == "gemini-2.0-flash-thinking-exp" {
+		if strings.HasPrefix(meta.ActualModelName, "gemini-2.0-flash-thinking-exp") {
 			logger.DebugForcef(context.Background(), "gemini-2.0-flash-thinking-exp request: %+v", geminiRequest)
 		}
 		return geminiRequest, nil
