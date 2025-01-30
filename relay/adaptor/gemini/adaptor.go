@@ -26,7 +26,7 @@ func (a *Adaptor) Init(meta *meta.Meta) {
 
 func (a *Adaptor) GetRequestURL(meta *meta.Meta) (string, error) {
 	defaultVersion := config.GeminiVersion
-	if meta.ActualModelName == "gemini-2.0-flash-exp" {
+	if strings.HasPrefix(meta.ActualModelName, "gemini-2.0-flash-exp") {
 		defaultVersion = "v1beta"
 	} else if strings.HasPrefix(meta.ActualModelName, "gemini-2.0-flash-thinking-exp") {
 		defaultVersion = "v1alpha"

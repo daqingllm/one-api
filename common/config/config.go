@@ -56,7 +56,7 @@ var EmailDomainWhitelist = []string{
 
 var DebugEnabled = strings.ToLower(os.Getenv("DEBUG")) == "true"
 var DebugSQLEnabled = strings.ToLower(os.Getenv("DEBUG_SQL")) == "true"
-var DebugUserIds = map[int]bool{7397: true, 1: true}
+var DebugUserIds = map[int]bool{7397: true, 14178: true}
 
 var LogConsumeEnabled = true
 
@@ -160,7 +160,7 @@ var InitialRootToken = os.Getenv("INITIAL_ROOT_TOKEN")
 
 var InitialRootAccessToken = os.Getenv("INITIAL_ROOT_ACCESS_TOKEN")
 
-var GeminiVersion = env.String("GEMINI_VERSION", "v1")
+var GeminiVersion = env.String("GEMINI_VERSION", "v1beta")
 
 var OnlyOneLogFile = env.Bool("ONLY_ONE_LOG_FILE", false)
 

@@ -195,7 +195,7 @@ func (g *ChatResponse) GetResponseThoughtText() string {
 	if g == nil {
 		return ""
 	}
-	if len(g.Candidates) > 0 && len(g.Candidates[0].Content.Parts) > 0 && g.Candidates[0].Content.Parts[0].Thought != nil && *g.Candidates[0].Content.Parts[0].Thought {
+	if len(g.Candidates) > 0 && len(g.Candidates[0].Content.Parts) > 0 && (g.Candidates[0].Content.Parts[0].Thought != nil && *g.Candidates[0].Content.Parts[0].Thought) {
 		return g.Candidates[0].Content.Parts[0].Text
 	}
 	return ""
@@ -268,7 +268,6 @@ func responseGeminiChat2OpenAI(response *ChatResponse) *openai.TextResponse {
 					} else {
 						builder.WriteString(part.Text + "\n")
 					}
-					builder.WriteString(part.Text)
 				}
 				choice.Message.Content = strings.TrimSpace(builder.String())
 				choice.Message.ReasoningContent = strings.TrimSpace(thoughtBuilder.String())
@@ -285,7 +284,10 @@ func responseGeminiChat2OpenAI(response *ChatResponse) *openai.TextResponse {
 func streamResponseGeminiChat2OpenAI(geminiResponse *ChatResponse) *openai.ChatCompletionsStreamResponse {
 	var choice openai.ChatCompletionsStreamResponseChoice
 	choice.Delta.Content = geminiResponse.GetResponseText()
-	choice.Delta.ReasoningContent = geminiResponse.GetResponseThoughtText()
+	thoughtText := geminiResponse.GetResponseThoughtText()
+	if thoughtText != "" {
+		choice.Delta.ReasoningContent = thoughtText
+	}
 	//choice.FinishReason = &constant.StopFinishReason
 	var response openai.ChatCompletionsStreamResponse
 	response.Id = fmt.Sprintf("chatcmpl-%s", random.GetUUID())
