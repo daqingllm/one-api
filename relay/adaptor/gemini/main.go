@@ -208,6 +208,11 @@ type ChatCandidate struct {
 	SafetyRatings []ChatSafetyRating `json:"safetyRatings"`
 }
 
+type ChatSafetyRating struct {
+	Category    string `json:"category"`
+	Probability string `json:"probability"`
+}
+
 type ChatPromptFeedback struct {
 	SafetyRatings []ChatSafetyRating `json:"safetyRatings"`
 }
