@@ -1,8 +1,10 @@
 package gemini
 
 import (
+	"context"
 	"errors"
 	"fmt"
+	"github.com/songquanpeng/one-api/common/logger"
 	"io"
 	"net/http"
 	"strings"
@@ -79,6 +81,9 @@ func (a *Adaptor) ConvertRequest(c *gin.Context, meta *meta.Meta, request *model
 		} else if strings.HasPrefix(meta.ActualModelName, "gemini-2.0-flash-thinking-exp") {
 			geminiRequest.GenerationConfig.ThinkingConfig = &ThinkingConfig{IncludeThoughts: true}
 		}
+		if meta.ActualModelName == "gemini-2.0-flash-thinking-exp" {
+			logger.DebugForcef(context.Background(), "gemini-2.0-flash-thinking-exp request: %+v", geminiRequest)
+		}
 		return geminiRequest, nil
 	}
 }
@@ -97,7 +102,7 @@ func (a *Adaptor) DoRequest(c *gin.Context, meta *meta.Meta, requestBody io.Read
 func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, meta *meta.Meta) (usage *model.Usage, err *model.ErrorWithStatusCode) {
 	if meta.IsStream {
 		var responseText string
-		err, responseText = StreamHandler(c, resp)
+		err, responseText = StreamHandler(c, resp, meta.ActualModelName)
 		usage = openai.ResponseText2Usage(responseText, meta.ActualModelName, meta.PromptTokens)
 	} else {
 		switch meta.Mode {

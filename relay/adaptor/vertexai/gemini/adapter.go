@@ -38,7 +38,7 @@ func (a *Adaptor) ConvertRequest(c *gin.Context, meta *meta.Meta, request *model
 func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, meta *meta.Meta) (usage *model.Usage, err *model.ErrorWithStatusCode) {
 	if meta.IsStream {
 		var responseText string
-		err, responseText = gemini.StreamHandler(c, resp)
+		err, responseText = gemini.StreamHandler(c, resp, meta.ActualModelName)
 		usage = openai.ResponseText2Usage(responseText, meta.ActualModelName, meta.PromptTokens)
 	} else {
 		switch meta.Mode {

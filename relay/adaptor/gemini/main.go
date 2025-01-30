@@ -319,7 +319,7 @@ func embeddingResponseGemini2OpenAI(response *EmbeddingResponse) *openai.Embeddi
 	return &openAIEmbeddingResponse
 }
 
-func StreamHandler(c *gin.Context, resp *http.Response) (*model.ErrorWithStatusCode, string) {
+func StreamHandler(c *gin.Context, resp *http.Response, modelName string) (*model.ErrorWithStatusCode, string) {
 	responseText := ""
 	scanner := bufio.NewScanner(resp.Body)
 	scanner.Split(bufio.ScanLines)
@@ -328,6 +328,9 @@ func StreamHandler(c *gin.Context, resp *http.Response) (*model.ErrorWithStatusC
 
 	for scanner.Scan() {
 		data := scanner.Text()
+		if modelName == "gemini-2.0-flash-thinking-exp-1219" {
+			logger.DebugForcef(context.Background(), "gemini-2.0-flash-thinking-exp-1219 data: %s", data)
+		}
 		data = strings.TrimSpace(data)
 		if !strings.HasPrefix(data, "data: ") {
 			continue
