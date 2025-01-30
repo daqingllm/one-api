@@ -186,7 +186,16 @@ func (g *ChatResponse) GetResponseText() string {
 	if g == nil {
 		return ""
 	}
-	if len(g.Candidates) > 0 && len(g.Candidates[0].Content.Parts) > 0 {
+	if len(g.Candidates) > 0 && len(g.Candidates[0].Content.Parts) > 0 && (g.Candidates[0].Content.Parts[0].Thought == nil || !*g.Candidates[0].Content.Parts[0].Thought) {
+		return g.Candidates[0].Content.Parts[0].Text
+	}
+	return ""
+}
+func (g *ChatResponse) GetResponseThoughtText() string {
+	if g == nil {
+		return ""
+	}
+	if len(g.Candidates) > 0 && len(g.Candidates[0].Content.Parts) > 0 && g.Candidates[0].Content.Parts[0].Thought != nil && *g.Candidates[0].Content.Parts[0].Thought {
 		return g.Candidates[0].Content.Parts[0].Text
 	}
 	return ""
@@ -197,11 +206,6 @@ type ChatCandidate struct {
 	FinishReason  string             `json:"finishReason"`
 	Index         int64              `json:"index"`
 	SafetyRatings []ChatSafetyRating `json:"safetyRatings"`
-}
-
-type ChatSafetyRating struct {
-	Category    string `json:"category"`
-	Probability string `json:"probability"`
 }
 
 type ChatPromptFeedback struct {
@@ -252,13 +256,17 @@ func responseGeminiChat2OpenAI(response *ChatResponse) *openai.TextResponse {
 				choice.Message.ToolCalls = getToolCalls(&candidate)
 			} else {
 				var builder strings.Builder
+				var thoughtBuilder strings.Builder
 				for _, part := range candidate.Content.Parts {
-					if i > 0 {
-						builder.WriteString("\n")
+					if part.Thought != nil && *part.Thought {
+						thoughtBuilder.WriteString(part.Text + "\n")
+					} else {
+						builder.WriteString(part.Text + "\n")
 					}
 					builder.WriteString(part.Text)
 				}
-				choice.Message.Content = builder.String()
+				choice.Message.Content = strings.TrimSpace(builder.String())
+				choice.Message.ReasoningContent = strings.TrimSpace(thoughtBuilder.String())
 			}
 		} else {
 			choice.Message.Content = ""
@@ -272,6 +280,7 @@ func responseGeminiChat2OpenAI(response *ChatResponse) *openai.TextResponse {
 func streamResponseGeminiChat2OpenAI(geminiResponse *ChatResponse) *openai.ChatCompletionsStreamResponse {
 	var choice openai.ChatCompletionsStreamResponseChoice
 	choice.Delta.Content = geminiResponse.GetResponseText()
+	choice.Delta.ReasoningContent = geminiResponse.GetResponseThoughtText()
 	//choice.FinishReason = &constant.StopFinishReason
 	var response openai.ChatCompletionsStreamResponse
 	response.Id = fmt.Sprintf("chatcmpl-%s", random.GetUUID())
@@ -327,7 +336,7 @@ func StreamHandler(c *gin.Context, resp *http.Response) (*model.ErrorWithStatusC
 			continue
 		}
 
-		responseText += response.Choices[0].Delta.StringContent()
+		responseText += response.Choices[0].Delta.StringContent() + response.Choices[0].Delta.StringReasoningContent()
 
 		err = render.ObjectData(c, response)
 		if err != nil {
@@ -376,7 +385,7 @@ func Handler(c *gin.Context, resp *http.Response, promptTokens int, modelName st
 	}
 	fullTextResponse := responseGeminiChat2OpenAI(&geminiResponse)
 	fullTextResponse.Model = modelName
-	completionTokens := openai.CountTokenText(geminiResponse.GetResponseText(), modelName)
+	completionTokens := openai.CountTokenText(geminiResponse.GetResponseText()+geminiResponse.GetResponseThoughtText(), modelName)
 	usage := model.Usage{
 		PromptTokens:     promptTokens,
 		CompletionTokens: completionTokens,

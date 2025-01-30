@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/songquanpeng/one-api/common/config"
@@ -27,6 +28,8 @@ func (a *Adaptor) GetRequestURL(meta *meta.Meta) (string, error) {
 	defaultVersion := config.GeminiVersion
 	if meta.ActualModelName == "gemini-2.0-flash-exp" {
 		defaultVersion = "v1beta"
+	} else if strings.HasPrefix(meta.ActualModelName, "gemini-2.0-flash-thinking-exp") {
+		defaultVersion = "v1alpha"
 	}
 
 	version := helper.AssignOrDefault(meta.Config.APIVersion, defaultVersion)
@@ -73,6 +76,8 @@ func (a *Adaptor) ConvertRequest(c *gin.Context, meta *meta.Meta, request *model
 					GoogleSearch: &Empty{},
 				})
 			}
+		} else if strings.HasPrefix(meta.ActualModelName, "gemini-2.0-flash-thinking-exp") {
+			geminiRequest.GenerationConfig.ThinkingConfig = &ThinkingConfig{IncludeThoughts: true}
 		}
 		return geminiRequest, nil
 	}
