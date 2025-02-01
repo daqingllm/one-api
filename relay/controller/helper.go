@@ -100,7 +100,6 @@ func postConsumeQuota(ctx context.Context, usage *relaymodel.Usage, meta *meta.M
 	var quota int64
 	completionRatio := billingratio.GetCompletionRatio(textRequest.Model, meta.ChannelType)
 	cacheRatio := billingratio.GetCacheRatio(textRequest.Model, meta.ChannelType)
-	audioInputRatio, audioOutputRatio := billingratio.GetAudioRatios(textRequest.Model)
 	promptTokens := usage.PromptTokens
 	completionTokens := usage.CompletionTokens
 	cachedTokens := 0
@@ -119,6 +118,11 @@ func postConsumeQuota(ctx context.Context, usage *relaymodel.Usage, meta *meta.M
 			audioCompletionTokens = *usage.CompletionTokensDetails.AudioTokens
 		}
 	}
+	audioInputRatio, audioOutputRatio := 1.0, 1.0
+	if audioPromptTokens > 0 || audioCompletionTokens > 0 {
+		audioInputRatio, audioOutputRatio = billingratio.GetAudioRatios(textRequest.Model)
+	}
+
 	//if cacheRatio > 0 && cachedTokens > 0 {
 	//	quota = int64(math.Ceil((float64(promptTokens-cachedTokens) + float64(cachedTokens)*cacheRatio + float64(completionTokens)*completionRatio) * ratio))
 	//} else {
