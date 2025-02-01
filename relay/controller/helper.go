@@ -100,17 +100,37 @@ func postConsumeQuota(ctx context.Context, usage *relaymodel.Usage, meta *meta.M
 	var quota int64
 	completionRatio := billingratio.GetCompletionRatio(textRequest.Model, meta.ChannelType)
 	cacheRatio := billingratio.GetCacheRatio(textRequest.Model, meta.ChannelType)
+	audioInputRatio, audioOutputRatio := billingratio.GetAudioRatios(textRequest.Model)
 	promptTokens := usage.PromptTokens
 	completionTokens := usage.CompletionTokens
 	cachedTokens := 0
-	if usage.PromptTokensDetails != nil && usage.PromptTokensDetails.CachedTokens != nil {
-		cachedTokens = *usage.PromptTokensDetails.CachedTokens
+	audioPromptTokens := 0
+	audioCompletionTokens := 0
+	if usage.PromptTokensDetails != nil {
+		if usage.PromptTokensDetails.CachedTokens != nil {
+			cachedTokens = *usage.PromptTokensDetails.CachedTokens
+		}
+		if usage.PromptTokensDetails.AudioTokens != nil {
+			audioPromptTokens = *usage.PromptTokensDetails.AudioTokens
+		}
 	}
-	if cacheRatio > 0 && cachedTokens > 0 {
-		quota = int64(math.Ceil((float64(promptTokens-cachedTokens) + float64(cachedTokens)*cacheRatio + float64(completionTokens)*completionRatio) * ratio))
-	} else {
-		quota = int64(math.Ceil((float64(promptTokens) + float64(completionTokens)*completionRatio) * ratio))
+	if usage.CompletionTokensDetails != nil {
+		if usage.CompletionTokensDetails.AudioTokens != nil {
+			audioCompletionTokens = *usage.CompletionTokensDetails.AudioTokens
+		}
 	}
+	//if cacheRatio > 0 && cachedTokens > 0 {
+	//	quota = int64(math.Ceil((float64(promptTokens-cachedTokens) + float64(cachedTokens)*cacheRatio + float64(completionTokens)*completionRatio) * ratio))
+	//} else {
+	//	quota = int64(math.Ceil((float64(promptTokens) + float64(completionTokens)*completionRatio) * ratio))
+	//}
+	quota = int64(math.Ceil(ratio *
+		(float64(promptTokens-cachedTokens-audioPromptTokens) + // non-cached text prompt tokens
+			float64(cachedTokens)*cacheRatio + // cached text prompt tokens
+			float64(audioPromptTokens)*audioInputRatio + // audio prompt tokens
+			float64(audioCompletionTokens)*audioOutputRatio + // audio completion tokens
+			float64(completionTokens-audioCompletionTokens)*completionRatio))) // text completion tokens
+
 	if ratio != 0 && quota <= 0 {
 		quota = 1
 	}
