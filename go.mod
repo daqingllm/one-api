@@ -1,9 +1,7 @@
 module github.com/songquanpeng/one-api
 
 // +heroku goVersion go1.18
-go 1.22.0
-
-toolchain go1.22.4
+go 1.20
 
 require (
 	cloud.google.com/go/iam v1.1.10
