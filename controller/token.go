@@ -1,11 +1,13 @@
 package controller
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"github.com/songquanpeng/one-api/common"
 	"github.com/songquanpeng/one-api/common/config"
 	"github.com/songquanpeng/one-api/common/ctxkey"
 	"github.com/songquanpeng/one-api/common/helper"
@@ -13,6 +15,87 @@ import (
 	"github.com/songquanpeng/one-api/common/random"
 	"github.com/songquanpeng/one-api/model"
 )
+
+type Token struct {
+	Name  string `json:"name"`
+	Value string `json:"value"`
+}
+
+type CherryData struct {
+	Type     string  `json:"type"`
+	Provider string  `json:"provider"`
+	ApiKeys  []Token `json:"api_keys"`
+	ApiHost  string
+}
+
+func GetCherryAllTokens(c *gin.Context) {
+	userId := c.GetInt(ctxkey.Id)
+	p, _ := strconv.Atoi(c.Query("p"))
+	if p < 0 {
+		p = 0
+	}
+	num := config.ItemsPerPage
+	var err error
+	if c.Query("num") != "" {
+		num, err = strconv.Atoi(c.Query("num"))
+		if err != nil {
+			num = config.ItemsPerPage
+		}
+	}
+
+	order := c.Query("order")
+	tokens, err := model.GetAllUserTokens(userId, p*config.ItemsPerPage, num, order)
+
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": err.Error(),
+		})
+		return
+	}
+
+	var apiKeys []Token
+
+	for i := 0; i < len(tokens); i++ {
+		if tokens[i].Status == model.TokenStatusEnabled {
+			apiKey := Token{
+				Name:  tokens[i].Name,
+				Value: "sk-" + tokens[i].Key,
+			}
+			apiKeys = append(apiKeys, apiKey)
+		}
+	}
+
+	data := CherryData{
+		Type:     "provider",
+		Provider: "aihubmix",
+		ApiKeys:  apiKeys,
+		ApiHost:  "https://aihubmix.com",
+	}
+	jsonStr, err := json.Marshal(data)
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": err.Error(),
+		})
+		return
+	}
+	ciphertext, err := common.Encrypt(string(jsonStr))
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "",
+		"data":    ciphertext,
+	})
+	return
+}
 
 func GetAllTokens(c *gin.Context) {
 	userId := c.GetInt(ctxkey.Id)
