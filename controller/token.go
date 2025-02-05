@@ -28,7 +28,7 @@ type CherryData struct {
 	ApiHost  string
 }
 
-func GetCherryAllTokens(c *gin.Context) {
+func GetClientAllTokens(c *gin.Context) {
 	userId := c.GetInt(ctxkey.Id)
 	p, _ := strconv.Atoi(c.Query("p"))
 	if p < 0 {
