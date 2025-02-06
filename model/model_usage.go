@@ -2,8 +2,9 @@ package model
 
 import (
 	"context"
-	"github.com/songquanpeng/one-api/common/logger"
 	"time"
+
+	"github.com/songquanpeng/one-api/common/logger"
 )
 
 type ModelUsage struct {
@@ -50,22 +51,56 @@ func RefreshModelUsage(ctx context.Context, lastdays int) error {
 	return nil
 }
 
-func GetModelUsageDetail(ctx context.Context, recentDay int) ([]ModelUsage, error) {
+func GetModelUsageDetail(ctx context.Context, recentDay int, endDate string) ([]ModelUsage, error) {
 	var modelUsages []ModelUsage
 	location, err := time.LoadLocation("Asia/Shanghai") // Beijing time zone
 	if err != nil {
 		logger.Error(ctx, "Error loading location: "+err.Error())
 		return modelUsages, err
 	}
-	now := time.Now().In(location)
-	startTime := time.Date(now.Year(), now.Month(), now.Day()-recentDay, 0, 0, 0, 0, now.Location())
-	err = DB.Model(&ModelUsage{}).Where("date >= ?", startTime).Find(&modelUsages).Error
+	// Initialize endTime as current time
+	var endTime time.Time
+	if endDate != "" {
+		// If endDate is provided, parse it
+		const layout = "2006-01-02"
+		endTime, err = time.ParseInLocation(layout, endDate, location)
+		if err != nil {
+			logger.Error(ctx, "Error parsing endDate: "+err.Error())
+			return nil, err
+		}
+	} else {
+		endTime = time.Now().In(location)
+	}
+
+	startTime := time.Date(endTime.Year(), endTime.Month(), endTime.Day()-recentDay, 0, 0, 0, 0, endTime.Location())
+	err = DB.Model(&ModelUsage{}).Where("date >= ? AND date <= ?", startTime, endTime).Find(&modelUsages).Error
 	return modelUsages, err
 }
 
-func GetModelUsageCount(ctx context.Context, date time.Time) ([]ModelUsageCount, error) {
-	query := "SELECT model_name as model, sum(call_count) as call_count, sum(token_used) as token_used FROM model_usages WHERE date >= ? GROUP BY model_name"
+func GetModelUsageCount(ctx context.Context, recentDay int, endDate string) ([]ModelUsageCount, error) {
 	var modelUsageCount []ModelUsageCount
-	err := DB.Raw(query, date).Scan(&modelUsageCount).Error
+	location, err := time.LoadLocation("Asia/Shanghai") // Beijing time zone
+	if err != nil {
+		logger.Error(ctx, "Error loading location: "+err.Error())
+		return nil, err
+	}
+
+	// Initialize endTime as current time
+	var endTime time.Time
+	if endDate != "" {
+		// If endDate is provided, parse it
+		const layout = "2006-01-02"
+		endTime, err = time.ParseInLocation(layout, endDate, location)
+		if err != nil {
+			logger.Error(ctx, "Error parsing endDate: "+err.Error())
+			return nil, err
+		}
+	} else {
+		endTime = time.Now().In(location)
+	}
+	startTime := time.Date(endTime.Year(), endTime.Month(), endTime.Day()-recentDay, 0, 0, 0, 0, endTime.Location())
+
+	query := "SELECT model_name as model, sum(call_count) as call_count, sum(token_used) as token_used FROM model_usages WHERE date >= ?  AND date <= ? GROUP BY model_name"
+	err = DB.Raw(query, startTime, endTime).Scan(&modelUsageCount).Error
 	return modelUsageCount, err
 }
