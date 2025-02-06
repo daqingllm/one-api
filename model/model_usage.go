@@ -2,8 +2,9 @@ package model
 
 import (
 	"context"
-	"github.com/songquanpeng/one-api/common/logger"
 	"time"
+
+	"github.com/songquanpeng/one-api/common/logger"
 )
 
 type ModelUsage struct {
@@ -50,16 +51,29 @@ func RefreshModelUsage(ctx context.Context, lastdays int) error {
 	return nil
 }
 
-func GetModelUsageDetail(ctx context.Context, recentDay int) ([]ModelUsage, error) {
+func GetModelUsageDetail(ctx context.Context, recentDay int, endDate string) ([]ModelUsage, error) {
 	var modelUsages []ModelUsage
 	location, err := time.LoadLocation("Asia/Shanghai") // Beijing time zone
 	if err != nil {
 		logger.Error(ctx, "Error loading location: "+err.Error())
 		return modelUsages, err
 	}
-	now := time.Now().In(location)
-	startTime := time.Date(now.Year(), now.Month(), now.Day()-recentDay, 0, 0, 0, 0, now.Location())
-	err = DB.Model(&ModelUsage{}).Where("date >= ?", startTime).Find(&modelUsages).Error
+	// Initialize endTime as current time
+	var endTime time.Time
+	if endDate != "" {
+		// If endDate is provided, parse it
+		const layout = "2006-01-02"
+		endTime, err = time.ParseInLocation(layout, endDate, location)
+		if err != nil {
+			logger.Error(ctx, "Error parsing endDate: "+err.Error())
+			return modelUsages, err
+		}
+	} else {
+		endTime = time.Now().In(location)
+	}
+
+	startTime := time.Date(endTime.Year(), endTime.Month(), endTime.Day()-recentDay, 0, 0, 0, 0, endTime.Location())
+	err = DB.Model(&ModelUsage{}).Where("date >= ? AND date <= ?", startTime, endTime).Find(&modelUsages).Error
 	return modelUsages, err
 }
 

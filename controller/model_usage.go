@@ -1,11 +1,12 @@
 package controller
 
 import (
-	"github.com/gin-gonic/gin"
-	"github.com/songquanpeng/one-api/model"
 	"net/http"
 	"strconv"
 	"time"
+
+	"github.com/gin-gonic/gin"
+	"github.com/songquanpeng/one-api/model"
 )
 
 type ModelUsageItem struct {
@@ -57,7 +58,8 @@ func GetModelUsageDetail(context *gin.Context) {
 	if day == 0 {
 		day = 30
 	}
-	modelUsages, err := model.GetModelUsageDetail(ctx, day)
+	endDate := context.Query("end_date")
+	modelUsages, err := model.GetModelUsageDetail(ctx, day, endDate)
 	if err != nil {
 		context.JSON(http.StatusOK, gin.H{
 			"success": false,
