@@ -66,7 +66,8 @@ func (a *Adaptor) ConvertRequest(c *gin.Context, meta *meta.Meta, request *model
 		return geminiEmbeddingRequest, nil
 	default:
 		geminiRequest := ConvertRequest(*request)
-		if meta.OriginModelName == "gemini-2.0-flash-exp-search" {
+		//if meta.OriginModelName == "gemini-2.0-flash-exp-search" {
+		if strings.HasSuffix(meta.OriginModelName, "-search") {
 			if geminiRequest.Tools == nil {
 				geminiRequest.Tools = []ChatTools{
 					{
