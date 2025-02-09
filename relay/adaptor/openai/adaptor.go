@@ -83,9 +83,14 @@ func (a *Adaptor) ConvertRequest(c *gin.Context, meta *meta.Meta, request *model
 	if request.Stream {
 		// always return usage in stream mode
 		if request.StreamOptions == nil {
-			request.StreamOptions = &model.StreamOptions{}
+			request.StreamOptions = &model.StreamOptions{
+				IncludeUsage: true,
+			}
 		}
-		request.StreamOptions.IncludeUsage = true
+	}
+	// reasoning models don't support temperature. egs: o1, o1-mini, o3-mini
+	if strings.HasPrefix(meta.ActualModelName, "o") {
+		request.Temperature = nil
 	}
 	return request, nil
 }
