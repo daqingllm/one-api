@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/songquanpeng/one-api/common/config"
 	"io"
 	"net/http"
 
@@ -125,11 +126,23 @@ func StreamHandler(c *gin.Context, awsCli *bedrockruntime.Client) (*relaymodel.E
 		return utils.WrapErr(errors.Wrap(err, "copy request")), nil
 	}
 	awsReq.Body, err = json.Marshal(awsClaudeReq)
+
 	if err != nil {
 		return utils.WrapErr(errors.Wrap(err, "marshal request")), nil
 	}
 
 	awsResp, err := awsCli.InvokeModelWithResponseStream(c.Request.Context(), awsReq)
+	userId := c.GetInt(ctxkey.Id)
+	if config.DebugUserIds[userId] {
+		logger.DebugForcef(c.Request.Context(), "Aws Stream Request: %s", string(awsReq.Body))
+		if awsResp != nil {
+			resp, _ := json.Marshal(awsResp)
+			logger.DebugForcef(c.Request.Context(), "Aws Stream Response: %s", string(resp))
+		}
+		if err != nil {
+			logger.DebugForcef(c.Request.Context(), "Aws Stream Error: %s", err.Error())
+		}
+	}
 	if err != nil {
 		return utils.WrapErr(errors.Wrap(err, "InvokeModelWithResponseStream")), nil
 	}
