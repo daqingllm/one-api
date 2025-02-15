@@ -84,7 +84,7 @@ func ClaudeMessages(c *gin.Context) {
 		Message: bizErr.Error.Message,
 	}
 	if bizErr.StatusCode == http.StatusTooManyRequests {
-		responseError.Message = "当前分组上游负载已饱和，联系客服或请稍后重试"
+		responseError.Message = "该模型遇到官方限速，联系客服增加并发或请稍后重试"
 	}
 	responseError.Message = helper.MessageWithRequestId(responseError.Message, requestId)
 	c.JSON(bizErr.StatusCode, gin.H{
