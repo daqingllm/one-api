@@ -196,6 +196,9 @@ func StreamHandler(c *gin.Context, awsCli *bedrockruntime.Client) (*relaymodel.E
 
 		switch v := event.(type) {
 		case *types.ResponseStreamMemberChunk:
+			if config.DebugUserIds[userId] {
+				logger.DebugForcef(c.Request.Context(), "Aws Stream Event: %s", string(v.Value.Bytes))
+			}
 			claudeResp := new(anthropic.StreamResponse)
 			err := json.NewDecoder(bytes.NewReader(v.Value.Bytes)).Decode(claudeResp)
 			if err != nil {
