@@ -162,7 +162,6 @@ func StreamHandler(c *gin.Context, awsCli *bedrockruntime.Client) (*relaymodel.E
 	stream := awsResp.GetStream()
 	defer stream.Close()
 
-	c.Writer.Header().Set("Content-Type", "text/event-stream")
 	var usage relaymodel.Usage
 	var started bool
 	var id string
@@ -219,8 +218,12 @@ func StreamHandler(c *gin.Context, awsCli *bedrockruntime.Client) (*relaymodel.E
 				logger.SysError("error marshalling stream response: " + err.Error())
 				return true
 			}
+
+			if !started {
+				c.Writer.Header().Set("Content-Type", "text/event-stream")
+				started = true
+			}
 			c.Render(-1, common.CustomEvent{Data: "data: " + string(jsonStr)})
-			started = true
 			return true
 		case *types.UnknownUnionMember:
 			logger.Errorf(c.Request.Context(), "unknown tag: %s", v.Tag)
