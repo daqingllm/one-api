@@ -174,8 +174,7 @@ func StreamHandler(c *gin.Context, awsCli *bedrockruntime.Client) (*relaymodel.E
 	defer stream.Close()
 
 	var usage relaymodel.Usage
-	var started bool
-	var id string
+	started := new(bool)
 	var lastToolCallChoice openai.ChatCompletionsStreamResponseChoice
 	toolCounter := &anthropic.ToolCounter{}
 	firstEvent, ok := <-stream.Events()
@@ -184,84 +183,83 @@ func StreamHandler(c *gin.Context, awsCli *bedrockruntime.Client) (*relaymodel.E
 		return utils.WrapErr(errors.New("error ocurred in stream")), nil
 	}
 	c.Stream(func(w io.Writer) bool {
-		var event types.ResponseStream
-		if started {
-			event, ok = <-stream.Events()
-			if !ok {
-				return false
-			}
-		} else {
-			event = firstEvent
+		if !*started {
+			c.Writer.Header().Set("Content-Type", "text/event-stream")
+			a := true
+			started = &a
+			return streamEventHandler(c, &firstEvent, toolCounter, &lastToolCallChoice, &usage, createdTime)
 		}
-
-		switch v := event.(type) {
-		case *types.ResponseStreamMemberChunk:
-			if config.DebugUserIds[userId] {
-				logger.DebugForcef(c.Request.Context(), "Aws Stream Event: %s", string(v.Value.Bytes))
-			}
-			claudeResp := new(anthropic.StreamResponse)
-			err := json.NewDecoder(bytes.NewReader(v.Value.Bytes)).Decode(claudeResp)
-			if err != nil {
-				logger.SysError("error unmarshalling stream response: " + err.Error())
-				return false
-			}
-
-			response, meta := anthropic.StreamResponseClaude2OpenAI(claudeResp, toolCounter)
-			if meta != nil {
-				usage.PromptTokens += meta.Usage.InputTokens
-				usage.CompletionTokens += meta.Usage.OutputTokens
-				if len(meta.Id) > 0 { // only message_start has an id, otherwise it's a finish_reason event.
-					id = fmt.Sprintf("chatcmpl-%s", meta.Id)
-					return true
-				} else { // finish_reason case
-					if len(lastToolCallChoice.Delta.ToolCalls) > 0 {
-						lastArgs := &lastToolCallChoice.Delta.ToolCalls[len(lastToolCallChoice.Delta.ToolCalls)-1].Function
-						if len(lastArgs.Arguments.(string)) == 0 { // compatible with OpenAI sending an empty object `{}` when no arguments.
-							lastArgs.Arguments = "{}"
-							response.Choices[len(response.Choices)-1].Delta.Content = nil
-							response.Choices[len(response.Choices)-1].Delta.ToolCalls = lastToolCallChoice.Delta.ToolCalls
-						}
-					}
-				}
-			}
-			if response == nil {
-				return true
-			}
-			response.Id = id
-			response.Model = c.GetString(ctxkey.OriginalModel)
-			response.Created = createdTime
-
-			for _, choice := range response.Choices {
-				if len(choice.Delta.ToolCalls) > 0 {
-					lastToolCallChoice = choice
-				}
-			}
-			jsonStr, err := json.Marshal(response)
-			if err != nil {
-				logger.SysError("error marshalling stream response: " + err.Error())
-				return true
-			}
-
-			if !started {
-				c.Writer.Header().Set("Content-Type", "text/event-stream")
-				started = true
-			}
-			c.Render(-1, common.CustomEvent{Data: "data: " + string(jsonStr)})
-			return true
-		case *types.UnknownUnionMember:
-			logger.Errorf(c.Request.Context(), "unknown tag: %s", v.Tag)
-			return false
-		default:
-			logger.Errorf(c.Request.Context(), "union is nil or unknown type")
+		event, ok := <-stream.Events()
+		if !ok {
+			c.Render(-1, common.CustomEvent{Data: "data: [DONE]"})
 			return false
 		}
+		return streamEventHandler(c, &event, toolCounter, &lastToolCallChoice, &usage, createdTime)
 	})
 
-	if started {
+	if *started {
 		c.Render(-1, common.CustomEvent{Data: "data: [DONE]"})
 		return nil, &usage
 	} else {
 		logger.Errorf(c.Request.Context(), "stream ended before any response")
 		return utils.WrapErr(errors.New("error ocurred in stream")), nil
+	}
+}
+
+func streamEventHandler(c *gin.Context, event *types.ResponseStream, toolCounter *anthropic.ToolCounter, lastToolCallChoice *openai.ChatCompletionsStreamResponseChoice, usage *relaymodel.Usage, createdTime int64) bool {
+	switch v := (*event).(type) {
+	case *types.ResponseStreamMemberChunk:
+		var id string
+		claudeResp := new(anthropic.StreamResponse)
+		err := json.NewDecoder(bytes.NewReader(v.Value.Bytes)).Decode(claudeResp)
+		if err != nil {
+			logger.SysError("error unmarshalling stream response: " + err.Error())
+			return false
+		}
+
+		response, meta := anthropic.StreamResponseClaude2OpenAI(claudeResp, toolCounter)
+		if meta != nil {
+			usage.PromptTokens += meta.Usage.InputTokens
+			usage.CompletionTokens += meta.Usage.OutputTokens
+			if len(meta.Id) > 0 { // only message_start has an id, otherwise it's a finish_reason event.
+				id = fmt.Sprintf("chatcmpl-%s", meta.Id)
+				return true
+			} else { // finish_reason case
+				if len(lastToolCallChoice.Delta.ToolCalls) > 0 {
+					lastArgs := &lastToolCallChoice.Delta.ToolCalls[len(lastToolCallChoice.Delta.ToolCalls)-1].Function
+					if len(lastArgs.Arguments.(string)) == 0 { // compatible with OpenAI sending an empty object `{}` when no arguments.
+						lastArgs.Arguments = "{}"
+						response.Choices[len(response.Choices)-1].Delta.Content = nil
+						response.Choices[len(response.Choices)-1].Delta.ToolCalls = lastToolCallChoice.Delta.ToolCalls
+					}
+				}
+			}
+		}
+		if response == nil {
+			return true
+		}
+		response.Id = id
+		response.Model = c.GetString(ctxkey.OriginalModel)
+		response.Created = createdTime
+
+		for _, choice := range response.Choices {
+			if len(choice.Delta.ToolCalls) > 0 {
+				lastToolCallChoice = &choice
+			}
+		}
+		jsonStr, err := json.Marshal(response)
+		if err != nil {
+			logger.SysError("error marshalling stream response: " + err.Error())
+			return true
+		}
+
+		c.Render(-1, common.CustomEvent{Data: "data: " + string(jsonStr)})
+		return true
+	case *types.UnknownUnionMember:
+		logger.Errorf(c.Request.Context(), "unknown tag: %s", v.Tag)
+		return false
+	default:
+		logger.Errorf(c.Request.Context(), "union is nil or unknown type")
+		return false
 	}
 }
