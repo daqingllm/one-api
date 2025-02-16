@@ -80,6 +80,17 @@ func Handler(c *gin.Context, awsCli *bedrockruntime.Client, modelName string) (*
 
 	awsResp, err := awsCli.InvokeModel(c.Request.Context(), awsReq)
 	if err != nil {
+		if opErr, ok := err.(*smithy.OperationError); ok {
+			if httpErr, ok := opErr.Err.(*awshttp.ResponseError); ok {
+				return &relaymodel.ErrorWithStatusCode{
+					IsChannelResponseError: true,
+					StatusCode:             httpErr.HTTPStatusCode(),
+					Error: relaymodel.Error{
+						Message: httpErr.Error(),
+					},
+				}, nil
+			}
+		}
 		return utils.WrapErr(errors.Wrap(err, "InvokeModel")), nil
 	}
 
