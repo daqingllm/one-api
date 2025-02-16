@@ -178,13 +178,12 @@ func StreamHandler(c *gin.Context, awsCli *bedrockruntime.Client) (*relaymodel.E
 	var id string
 	var lastToolCallChoice openai.ChatCompletionsStreamResponseChoice
 	toolCounter := &anthropic.ToolCounter{}
-
+	event, ok := <-stream.Events()
+	if !ok {
+		logger.Errorf(c.Request.Context(), "stream ended before any response")
+		return utils.WrapErr(errors.New("error ocurred in stream")), nil
+	}
 	c.Stream(func(w io.Writer) bool {
-		event, ok := <-stream.Events()
-		if !ok {
-			return false
-		}
-
 		switch v := event.(type) {
 		case *types.ResponseStreamMemberChunk:
 			claudeResp := new(anthropic.StreamResponse)
@@ -235,7 +234,6 @@ func StreamHandler(c *gin.Context, awsCli *bedrockruntime.Client) (*relaymodel.E
 				started = true
 			}
 			c.Render(-1, common.CustomEvent{Data: "data: " + string(jsonStr)})
-			return true
 		case *types.UnknownUnionMember:
 			logger.Errorf(c.Request.Context(), "unknown tag: %s", v.Tag)
 			return false
@@ -243,6 +241,11 @@ func StreamHandler(c *gin.Context, awsCli *bedrockruntime.Client) (*relaymodel.E
 			logger.Errorf(c.Request.Context(), "union is nil or unknown type")
 			return false
 		}
+		event, ok = <-stream.Events()
+		if !ok {
+			return false
+		}
+		return true
 	})
 
 	if started {
