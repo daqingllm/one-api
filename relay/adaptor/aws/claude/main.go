@@ -5,6 +5,8 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	awshttp "github.com/aws/aws-sdk-go-v2/aws/transport/http"
+	"github.com/aws/smithy-go"
 	"github.com/songquanpeng/one-api/common/config"
 	"io"
 	"net/http"
@@ -144,6 +146,17 @@ func StreamHandler(c *gin.Context, awsCli *bedrockruntime.Client) (*relaymodel.E
 		}
 	}
 	if err != nil {
+		if opErr, ok := err.(*smithy.OperationError); ok {
+			if httpErr, ok := opErr.Err.(*awshttp.ResponseError); ok {
+				return &relaymodel.ErrorWithStatusCode{
+					IsChannelResponseError: true,
+					StatusCode:             httpErr.HTTPStatusCode(),
+					Error: relaymodel.Error{
+						Message: httpErr.Error(),
+					},
+				}, nil
+			}
+		}
 		return utils.WrapErr(errors.Wrap(err, "InvokeModelWithResponseStream")), nil
 	}
 	stream := awsResp.GetStream()
@@ -151,6 +164,7 @@ func StreamHandler(c *gin.Context, awsCli *bedrockruntime.Client) (*relaymodel.E
 
 	c.Writer.Header().Set("Content-Type", "text/event-stream")
 	var usage relaymodel.Usage
+	var started bool
 	var id string
 	var lastToolCallChoice openai.ChatCompletionsStreamResponseChoice
 	toolCounter := &anthropic.ToolCounter{}
@@ -158,7 +172,6 @@ func StreamHandler(c *gin.Context, awsCli *bedrockruntime.Client) (*relaymodel.E
 	c.Stream(func(w io.Writer) bool {
 		event, ok := <-stream.Events()
 		if !ok {
-			c.Render(-1, common.CustomEvent{Data: "data: [DONE]"})
 			return false
 		}
 
@@ -207,15 +220,22 @@ func StreamHandler(c *gin.Context, awsCli *bedrockruntime.Client) (*relaymodel.E
 				return true
 			}
 			c.Render(-1, common.CustomEvent{Data: "data: " + string(jsonStr)})
+			started = true
 			return true
 		case *types.UnknownUnionMember:
-			fmt.Println("unknown tag:", v.Tag)
+			logger.Errorf(c.Request.Context(), "unknown tag: %s", v.Tag)
 			return false
 		default:
-			fmt.Println("union is nil or unknown type")
+			logger.Errorf(c.Request.Context(), "union is nil or unknown type")
 			return false
 		}
 	})
 
-	return nil, &usage
+	if started {
+		c.Render(-1, common.CustomEvent{Data: "data: [DONE]"})
+		return nil, &usage
+	} else {
+		logger.Errorf(c.Request.Context(), "stream ended before any response")
+		return utils.WrapErr(errors.New("error ocurred in stream")), nil
+	}
 }
