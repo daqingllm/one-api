@@ -196,14 +196,7 @@ func StreamHandler(c *gin.Context, awsCli *bedrockruntime.Client) (*relaymodel.E
 		}
 		return streamEventHandler(c, &event, toolCounter, &lastToolCallChoice, &usage, createdTime)
 	})
-
-	if *started {
-		c.Render(-1, common.CustomEvent{Data: "data: [DONE]"})
-		return nil, &usage
-	} else {
-		logger.Errorf(c.Request.Context(), "stream ended before any response")
-		return utils.WrapErr(errors.New("error ocurred in stream")), nil
-	}
+	return nil, &usage
 }
 
 func streamEventHandler(c *gin.Context, event *types.ResponseStream, toolCounter *anthropic.ToolCounter, lastToolCallChoice *openai.ChatCompletionsStreamResponseChoice, usage *relaymodel.Usage, createdTime int64) bool {
