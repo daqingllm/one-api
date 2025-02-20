@@ -29,6 +29,9 @@ func RelayProxyHelper(c *gin.Context, relayMode int) *relaymodel.ErrorWithStatus
 		logger.Errorf(ctx, "DoRequest failed: %s", err.Error())
 		return openai.ChannelErrorWrapper(err, "do_request_failed", http.StatusInternalServerError)
 	}
+	if isErrorHappened(meta, resp) {
+		return RelayErrorHandler(resp)
+	}
 
 	// do response
 	_, respErr := adaptor.DoResponse(c, resp, meta)
