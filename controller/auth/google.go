@@ -6,7 +6,6 @@ import (
 	"errors"
 	"io"
 	"net/http"
-	"strconv"
 	"time"
 
 	"github.com/gin-contrib/sessions"
@@ -101,7 +100,15 @@ func GoogleOAuth(c *gin.Context) {
 		}
 	} else {
 		if config.RegisterEnabled {
-			user.Username = "google_" + strconv.Itoa(model.GetMaxUserId()+1)
+			username, err := model.GetRandomUserName()
+			if err != nil || username == "" {
+				c.JSON(http.StatusOK, gin.H{
+					"success": false,
+					"message": "无法生成随机用户名",
+				})
+				return
+			}
+			user.Username = username
 			if googleUser.Name != "" {
 				user.DisplayName = googleUser.Name
 			} else {

@@ -309,8 +309,17 @@ func IsOidcIdAlreadyTaken(oidcId string) bool {
 	return DB.Where("oidc_id = ?", oidcId).Find(&User{}).RowsAffected == 1
 }
 
-func IsUsernameAlreadyTaken(username string) bool {
-	return DB.Where("username = ?", username).Find(&User{}).RowsAffected == 1
+func IsUsernameAlreadyTaken(username string) (bool, error) {
+	var user User
+	err := DB.Select("id").Where("username = ?", username).First(&user).Error
+
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return false, nil
+	}
+	if err != nil {
+		return false, fmt.Errorf("数据库查询失败: %w", err)
+	}
+	return true, nil
 }
 
 func ResetUserPasswordByEmail(email string, password string) error {
@@ -499,4 +508,25 @@ func UpdateUserRemind(id int, notify bool, email string, quotaRemindThreshold in
 		return err
 	}
 
+}
+
+func GetRandomUserName() (string, error) {
+	maxAttempts := 5 // 最大尝试次数防止死循环
+	for i := 0; i < maxAttempts; i++ {
+		// 生成候选用户名
+		username := random.GenerateRandomUsername()
+		// 检查是否存在
+		taken, err := IsUsernameAlreadyTaken(username)
+		if err != nil {
+			// 记录错误日志（至少包含重试次数和错误详情）
+			logger.SysError(fmt.Sprintf("用户名检查失败 (尝试 %d/%d: %s", i+1, maxAttempts, err.Error()))
+			continue
+		}
+		if taken {
+			logger.SysError(fmt.Sprintf("用户名冲突 (尝试 %d/%d): %s", i+1, maxAttempts, username))
+			continue
+		}
+		return username, nil
+	}
+	return "", fmt.Errorf(fmt.Sprintf("无法生成唯一用户名（已尝试 %d 次）", maxAttempts))
 }

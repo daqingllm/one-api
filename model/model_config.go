@@ -19,6 +19,8 @@ type ModelConfig struct {
 	Desc            string  `json:"desc"`
 	Order           int     `json:"order"`
 	Flag            int     `json:"flag"`
+	ContextLength   string  `json:"context_length"`
+	ParametersCount string  `json:"parameters_count"`
 }
 
 type ModelProvider struct {
@@ -33,6 +35,28 @@ type ModelDeveloper struct {
 	Developer string `json:"developer"`
 	Icon      string `json:"icon"`
 	Desc      string `json:"desc"`
+}
+
+type ModelTag struct {
+	Id    int    `json:"id" gorm:"primaryKey"`
+	Model string `json:"model" gorm:"index"`
+	TagID int    `json:"tag_id"`
+}
+
+type Tag struct {
+	Id   int    `json:"id" gorm:"primaryKey"`
+	Name string `json:"name"`
+	Type int    `json:"type"`
+}
+type ModelParameter struct {
+	Id           int    `json:"id" gorm:"primaryKey"`
+	Model        string `json:"model" gorm:"index"`
+	Name         string `json:"name"`
+	Type         string `json:"type"`
+	Required     bool   `json:"required"`
+	DefaultValue string `json:"default_value"`
+	Options      string `json:"options"`
+	Desc         string `json:"desc"`
 }
 
 func InitModelConfig() {
@@ -59,7 +83,37 @@ func GetAllModelConfig(ctx context.Context) ([]*ModelConfig, error) {
 func GetModelConfig(ctx context.Context, model string) (*ModelConfig, error) {
 	modelConfig := ModelConfig{}
 	err := DB.First(&modelConfig, "model = ?", model).Error
+	if err != nil {
+		return nil, err
+	}
 	return &modelConfig, err
+}
+
+func GetModelTags(ctx context.Context, model string) ([]Tag, error) {
+	var modelTags []*ModelTag
+	err := DB.Find(&modelTags, "model = ?", model).Error
+	if err != nil {
+		return nil, err
+	}
+	var tags []Tag
+	for _, modelTag := range modelTags {
+		tag := Tag{}
+		err := DB.First(&tag, "id = ?", modelTag.TagID).Error
+		if err != nil {
+			return nil, err
+		}
+		tags = append(tags, tag)
+	}
+	return tags, err
+}
+
+func GetModelParameters(ctx context.Context, model string) ([]*ModelParameter, error) {
+	var modelParameters []*ModelParameter
+	err := DB.Find(&modelParameters, "model = ?", model).Error
+	if err != nil {
+		return nil, err
+	}
+	return modelParameters, err
 }
 
 func SaveModelConfig(ctx context.Context, modelConfig *ModelConfig) error {
@@ -117,4 +171,10 @@ func SaveModelDeveloper(ctx context.Context, modelDeveloper *ModelDeveloper) err
 	}
 	err := DB.Save(modelDeveloper).Error
 	return err
+}
+
+func GetAllTags(ctx context.Context) ([]*Tag, error) {
+	var tags []*Tag
+	err := DB.Find(&tags, "type = ?", 1).Error
+	return tags, err
 }

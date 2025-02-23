@@ -163,6 +163,18 @@ func InitDB(envName string) (db *gorm.DB, err error) {
 		if err != nil {
 			return nil, err
 		}
+		err = db.AutoMigrate(&ModelTag{})
+		if err != nil {
+			return nil, err
+		}
+		err = db.AutoMigrate(&Tag{})
+		if err != nil {
+			return nil, err
+		}
+		err = db.AutoMigrate(&ModelParameter{})
+		if err != nil {
+			return nil, err
+		}
 		err = db.AutoMigrate(&Cache{})
 		if err != nil {
 			return nil, err

@@ -1,10 +1,11 @@
 package random
 
 import (
-	"github.com/google/uuid"
 	"math/rand"
 	"strings"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 func GetUUID() string {
@@ -15,6 +16,7 @@ func GetUUID() string {
 
 const keyChars = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 const keyNumbers = "0123456789"
+const usernameCharset = "abcdefghijkmnopqrstuvwxyzABCDEFGHJKMNOPQRSTUVWXYZ23456789"
 
 func init() {
 	rand.Seed(time.Now().UnixNano())
@@ -58,4 +60,13 @@ func GetRandomNumberString(length int) string {
 // RandRange returns a random number between min and max (max is not included)
 func RandRange(min, max int) int {
 	return min + rand.Intn(max-min)
+}
+
+func GenerateRandomUsername() string {
+	randSrc := rand.New(rand.NewSource(time.Now().UnixNano())) // 独立随机源
+	code := make([]byte, 6)
+	for i := range code {
+		code[i] = usernameCharset[randSrc.Intn(len(usernameCharset))]
+	}
+	return "fun_" + string(code)
 }

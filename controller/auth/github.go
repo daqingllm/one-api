@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"strconv"
 	"time"
 
 	"github.com/gin-contrib/sessions"
@@ -128,7 +127,15 @@ func GitHubOAuth(c *gin.Context) {
 		}
 	} else {
 		if config.RegisterEnabled {
-			user.Username = "github_" + strconv.Itoa(model.GetMaxUserId()+1)
+			username, err := model.GetRandomUserName()
+			if err != nil || username == "" {
+				c.JSON(http.StatusOK, gin.H{
+					"success": false,
+					"message": "无法生成随机用户名",
+				})
+				return
+			}
+			user.Username = username
 			if githubUser.Name != "" {
 				user.DisplayName = githubUser.Name
 			} else {
