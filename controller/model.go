@@ -46,6 +46,12 @@ type OpenAIModels struct {
 	Parent     *string                 `json:"parent"`
 }
 
+type EnhancedModelConfig struct {
+	model.ModelConfig
+	Tags       []model.Tag             `json:"tags"`
+	Parameters []*model.ModelParameter `json:"parameters"`
+}
+
 var models []OpenAIModels
 var modelsMap map[string]OpenAIModels
 var channelId2Models map[int][]string
@@ -139,14 +145,41 @@ func GetModelInfo(c *gin.Context) {
 			"success": false,
 			"message": err.Error(),
 		})
+		return
 	}
+
+	EnhancedModels := []EnhancedModelConfig{}
+	// 循环遍历models，获取每个model的tags和parameters
 	for _, m := range models {
 		m.ModelRatio = ratio.GetModelRatio(m.Model, channeltype.OpenAI) * ratio.GetGroupRatio("default")
 		m.CompletionRatio = ratio.GetCompletionRatio(m.Model, channeltype.OpenAI)
+		tags, err := model.GetModelTags(ctx, m.Model)
+		if err != nil {
+			logger.Error(ctx, err.Error())
+			c.JSON(http.StatusOK, gin.H{
+				"success": false,
+				"message": err.Error(),
+			})
+			return
+		}
+		parameters, err := model.GetModelParameters(ctx, m.Model)
+		if err != nil {
+			logger.Error(ctx, err.Error())
+			c.JSON(http.StatusOK, gin.H{
+				"success": false,
+				"message": err.Error(),
+			})
+			return
+		}
+		EnhancedModels = append(EnhancedModels, EnhancedModelConfig{
+			ModelConfig: m,
+			Tags:        tags,
+			Parameters:  parameters,
+		})
 	}
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
-		"data":    models,
+		"data":    EnhancedModels,
 	})
 }
 
@@ -256,5 +289,22 @@ func GetModelDevelopers(context *gin.Context) {
 		"success": true,
 		"message": "",
 		"data":    modelDevelopers,
+	})
+}
+
+func GetModelTags(context *gin.Context) {
+	ctx := context.Request.Context()
+	tags, err := model.GetAllTags(ctx)
+	if err != nil {
+		context.JSON(200, gin.H{
+			"success": false,
+			"message": err.Error(),
+		})
+		return
+	}
+	context.JSON(200, gin.H{
+		"success": true,
+		"message": "",
+		"data":    tags,
 	})
 }
