@@ -79,6 +79,9 @@ func Handler(c *gin.Context, awsCli *bedrockruntime.Client, modelName string) (*
 		return utils.WrapErr(errors.Wrap(err, "marshal request")), nil
 	}
 
+	if config.DebugUserIds[c.GetInt(ctxkey.Id)] {
+		logger.DebugForcef(c.Request.Context(), "Aws Request: %s", string(awsReq.Body))
+	}
 	awsResp, err := awsCli.InvokeModel(c.Request.Context(), awsReq)
 	if err != nil {
 		if opErr, ok := err.(*smithy.OperationError); ok {
@@ -143,6 +146,9 @@ func StreamHandler(c *gin.Context, awsCli *bedrockruntime.Client) (*relaymodel.E
 
 	if err != nil {
 		return utils.WrapErr(errors.Wrap(err, "marshal request")), nil
+	}
+	if config.DebugUserIds[c.GetInt(ctxkey.Id)] {
+		logger.DebugForcef(c.Request.Context(), "Aws Stream Request: %s", string(awsReq.Body))
 	}
 
 	awsResp, err := awsCli.InvokeModelWithResponseStream(c.Request.Context(), awsReq)
