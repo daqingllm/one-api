@@ -12,6 +12,7 @@ type Request struct {
 	System           string              `json:"system,omitempty"`
 	MaxTokens        int                 `json:"max_tokens,omitempty"`
 	Temperature      *float64            `json:"temperature,omitempty"`
+	Thinking         *anthropic.Thinking `json:"thinking,omitempty"`
 	TopP             *float64            `json:"top_p,omitempty"`
 	TopK             int                 `json:"top_k,omitempty"`
 	StopSequences    []string            `json:"stop_sequences,omitempty"`
