@@ -10,6 +10,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/copier"
 	"github.com/pkg/errors"
+	"github.com/songquanpeng/one-api/common/config"
+	"github.com/songquanpeng/one-api/common/ctxkey"
 	"github.com/songquanpeng/one-api/common/logger"
 	"github.com/songquanpeng/one-api/common/render"
 	"github.com/songquanpeng/one-api/relay/adaptor/anthropic"
@@ -64,6 +66,9 @@ func AwsHandler(c *gin.Context, request *anthropic.Request, client *bedrockrunti
 		logger.Errorf(ctx, "marshal request error: %v", err)
 		return nil, utils.WrapErr(errors.Wrap(err, "marshal request"))
 	}
+	if config.DebugUserIds[c.GetInt(ctxkey.Id)] {
+		logger.DebugForcef(c.Request.Context(), "Aws Request: %s", string(awsReq.Body))
+	}
 
 	awsResp, err := client.InvokeModel(c.Request.Context(), awsReq)
 	if err != nil {
@@ -116,6 +121,9 @@ func AwsStreamHandler(c *gin.Context, request *anthropic.Request, client *bedroc
 	if err != nil {
 		logger.Errorf(ctx, "marshal request error: %v", err)
 		return nil, utils.WrapErr(errors.Wrap(err, "marshal request"))
+	}
+	if config.DebugUserIds[c.GetInt(ctxkey.Id)] {
+		logger.DebugForcef(c.Request.Context(), "Aws Request: %s", string(awsReq.Body))
 	}
 
 	awsResp, err := client.InvokeModelWithResponseStream(c.Request.Context(), awsReq)
