@@ -25,9 +25,12 @@ type ContentReq struct {
 }
 
 type Content struct {
-	Type   string       `json:"type"`
-	Text   string       `json:"text"`
-	Source *ImageSource `json:"source,omitempty"`
+	Type      string       `json:"type"`
+	Text      string       `json:"text"`
+	Source    *ImageSource `json:"source,omitempty"`
+	Thinking  string       `json:"thinking,omitempty"`
+	Signature string       `json:"signature,omitempty"`
+	Data      string       `json:"data,omitempty"`
 	// tool_calls
 	Id        string `json:"id,omitempty"`
 	Name      string `json:"name,omitempty"`
@@ -39,6 +42,11 @@ type Content struct {
 type Message struct {
 	Role    string `json:"role"`
 	Content any    `json:"content"`
+}
+
+type Thinking struct {
+	BudgetTokens int    `json:"budget_tokens"`
+	Type         string `json:"type"`
 }
 
 type Tool struct {
@@ -61,6 +69,7 @@ type Request struct {
 	StopSequences []string  `json:"stop_sequences,omitempty"`
 	Stream        bool      `json:"stream,omitempty"`
 	Temperature   *float64  `json:"temperature,omitempty"`
+	Thinking      *Thinking `json:"thinking,omitempty"`
 	TopP          *float64  `json:"top_p,omitempty"`
 	TopK          int       `json:"top_k,omitempty"`
 	Tools         []Tool    `json:"tools,omitempty"`
