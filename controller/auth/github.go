@@ -136,11 +136,7 @@ func GitHubOAuth(c *gin.Context) {
 				return
 			}
 			user.Username = username
-			if githubUser.Name != "" {
-				user.DisplayName = githubUser.Name
-			} else {
-				user.DisplayName = "GitHub User"
-			}
+			user.DisplayName = "GitHub User"
 			inviterId, _ := model.GetUserIdByAffCode(affCode)
 			user.Email = githubUser.Email
 			user.Role = model.RoleCommonUser
