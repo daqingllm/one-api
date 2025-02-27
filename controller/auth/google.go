@@ -109,11 +109,7 @@ func GoogleOAuth(c *gin.Context) {
 				return
 			}
 			user.Username = username
-			if googleUser.Name != "" {
-				user.DisplayName = googleUser.Name
-			} else {
-				user.DisplayName = "Google User"
-			}
+			user.DisplayName = "Google User"
 			inviterId, _ := model.GetUserIdByAffCode(affCode)
 			user.GoogleId = googleUser.Id
 			user.Email = googleUser.Email

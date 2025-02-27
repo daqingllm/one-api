@@ -14,6 +14,7 @@ import (
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
 )
 
 type LoginRequest struct {
@@ -133,6 +134,25 @@ func Register(c *gin.Context) {
 		return
 	}
 	if err := common.Validate.Struct(&user); err != nil {
+		if validationErrors, ok := err.(validator.ValidationErrors); ok {
+			for _, fieldError := range validationErrors {
+				// 自定义错误消息
+				if fieldError.Field() == "Username" && fieldError.Tag() == "max" {
+					c.JSON(http.StatusOK, gin.H{
+						"success": false,
+						"message": "用户名不能超过 12 个字符",
+					})
+					return
+				} else if fieldError.Field() == "Username" && fieldError.Tag() == "min" {
+					c.JSON(http.StatusOK, gin.H{
+						"success": false,
+						"message": "用户名不能少于 3 个字符",
+					})
+					return
+				}
+			}
+		}
+
 		c.JSON(http.StatusOK, gin.H{
 			"success": false,
 			"message": "输入不合法 " + err.Error(),
@@ -415,9 +435,6 @@ func UpdateUser(c *gin.Context) {
 		})
 		return
 	}
-	if originUser.Quota != updatedUser.Quota {
-		model.RecordLog(originUser.Id, model.LogTypeManage, fmt.Sprintf("管理员将用户额度从 %s修改为 %s", common.LogQuota(originUser.Quota), common.LogQuota(updatedUser.Quota)))
-	}
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
@@ -552,7 +569,7 @@ func CreateUser(c *gin.Context) {
 		return
 	}
 	if user.DisplayName == "" {
-		user.DisplayName = user.Username
+		user.DisplayName = "Password User"
 	}
 	myRole := c.GetInt("role")
 	if user.Role >= myRole {
