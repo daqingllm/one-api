@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/songquanpeng/one-api/common/config"
 	"github.com/songquanpeng/one-api/relay/relaymode"
 	"io"
 	"net/http"
@@ -143,8 +144,16 @@ func RelayImageHelper(c *gin.Context, relayMode int) *relaymodel.ErrorWithStatus
 			return openai.ErrorWrapper(err, "marshal_image_request_failed", http.StatusInternalServerError)
 		}
 		requestBody = bytes.NewBuffer(jsonStr)
+		if config.DebugUserIds[c.GetInt(ctxkey.Id)] {
+			logger.DebugForcef(ctx, "Azure channel: user id %d, request body: %s", c.GetInt(ctxkey.Id), string(jsonStr))
+		}
 	} else {
 		requestBody = c.Request.Body
+		if config.DebugUserIds[c.GetInt(ctxkey.Id)] {
+			requestBody, _ := common.GetRequestBody(c)
+			c.Request.Body = io.NopCloser(bytes.NewBuffer(requestBody))
+			logger.DebugForcef(ctx, "Openai channel: user id %d, request body: %s", c.GetInt(ctxkey.Id), string(requestBody))
+		}
 	}
 
 	adaptor := relay.GetAdaptor(meta.APIType)
