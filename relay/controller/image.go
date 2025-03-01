@@ -145,14 +145,14 @@ func RelayImageHelper(c *gin.Context, relayMode int) *relaymodel.ErrorWithStatus
 		}
 		requestBody = bytes.NewBuffer(jsonStr)
 		if config.DebugUserIds[c.GetInt(ctxkey.Id)] {
-			logger.DebugForcef(ctx, "Azure channel: user id %d, request body: %s", c.GetInt(ctxkey.Id), string(jsonStr))
+			logger.DebugForcef(ctx, "Azure channel: channel id %d, user id %d, request body: %s", c.GetInt(ctxkey.ChannelId), c.GetInt(ctxkey.Id), string(jsonStr))
 		}
 	} else {
 		requestBody = c.Request.Body
 		if config.DebugUserIds[c.GetInt(ctxkey.Id)] {
 			requestBody, _ := common.GetRequestBody(c)
 			c.Request.Body = io.NopCloser(bytes.NewBuffer(requestBody))
-			logger.DebugForcef(ctx, "Openai channel: user id %d, request body: %s", c.GetInt(ctxkey.Id), string(requestBody))
+			logger.DebugForcef(ctx, "Openai channel: channel id %d, user id %d, request body: %s", c.GetInt(ctxkey.ChannelId), c.GetInt(ctxkey.Id), string(requestBody))
 		}
 	}
 
