@@ -52,7 +52,6 @@ func ConvertRequest(textRequest model.GeneralOpenAIRequest) *Request {
 				InputSchema: InputSchema{
 					Type:       params["type"].(string),
 					Properties: params["properties"],
-					Required:   params["required"],
 				},
 			})
 		}

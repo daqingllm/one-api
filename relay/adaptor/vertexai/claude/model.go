@@ -7,7 +7,7 @@ type Request struct {
 	AnthropicVersion string `json:"anthropic_version"`
 	// Model            string              `json:"model"`
 	Messages      []anthropic.Message `json:"messages"`
-	System        string              `json:"system,omitempty"`
+	System        any                 `json:"system,omitempty"`
 	MaxTokens     int                 `json:"max_tokens,omitempty"`
 	StopSequences []string            `json:"stop_sequences,omitempty"`
 	Stream        bool                `json:"stream,omitempty"`
