@@ -94,7 +94,7 @@ func ConvertRequest(textRequest model.GeneralOpenAIRequest) *Request {
 	}
 	lastRoleUser := false
 	for _, message := range textRequest.Messages {
-		if message.Role == "system" && claudeRequest.System == "" {
+		if message.Role == "system" && claudeRequest.System == nil {
 			claudeRequest.System = message.StringContent()
 			continue
 		}
