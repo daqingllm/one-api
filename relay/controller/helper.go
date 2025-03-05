@@ -78,7 +78,7 @@ func preConsumeQuota(ctx context.Context, textRequest *relaymodel.GeneralOpenAIR
 	}
 
 	if preConsumedQuota > 0 {
-		logger.Info(ctx, fmt.Sprintf("user %d has quota %d, use %d, need to pre-consume", meta.UserId, userQuota, preConsumedQuota))
+		logger.Debug(ctx, fmt.Sprintf("user %d has quota %d, use %d, need to pre-consume", meta.UserId, userQuota, preConsumedQuota))
 		err := model.PreConsumeTokenQuota(meta.TokenId, preConsumedQuota)
 		if err != nil {
 			return preConsumedQuota, openai.ErrorWrapper(err, "pre_consume_token_quota_failed", http.StatusForbidden)

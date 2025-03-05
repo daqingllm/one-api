@@ -17,11 +17,12 @@ import (
 	"github.com/songquanpeng/one-api/relay/adaptor/anthropic"
 	claude "github.com/songquanpeng/one-api/relay/adaptor/aws/claude"
 	"github.com/songquanpeng/one-api/relay/adaptor/aws/utils"
-	"github.com/songquanpeng/one-api/relay/controller"
 	"github.com/songquanpeng/one-api/relay/meta"
 	"github.com/songquanpeng/one-api/relay/model"
 	"io"
 	"net/http"
+	"strconv"
+	"strings"
 )
 
 var _ Adaptor = new(Aws)
@@ -73,7 +74,37 @@ func AwsHandler(c *gin.Context, request *anthropic.Request, client *bedrockrunti
 	awsResp, err := client.InvokeModel(c.Request.Context(), awsReq)
 	if err != nil {
 		logger.Errorf(ctx, "invoke model error: %v", err)
-		return nil, controller.RelayErrorHandler(nil)
+
+		// Parse AWS Bedrock errors to extract status code and message
+		var statusCode int = http.StatusInternalServerError
+		var errorType string = "internal_error"
+		var errorMessage string = err.Error()
+
+		// Extract status code from error string
+		errStr := err.Error()
+		if statusIndex := strings.Index(errStr, "StatusCode: "); statusIndex >= 0 {
+			endIndex := strings.Index(errStr[statusIndex+len("StatusCode: "):], ",")
+			if endIndex > 0 {
+				if code, err := strconv.Atoi(errStr[statusIndex+len("StatusCode: ") : statusIndex+len("StatusCode: ")+endIndex]); err == nil {
+					statusCode = code
+				}
+			}
+		}
+
+		// Extract the actual error message after ValidationException
+		if validationIndex := strings.Index(errStr, "ValidationException: "); validationIndex >= 0 {
+			errorMessage = errStr[validationIndex+len("ValidationException: "):]
+			errorType = "invalid_request_error"
+		}
+
+		return nil, &model.ErrorWithStatusCode{
+			Error: model.Error{
+				Message: errorMessage,
+				Type:    errorType,
+				Code:    errorType,
+			},
+			StatusCode: statusCode,
+		}
 	}
 
 	claudeResponse := new(anthropic.Response)
@@ -129,7 +160,36 @@ func AwsStreamHandler(c *gin.Context, request *anthropic.Request, client *bedroc
 	awsResp, err := client.InvokeModelWithResponseStream(c.Request.Context(), awsReq)
 	if err != nil {
 		logger.Errorf(ctx, "invoke model error: %v", err)
-		return nil, controller.RelayErrorHandler(nil)
+		// Parse AWS Bedrock errors to extract status code and message
+		var statusCode int = http.StatusInternalServerError
+		var errorType string = "internal_error"
+		var errorMessage string = err.Error()
+
+		// Extract status code from error string
+		errStr := err.Error()
+		if statusIndex := strings.Index(errStr, "StatusCode: "); statusIndex >= 0 {
+			endIndex := strings.Index(errStr[statusIndex+len("StatusCode: "):], ",")
+			if endIndex > 0 {
+				if code, err := strconv.Atoi(errStr[statusIndex+len("StatusCode: ") : statusIndex+len("StatusCode: ")+endIndex]); err == nil {
+					statusCode = code
+				}
+			}
+		}
+
+		// Extract the actual error message after ValidationException
+		if validationIndex := strings.Index(errStr, "ValidationException: "); validationIndex >= 0 {
+			errorMessage = errStr[validationIndex+len("ValidationException: "):]
+			errorType = "invalid_request_error"
+		}
+
+		return nil, &model.ErrorWithStatusCode{
+			Error: model.Error{
+				Message: errorMessage,
+				Type:    errorType,
+				Code:    errorType,
+			},
+			StatusCode: statusCode,
+		}
 	}
 	stream := awsResp.GetStream()
 	defer func(stream *bedrockruntime.InvokeModelWithResponseStreamEventStream) {
