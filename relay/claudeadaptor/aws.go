@@ -115,6 +115,7 @@ func AwsHandler(c *gin.Context, request *anthropic.Request, client *bedrockrunti
 	}
 	if claudeResponse.Error != nil && claudeResponse.Error.Type != "" {
 		return nil, &model.ErrorWithStatusCode{
+			IsChannelResponseError: true,
 			Error: model.Error{
 				Message: claudeResponse.Error.Message,
 				Type:    claudeResponse.Error.Type,
@@ -183,6 +184,7 @@ func AwsStreamHandler(c *gin.Context, request *anthropic.Request, client *bedroc
 		}
 
 		return nil, &model.ErrorWithStatusCode{
+			IsChannelResponseError: true,
 			Error: model.Error{
 				Message: errorMessage,
 				Type:    errorType,
