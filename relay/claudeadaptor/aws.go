@@ -98,6 +98,7 @@ func AwsHandler(c *gin.Context, request *anthropic.Request, client *bedrockrunti
 		}
 
 		return nil, &model.ErrorWithStatusCode{
+			IsChannelResponseError: true,
 			Error: model.Error{
 				Message: errorMessage,
 				Type:    errorType,
