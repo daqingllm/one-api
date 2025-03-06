@@ -14,6 +14,7 @@ import (
 	"github.com/songquanpeng/one-api/middleware"
 	dbmodel "github.com/songquanpeng/one-api/model"
 	"github.com/songquanpeng/one-api/monitor"
+	billingratio "github.com/songquanpeng/one-api/relay/billing/ratio"
 	"github.com/songquanpeng/one-api/relay/controller"
 	"github.com/songquanpeng/one-api/relay/model"
 	"github.com/songquanpeng/one-api/relay/relaymode"
@@ -60,7 +61,10 @@ func Relay(c *gin.Context) {
 	}
 	bizErr := relayHelper(c, relayMode)
 	if bizErr == nil {
-		dbmodel.CacheSetRecentChannel(ctx, userId, c.GetString(ctxkey.RequestModel), channelId)
+		cacheRatio := billingratio.GetCacheRatio(c.GetString(ctxkey.RequestModel), c.GetInt(ctxkey.Channel))
+		if cacheRatio < 1 {
+			dbmodel.CacheSetRecentChannel(ctx, userId, c.GetString(ctxkey.RequestModel), channelId)
+		}
 		monitor.Emit(channelId, true)
 		return
 	}

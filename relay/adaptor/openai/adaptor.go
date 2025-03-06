@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/songquanpeng/one-api/relay/adaptor/mistral"
 	"github.com/songquanpeng/one-api/relay/adaptor/perplexity"
 	"io"
 	"net/http"
@@ -57,6 +58,8 @@ func (a *Adaptor) GetRequestURL(meta *meta.Meta) (string, error) {
 		return novita.GetRequestURL(meta)
 	case channeltype.Perplexity:
 		return perplexity.GetRequestURL(meta)
+	case channeltype.Mistral:
+		return mistral.GetRequestURL(meta)
 	default:
 		return GetFullRequestURL(meta.BaseURL, meta.RequestURLPath, meta.ChannelType), nil
 	}
