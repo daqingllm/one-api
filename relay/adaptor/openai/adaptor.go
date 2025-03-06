@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/songquanpeng/one-api/relay/adaptor/mistral"
 	"github.com/songquanpeng/one-api/relay/adaptor/perplexity"
 	"io"
 	"net/http"
@@ -59,7 +58,10 @@ func (a *Adaptor) GetRequestURL(meta *meta.Meta) (string, error) {
 	case channeltype.Perplexity:
 		return perplexity.GetRequestURL(meta)
 	case channeltype.Mistral:
-		return mistral.GetRequestURL(meta)
+		if meta.Mode == relaymode.Completions {
+			return fmt.Sprintf("%s/v1/fim/completions", meta.BaseURL), nil
+		}
+		fallthrough
 	default:
 		return GetFullRequestURL(meta.BaseURL, meta.RequestURLPath, meta.ChannelType), nil
 	}
