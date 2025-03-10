@@ -17,6 +17,7 @@ type ModelConfig struct {
 	CacheRatio      float64 `json:"cache_ratio"`
 	CompletionRatio float64 `json:"completion_ratio"`
 	Desc            string  `json:"desc"`
+	DescEn          string  `json:"desc_en"`
 	Order           int     `json:"order"`
 	Flag            int     `json:"flag"`
 	ContextLength   string  `json:"context_length"`
@@ -44,9 +45,10 @@ type ModelTag struct {
 }
 
 type Tag struct {
-	Id   int    `json:"id" gorm:"primaryKey"`
-	Name string `json:"name"`
-	Type int    `json:"type"`
+	Id     int    `json:"id" gorm:"primaryKey"`
+	Name   string `json:"name"`
+	NameEn string `json:"name_en"`
+	Type   int    `json:"type"`
 }
 type ModelParameter struct {
 	Id           int    `json:"id" gorm:"primaryKey"`
@@ -107,6 +109,36 @@ func GetModelTags(ctx context.Context, model string) ([]Tag, error) {
 	return tags, err
 }
 
+func GetModelTagsRelative(ctx context.Context, model string) ([]*ModelTag, error) {
+	var modelTags []*ModelTag
+	err := DB.Find(&modelTags, "model = ?", model).Error
+	if err != nil {
+		return nil, err
+	}
+	return modelTags, err
+}
+
+func SaveModelTag(ctx context.Context, modelTag *ModelTag) error {
+	if modelTag.Id == 0 {
+		create := &ModelTag{
+			Model: modelTag.Model,
+			TagID: modelTag.TagID,
+		}
+		err := DB.Create(create).Error
+		return err
+	}
+	err := DB.Save(modelTag).Error
+	return err
+}
+
+func DeleteModelTag(ctx context.Context, Id int) error {
+	err := DB.Delete(&ModelTag{}, "id = ?", Id).Error
+	if err != nil {
+		return err
+	}
+	return err
+}
+
 func GetModelParameters(ctx context.Context, model string) ([]*ModelParameter, error) {
 	var modelParameters []*ModelParameter
 	err := DB.Find(&modelParameters, "model = ?", model).Error
@@ -114,6 +146,32 @@ func GetModelParameters(ctx context.Context, model string) ([]*ModelParameter, e
 		return nil, err
 	}
 	return modelParameters, err
+}
+
+func SaveModelParameter(ctx context.Context, modelParameter *ModelParameter) error {
+	if modelParameter.Id == 0 {
+		create := &ModelParameter{
+			Model:        modelParameter.Model,
+			Name:         modelParameter.Name,
+			Type:         modelParameter.Type,
+			Required:     modelParameter.Required,
+			DefaultValue: modelParameter.DefaultValue,
+			Options:      modelParameter.Options,
+			Desc:         modelParameter.Desc,
+		}
+		err := DB.Create(create).Error
+		return err
+	}
+	err := DB.Save(modelParameter).Error
+	return err
+}
+
+func DeleteModelParameter(ctx context.Context, Id int) error {
+	err := DB.Delete(&ModelParameter{}, "id = ?", Id).Error
+	if err != nil {
+		return err
+	}
+	return err
 }
 
 func SaveModelConfig(ctx context.Context, modelConfig *ModelConfig) error {
@@ -173,8 +231,14 @@ func SaveModelDeveloper(ctx context.Context, modelDeveloper *ModelDeveloper) err
 	return err
 }
 
-func GetAllTags(ctx context.Context) ([]*Tag, error) {
+func GetFixedTags(ctx context.Context) ([]*Tag, error) {
 	var tags []*Tag
 	err := DB.Find(&tags, "type = ?", 1).Error
+	return tags, err
+}
+
+func GetAllTags(ctx context.Context) ([]*Tag, error) {
+	var tags []*Tag
+	err := DB.Find(&tags).Error
 	return tags, err
 }

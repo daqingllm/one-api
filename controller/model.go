@@ -294,7 +294,7 @@ func GetModelDevelopers(context *gin.Context) {
 
 func GetModelTags(context *gin.Context) {
 	ctx := context.Request.Context()
-	tags, err := model.GetAllTags(ctx)
+	tags, err := model.GetFixedTags(ctx)
 	if err != nil {
 		context.JSON(200, gin.H{
 			"success": false,
