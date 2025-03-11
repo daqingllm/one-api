@@ -4,4 +4,5 @@ func Init() {
 	CalcModelUsageSchedule()
 	ExpireCache()
 	QuotaJob()
+	ExpireHistoryLogs()
 }

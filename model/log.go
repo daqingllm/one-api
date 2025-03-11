@@ -37,8 +37,8 @@ const (
 
 type FailedLog struct {
 	Id            int    `json:"id"`
-	UserId        int    `json:"user_id" gorm:"index"`
-	CreatedAt     int64  `json:"created_at" gorm:"bigint"`
+	UserId        int    `json:"user_id" gorm:"index:idx_user_id_created_at"`
+	CreatedAt     int64  `json:"created_at" gorm:"bigint;index:idx_user_id_created_at"`
 	ModelName     string `json:"model" gorm:"type:varchar(128)"`
 	ChannelsTried string `json:"channels_tried"`
 	StatusCode    int    `json:"status_code"`
@@ -241,6 +241,11 @@ func SumUsedQuota(logType int, startTimestamp int64, endTimestamp int64, modelNa
 
 func DeleteOldLog(targetTimestamp int64) (int64, error) {
 	result := LOG_DB.Where("created_at < ?", targetTimestamp).Delete(&Log{})
+	return result.RowsAffected, result.Error
+}
+
+func DeleteExpiredFailedLog(targetTimestamp int64) (int64, error) {
+	result := LOG_DB.Where("created_at < ?", targetTimestamp).Delete(&FailedLog{})
 	return result.RowsAffected, result.Error
 }
 
