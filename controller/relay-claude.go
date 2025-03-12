@@ -205,13 +205,13 @@ func postConsumeQuota(ctx context.Context, usage *anthropic.Usage, meta *meta.Me
 	}
 	var quota int64
 	completionRatio := billingratio.GetCompletionRatio(textRequest.Model, meta.ChannelType)
-	// todo cache
-	quota = int64(math.Ceil((float64(usage.InputTokens) + float64(usage.CacheCreationInputTokens)*1.25 +
+
+	quota = int64(math.Ceil((float64(usage.InputTokens+usage.CacheCreationInputTokens) + float64(usage.CacheCreationInputTokens)*1.25 +
 		float64(usage.CacheReadInputTokens)*0.1 + float64(usage.OutputTokens)*completionRatio) * ratio))
 	if ratio != 0 && quota <= 0 {
 		quota = 1
 	}
-	totalTokens := usage.InputTokens + usage.OutputTokens
+	totalTokens := usage.InputTokens + usage.OutputTokens + usage.CacheReadInputTokens + usage.CacheCreationInputTokens
 	if totalTokens == 0 {
 		// in this case, must be some error happened
 		// we cannot just return, because we may have to return the pre-consumed quota
@@ -226,7 +226,7 @@ func postConsumeQuota(ctx context.Context, usage *anthropic.Usage, meta *meta.Me
 		logger.Error(ctx, "error update user quota cache: "+err.Error())
 	}
 	logContent := fmt.Sprintf("模型倍率 %.3f，分组倍率 %.3f，补全倍率 %.3f", modelRatio, groupRatio, completionRatio)
-	model.RecordConsumeLog(ctx, meta.UserId, meta.ChannelId, usage.InputTokens, 0, usage.OutputTokens, textRequest.Model, meta.TokenName, quota, logContent)
+	model.RecordConsumeLog(ctx, meta.UserId, meta.ChannelId, usage.InputTokens+usage.CacheCreationInputTokens+usage.CacheReadInputTokens, usage.CacheReadInputTokens, usage.OutputTokens, textRequest.Model, meta.TokenName, quota, logContent)
 	model.UpdateUserUsedQuotaAndRequestCount(meta.UserId, quota)
 	model.UpdateChannelUsedQuota(meta.ChannelId, quota)
 }
