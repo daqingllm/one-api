@@ -205,6 +205,8 @@ func AwsStreamHandler(c *gin.Context, request *anthropic.Request, client *bedroc
 	c.Writer.Header().Set("Content-Type", "text/event-stream")
 	var inputTokens int
 	var outputTokens int
+	var cacheCreateTokens int
+	var cacheHitTokens int
 
 	c.Stream(func(w io.Writer) bool {
 		event, ok := <-stream.Events()
@@ -233,10 +235,14 @@ func AwsStreamHandler(c *gin.Context, request *anthropic.Request, client *bedroc
 			if claudeResp.Message != nil {
 				inputTokens += claudeResp.Message.Usage.InputTokens
 				outputTokens += claudeResp.Message.Usage.OutputTokens
+				cacheCreateTokens += claudeResp.Message.Usage.CacheCreationInputTokens
+				cacheHitTokens += claudeResp.Message.Usage.CacheReadInputTokens
 			}
 			if claudeResp.Usage != nil {
 				inputTokens += claudeResp.Usage.InputTokens
 				outputTokens += claudeResp.Usage.OutputTokens
+				cacheCreateTokens += claudeResp.Message.Usage.CacheCreationInputTokens
+				cacheHitTokens += claudeResp.Message.Usage.CacheReadInputTokens
 			}
 			return true
 		case *types.UnknownUnionMember:
@@ -249,7 +255,9 @@ func AwsStreamHandler(c *gin.Context, request *anthropic.Request, client *bedroc
 	})
 
 	return &anthropic.Usage{
-		InputTokens:  inputTokens,
-		OutputTokens: outputTokens,
+		InputTokens:              inputTokens,
+		OutputTokens:             outputTokens,
+		CacheCreationInputTokens: cacheCreateTokens,
+		CacheReadInputTokens:     cacheHitTokens,
 	}, nil
 }

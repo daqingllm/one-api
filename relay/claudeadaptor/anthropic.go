@@ -71,6 +71,8 @@ func StreamHandler(c *gin.Context, resp *http.Response) (*anthropic.Usage, *mode
 	common.SetEventStreamHeaders(c)
 	var inputTokens int
 	var outputTokens int
+	var cacheCreateTokens int
+	var cacheHitTokens int
 	for scanner.Scan() {
 		data := scanner.Text()
 		render.RawData(c, data)
@@ -89,15 +91,21 @@ func StreamHandler(c *gin.Context, resp *http.Response) (*anthropic.Usage, *mode
 		if claudeResponse.Message != nil {
 			inputTokens += claudeResponse.Message.Usage.InputTokens
 			outputTokens += claudeResponse.Message.Usage.OutputTokens
+			cacheCreateTokens += claudeResponse.Message.Usage.CacheCreationInputTokens
+			cacheHitTokens += claudeResponse.Message.Usage.CacheReadInputTokens
 		}
 		if claudeResponse.Usage != nil {
 			inputTokens += claudeResponse.Usage.InputTokens
 			outputTokens += claudeResponse.Usage.OutputTokens
+			cacheCreateTokens += claudeResponse.Usage.CacheCreationInputTokens
+			cacheHitTokens += claudeResponse.Usage.CacheReadInputTokens
 		}
 	}
 	usage := &anthropic.Usage{
-		InputTokens:  inputTokens,
-		OutputTokens: outputTokens,
+		InputTokens:              inputTokens,
+		OutputTokens:             outputTokens,
+		CacheCreationInputTokens: cacheCreateTokens,
+		CacheReadInputTokens:     cacheHitTokens,
 	}
 	if err := scanner.Err(); err != nil {
 		logger.Error(ctx, "error reading stream: "+err.Error())
