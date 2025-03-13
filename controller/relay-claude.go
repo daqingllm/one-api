@@ -206,7 +206,7 @@ func postConsumeQuota(ctx context.Context, usage *anthropic.Usage, meta *meta.Me
 	var quota int64
 	completionRatio := billingratio.GetCompletionRatio(textRequest.Model, meta.ChannelType)
 
-	quota = int64(math.Ceil((float64(usage.InputTokens+usage.CacheCreationInputTokens) + float64(usage.CacheCreationInputTokens)*1.25 +
+	quota = int64(math.Ceil((float64(usage.InputTokens) + float64(usage.CacheCreationInputTokens)*1.25 +
 		float64(usage.CacheReadInputTokens)*0.1 + float64(usage.OutputTokens)*completionRatio) * ratio))
 	if ratio != 0 && quota <= 0 {
 		quota = 1
