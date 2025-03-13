@@ -110,7 +110,7 @@ func StreamHandler(c *gin.Context, resp *http.Response) (*anthropic.Usage, *mode
 		CacheReadInputTokens:     cacheHitTokens,
 	}
 	if config.DebugUserIds[c.GetInt(ctxkey.Id)] {
-		logger.DebugForcef(c.Request.Context(), "usage: %v", usage)
+		logger.DebugForcef(c.Request.Context(), "claude usage: %v", usage)
 	}
 	if err := scanner.Err(); err != nil {
 		logger.Error(ctx, "error reading stream: "+err.Error())
@@ -162,6 +162,9 @@ func Handler(c *gin.Context, resp *http.Response) (*anthropic.Usage, *model.Erro
 		return nil, openai.ErrorWrapper(err, "close_response_body_failed", http.StatusInternalServerError)
 	}
 
+	if config.DebugUserIds[c.GetInt(ctxkey.Id)] {
+		logger.DebugForcef(c.Request.Context(), "claude usage: %v", claudeResponse.Usage)
+	}
 	return claudeResponse.Usage, nil
 }
 
