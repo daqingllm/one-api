@@ -241,8 +241,8 @@ func AwsStreamHandler(c *gin.Context, request *anthropic.Request, client *bedroc
 			if claudeResp.Usage != nil {
 				inputTokens += claudeResp.Usage.InputTokens
 				outputTokens += claudeResp.Usage.OutputTokens
-				cacheCreateTokens += claudeResp.Message.Usage.CacheCreationInputTokens
-				cacheHitTokens += claudeResp.Message.Usage.CacheReadInputTokens
+				cacheCreateTokens += claudeResp.Usage.CacheCreationInputTokens
+				cacheHitTokens += claudeResp.Usage.CacheReadInputTokens
 			}
 			return true
 		case *types.UnknownUnionMember:
