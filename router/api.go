@@ -80,6 +80,7 @@ func SetApiRouter(router *gin.Engine) {
 			optionRoute.GET("/model", controller.GetModelOptions)
 			optionRoute.PUT("/model", controller.UpsertModelOption)
 			optionRoute.DELETE("/model", controller.DeleteModelOption)
+			optionRoute.GET("/tags", controller.GetAllTags)
 		}
 		channelRoute := apiRouter.Group("/channel")
 		channelRoute.Use(middleware.AdminAuth())

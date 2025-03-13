@@ -3,12 +3,13 @@ package controller
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
+	"strings"
+
 	"github.com/songquanpeng/one-api/common"
 	"github.com/songquanpeng/one-api/common/config"
 	"github.com/songquanpeng/one-api/common/message"
 	"github.com/songquanpeng/one-api/model"
-	"net/http"
-	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -53,7 +54,10 @@ func GetNotice(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
-		"data":    config.OptionMap["Notice"],
+		"data": gin.H{
+			"zh": config.OptionMap["Notice"],
+			"en": config.OptionMap["NoticeEn"],
+		},
 	})
 	return
 }

@@ -2,12 +2,13 @@ package model
 
 import (
 	"context"
-	"github.com/songquanpeng/one-api/common/config"
-	"github.com/songquanpeng/one-api/common/logger"
-	billingratio "github.com/songquanpeng/one-api/relay/billing/ratio"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/songquanpeng/one-api/common/config"
+	"github.com/songquanpeng/one-api/common/logger"
+	billingratio "github.com/songquanpeng/one-api/relay/billing/ratio"
 )
 
 type Option struct {
@@ -48,6 +49,7 @@ func InitOptionMap() {
 	config.OptionMap["SMTPAccount"] = ""
 	config.OptionMap["SMTPToken"] = ""
 	config.OptionMap["Notice"] = ""
+	config.OptionMap["NoticeEn"] = ""
 	config.OptionMap["About"] = ""
 	config.OptionMap["HomePageContent"] = ""
 	config.OptionMap["Footer"] = config.Footer
