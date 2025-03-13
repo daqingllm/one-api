@@ -13,3 +13,15 @@ type Function struct {
 	Parameters  any    `json:"parameters,omitempty"` // request
 	Arguments   any    `json:"arguments,omitempty"`  // response
 }
+
+type Annotation struct {
+	Type        string      `json:"type"`
+	UrlCitation UrlCitation `json:"url_citation"`
+}
+
+type UrlCitation struct {
+	Url        string `json:"url"`
+	Title      string `json:"title"`
+	StartIndex int    `json:"start_index"`
+	EndIndex   int    `json:"end_index"`
+}

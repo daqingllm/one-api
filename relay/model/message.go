@@ -1,15 +1,16 @@
 package model
 
 type Message struct {
-	Role             string    `json:"role,omitempty"`
-	Content          any       `json:"content,omitempty"`
-	ReasoningContent any       `json:"reasoning_content,omitempty"`
-	Refusal          *string   `json:"refusal,omitempty"`
-	Name             *string   `json:"name,omitempty"`
-	FunctionCall     *Function `json:"function_call,omitempty"`
-	ToolCalls        []Tool    `json:"tool_calls,omitempty"`
-	ToolCallId       string    `json:"tool_call_id,omitempty"`
-	Audio            any       `json:"audio,omitempty"`
+	Role             string       `json:"role,omitempty"`
+	Content          any          `json:"content,omitempty"`
+	ReasoningContent any          `json:"reasoning_content,omitempty"`
+	Refusal          *string      `json:"refusal,omitempty"`
+	Name             *string      `json:"name,omitempty"`
+	FunctionCall     *Function    `json:"function_call,omitempty"`
+	ToolCalls        []Tool       `json:"tool_calls,omitempty"`
+	ToolCallId       string       `json:"tool_call_id,omitempty"`
+	Audio            any          `json:"audio,omitempty"`
+	Annotations      []Annotation `json:"annotations,omitempty"`
 }
 
 func (m Message) IsStringContent() bool {

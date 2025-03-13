@@ -127,6 +127,9 @@ func ConvertRequest(textRequest model.GeneralOpenAIRequest) *Request {
 						Input: inputParam,
 					})
 				}
+				if len(contents) == 0 {
+					contents = append(contents, content)
+				}
 			}
 			claudeMessage.Content = contents
 		} else {
