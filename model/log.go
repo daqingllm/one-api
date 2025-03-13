@@ -40,6 +40,8 @@ type FailedLog struct {
 	UserId        int    `json:"user_id" gorm:"index:idx_user_id_created_at"`
 	CreatedAt     int64  `json:"created_at" gorm:"bigint;index:idx_user_id_created_at"`
 	ModelName     string `json:"model" gorm:"type:varchar(128)"`
+	Url           string `json:"url" gorm:"type:varchar(255)"`
+	RequestId     string `json:"request_id" gorm:"type:varchar(128)"`
 	ChannelsTried string `json:"channels_tried"`
 	StatusCode    int    `json:"status_code"`
 	ErrorResponse string `json:"error_response"`
@@ -64,16 +66,19 @@ func RecordLog(userId int, logType int, content string) {
 	}
 }
 
-func RecordFailedLog(ctx context.Context, userId int, modelName string, channelsTried string, statusCode int, errorResponse string, requestBody string) {
+func RecordFailedLog(ctx context.Context, userId int, modelName string, channelsTried string, statusCode int, errorResponse string, requestBody string, requestId string, url string) {
 	// requestBody may be too long, so only log the first 1000 characters
+	shortReq := requestBody
 	if len(requestBody) > 1000 {
-		requestBody = requestBody[:1000] + "..."
+		shortReq = requestBody[:1000] + "..."
 	}
-	logger.Error(ctx, fmt.Sprintf("record failed log: userId=%d, modelName=%s, channelsTried=%s, statusCode=%d, errorResponse=%s, requestBody=%s", userId, modelName, channelsTried, statusCode, errorResponse, requestBody))
+	logger.Error(ctx, fmt.Sprintf("record failed log: userId=%d, modelName=%s, channelsTried=%s, statusCode=%d, errorResponse=%s, requestBody=%s", userId, modelName, channelsTried, statusCode, errorResponse, shortReq))
 	failedLog := &FailedLog{
 		UserId:        userId,
 		CreatedAt:     helper.GetTimestamp(),
 		ModelName:     modelName,
+		Url:           url,
+		RequestId:     requestId,
 		ChannelsTried: channelsTried,
 		StatusCode:    statusCode,
 		ErrorResponse: errorResponse,

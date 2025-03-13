@@ -93,7 +93,7 @@ func ClaudeMessages(c *gin.Context) {
 	})
 
 	if bizErr.Code != "insufficient_user_quota" {
-		go logRespError(ctx, userId, originalModel, excludedChannels, bizErr.StatusCode, copyError, string(requestBody))
+		go logRespError(ctx, userId, originalModel, excludedChannels, bizErr.StatusCode, copyError, string(requestBody), requestId, c.GetString(ctxkey.BaseURL))
 	}
 }
 

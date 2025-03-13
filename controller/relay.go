@@ -119,18 +119,18 @@ func Relay(c *gin.Context) {
 	})
 
 	if bizErr.Code != "insufficient_user_quota" {
-		go logRespError(ctx, userId, originalModel, excludedChannels, bizErr.StatusCode, responseError, string(requestBody))
+		go logRespError(ctx, userId, originalModel, excludedChannels, bizErr.StatusCode, responseError, string(requestBody), requestId, c.GetString(ctxkey.BaseURL))
 	}
 }
 
-func logRespError(ctx context.Context, userId int, originalModel string, channels []int, statusCode int, responseError model.Error, requestBody string) {
+func logRespError(ctx context.Context, userId int, originalModel string, channels []int, statusCode int, responseError model.Error, requestBody string, requestId string, url string) {
 	logger.Errorf(ctx, "relay error (user id: %d, model: %s, channels: %v): %s", userId, originalModel, channels, responseError.Message)
 	if config.IsZiai {
 		return
 	}
 	channelsData, _ := json.Marshal(channels)
 	respData, _ := json.Marshal(responseError)
-	dbmodel.RecordFailedLog(ctx, userId, originalModel, string(channelsData), statusCode, string(respData), requestBody)
+	dbmodel.RecordFailedLog(ctx, userId, originalModel, string(channelsData), statusCode, string(respData), requestBody, requestId, url)
 }
 
 func shouldRetry(c *gin.Context, bizError *model.ErrorWithStatusCode) bool {
