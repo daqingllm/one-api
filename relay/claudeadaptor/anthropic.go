@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/songquanpeng/one-api/common"
+	"github.com/songquanpeng/one-api/common/config"
+	"github.com/songquanpeng/one-api/common/ctxkey"
 	"github.com/songquanpeng/one-api/common/logger"
 	"github.com/songquanpeng/one-api/common/render"
 	"github.com/songquanpeng/one-api/relay/adaptor"
@@ -106,6 +108,9 @@ func StreamHandler(c *gin.Context, resp *http.Response) (*anthropic.Usage, *mode
 		OutputTokens:             outputTokens,
 		CacheCreationInputTokens: cacheCreateTokens,
 		CacheReadInputTokens:     cacheHitTokens,
+	}
+	if config.DebugUserIds[c.GetInt(ctxkey.Id)] {
+		logger.DebugForcef(c.Request.Context(), "usage: %v", usage)
 	}
 	if err := scanner.Err(); err != nil {
 		logger.Error(ctx, "error reading stream: "+err.Error())
