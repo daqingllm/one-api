@@ -128,6 +128,7 @@ func ConvertRequest(textRequest model.GeneralOpenAIRequest) *Request {
 					})
 				}
 				if len(contents) == 0 {
+					content.Text = "..."
 					contents = append(contents, content)
 				}
 			}
