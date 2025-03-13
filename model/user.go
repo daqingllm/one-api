@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/go-playground/validator/v10"
+
 	"github.com/songquanpeng/one-api/common"
 	"github.com/songquanpeng/one-api/common/blacklist"
 	"github.com/songquanpeng/one-api/common/config"
@@ -13,6 +15,8 @@ import (
 	"github.com/songquanpeng/one-api/common/random"
 	"gorm.io/gorm"
 )
+
+var validate *validator.Validate
 
 const (
 	RoleGuestUser  = 0
@@ -31,7 +35,7 @@ const (
 // Otherwise, the sensitive information will be saved on local storage in plain text!
 type User struct {
 	Id                   int    `json:"id"`
-	Username             string `json:"username" gorm:"unique;index" validate:"max=12"`
+	Username             string `json:"username" gorm:"unique;index" validate:"min=3,max=12"`
 	Password             string `json:"password" gorm:"not null;" validate:"min=8,max=20"`
 	DisplayName          string `json:"display_name" gorm:"index" validate:"max=20"`
 	Role                 int    `json:"role" gorm:"type:int;default:1"`   // admin, util
@@ -121,12 +125,20 @@ func DeleteUserById(id int) (err error) {
 
 func (user *User) Insert(inviterId int) error {
 	var err error
+
+	// 检查用户名是否已存在
+	var existingUser User
+	if err := DB.Where("username = ?", user.Username).First(&existingUser).Error; err == nil {
+		return fmt.Errorf("用户名 %s 已存在", user.Username)
+	}
+
 	if user.Password != "" {
 		user.Password, err = common.Password2Hash(user.Password)
 		if err != nil {
 			return err
 		}
 	}
+
 	user.Quota = config.QuotaForNewUser
 	user.AccessToken = random.GetUUID()
 	user.AffCode = random.GetRandomString(4)
@@ -181,7 +193,7 @@ func (user *User) Update(updatePassword bool) error {
 	} else if user.Status == UserStatusEnabled {
 		blacklist.UnbanUser(user.Id)
 	}
-	err = DB.Model(user).Updates(user).Error
+	err = DB.Model(user).Omit("Quota").Updates(user).Error
 	return err
 }
 
