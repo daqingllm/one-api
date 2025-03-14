@@ -145,6 +145,7 @@ func postConsumeQuota(ctx context.Context, usage *relaymodel.Usage, meta *meta.M
 		var searchQuota int64
 		switch meta.ActualModelName {
 		case "gpt-4o-search-preview":
+			fallthrough
 		case "gpt-4o":
 			switch meta.Extra["search_context_size"] {
 			case "low":
@@ -157,6 +158,7 @@ func postConsumeQuota(ctx context.Context, usage *relaymodel.Usage, meta *meta.M
 				searchQuota = 17500 // medium
 			}
 		case "gpt-4o-mini":
+			fallthrough
 		case "gpt-4o-mini-search-preview":
 			switch meta.Extra["search_context_size"] {
 			case "low":
