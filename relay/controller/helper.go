@@ -142,38 +142,40 @@ func postConsumeQuota(ctx context.Context, usage *relaymodel.Usage, meta *meta.M
 
 	//tools cost
 	if meta.Extra["web_search"] == "true" {
+		var searchQuota int64
 		switch meta.ActualModelName {
 		case "gpt-4o-search-preview":
 		case "gpt-4o":
 			switch meta.Extra["search_context_size"] {
 			case "low":
-				quota += 15000 // $30.00 1k calls
+				searchQuota = 15000 // $30.00 1k calls
 			case "medium":
-				quota += 17500 // $35.00 1k calls
+				searchQuota = 17500 // $35.00 1k calls
 			case "high":
-				quota += 25000 // $50.00 1k calls
+				searchQuota = 25000 // $50.00 1k calls
 			default:
-				quota += 17500 // medium
+				searchQuota = 17500 // medium
 			}
 		case "gpt-4o-mini":
 		case "gpt-4o-mini-search-preview":
 			switch meta.Extra["search_context_size"] {
 			case "low":
-				quota += 12500 // $25.00 1k calls
+				searchQuota = 12500 // $25.00 1k calls
 			case "medium":
-				quota += 13750 // $27.50 1k calls
+				searchQuota = 13750 // $27.50 1k calls
 			case "high":
-				quota += 15000 // $30.00 1k calls
+				searchQuota = 15000 // $30.00 1k calls
 			default:
-				quota += 13750 // medium
+				searchQuota = 13750 // medium
 			}
 		}
 		if strings.HasPrefix(meta.ActualModelName, "gemini") {
 			//$35 / 1K
-			quota += 17500
+			searchQuota = 17500
 		}
-		cost := float64(quota) / 1000 * 0.002
-		extraLog += fmt.Sprintf("Websearch费用$%.3f。", cost)
+		searchCost := float64(searchQuota) / 1000 * 0.002
+		extraLog += fmt.Sprintf("Websearch费用$%.3f。", searchCost)
+		quota += searchQuota
 	}
 
 	totalTokens := promptTokens + completionTokens
