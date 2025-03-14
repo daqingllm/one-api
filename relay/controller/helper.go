@@ -142,6 +142,9 @@ func postConsumeQuota(ctx context.Context, usage *relaymodel.Usage, meta *meta.M
 
 	//tools cost
 	if meta.Extra["web_search"] == "true" {
+		if config.DebugUserIds[meta.UserId] {
+			logger.DebugForcef(ctx, "websearch费用计算。")
+		}
 		var searchQuota int64
 		switch meta.ActualModelName {
 		case "gpt-4o-search-preview":
@@ -198,7 +201,13 @@ func postConsumeQuota(ctx context.Context, usage *relaymodel.Usage, meta *meta.M
 	if systemPromptReset {
 		extraLog += "注意系统提示词已被重置。"
 	}
-	logContent := fmt.Sprintf("模型倍率 %.3f，分组倍率 %.3f，补全倍率 %.3f(%s)", modelRatio, groupRatio, completionRatio, extraLog)
+	var logContent string
+	if extraLog != "" {
+		logContent = fmt.Sprintf("模型倍率 %.3f，分组倍率 %.3f，补全倍率 %.3f(%s)", modelRatio, groupRatio, completionRatio, extraLog)
+	} else {
+		logContent = fmt.Sprintf("模型倍率 %.3f，分组倍率 %.3f，补全倍率 %.3f", modelRatio, groupRatio, completionRatio)
+
+	}
 	model.RecordConsumeLog(ctx, meta.UserId, meta.ChannelId, promptTokens, cachedTokens, completionTokens, textRequest.Model, meta.TokenName, quota, logContent)
 	model.UpdateUserUsedQuotaAndRequestCount(meta.UserId, quota)
 	model.UpdateChannelUsedQuota(meta.ChannelId, quota)
