@@ -3,6 +3,7 @@ package gemini
 import (
 	"errors"
 	"fmt"
+	"github.com/songquanpeng/one-api/common/logger"
 	"io"
 	"net/http"
 	"strings"
@@ -69,6 +70,9 @@ func (a *Adaptor) ConvertRequest(c *gin.Context, meta *meta.Meta, request *model
 		//if meta.OriginModelName == "gemini-2.0-flash-exp-search" {
 		if strings.HasSuffix(meta.OriginModelName, "-search") {
 			meta.Extra["web_search"] = "true"
+			if config.DebugUserIds[meta.UserId] {
+				logger.DebugForcef(c.Request.Context(), "web search: %s", meta.ActualModelName)
+			}
 			if geminiRequest.Tools == nil {
 				geminiRequest.Tools = []ChatTools{
 					{
