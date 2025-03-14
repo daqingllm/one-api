@@ -68,6 +68,7 @@ func (a *Adaptor) ConvertRequest(c *gin.Context, meta *meta.Meta, request *model
 		geminiRequest := ConvertRequest(*request)
 		//if meta.OriginModelName == "gemini-2.0-flash-exp-search" {
 		if strings.HasSuffix(meta.OriginModelName, "-search") {
+			meta.Extra["web_search"] = "true"
 			if geminiRequest.Tools == nil {
 				geminiRequest.Tools = []ChatTools{
 					{

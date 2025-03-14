@@ -138,6 +138,44 @@ func postConsumeQuota(ctx context.Context, usage *relaymodel.Usage, meta *meta.M
 	if ratio != 0 && quota <= 0 {
 		quota = 1
 	}
+	var extraLog string
+
+	//tools cost
+	if meta.Extra["web_search"] == "true" {
+		switch meta.ActualModelName {
+		case "gpt-4o-search-preview":
+		case "gpt-4o":
+			switch meta.Extra["search_context_size"] {
+			case "low":
+				quota += 15000 // $30.00 1k calls
+			case "medium":
+				quota += 17500 // $35.00 1k calls
+			case "high":
+				quota += 25000 // $50.00 1k calls
+			default:
+				quota += 17500 // medium
+			}
+		case "gpt-4o-mini":
+		case "gpt-4o-mini-search-preview":
+			switch meta.Extra["search_context_size"] {
+			case "low":
+				quota += 12500 // $25.00 1k calls
+			case "medium":
+				quota += 13750 // $27.50 1k calls
+			case "high":
+				quota += 15000 // $30.00 1k calls
+			default:
+				quota += 13750 // medium
+			}
+		}
+		if strings.HasPrefix(meta.ActualModelName, "gemini") {
+			//$35 / 1K
+			quota += 17500
+		}
+		cost := float64(quota) / 1000 * 0.002
+		extraLog += fmt.Sprintf("Websearch费用$%.3f。", cost)
+	}
+
 	totalTokens := promptTokens + completionTokens
 	if totalTokens == 0 {
 		// in this case, must be some error happened
@@ -153,11 +191,10 @@ func postConsumeQuota(ctx context.Context, usage *relaymodel.Usage, meta *meta.M
 	if err != nil {
 		logger.Error(ctx, "error update user quota cache: "+err.Error())
 	}
-	var extraLog string
 	if systemPromptReset {
-		extraLog = " （注意系统提示词已被重置）"
+		extraLog += "注意系统提示词已被重置。"
 	}
-	logContent := fmt.Sprintf("模型倍率 %.3f，分组倍率 %.3f，补全倍率 %.3f%s", modelRatio, groupRatio, completionRatio, extraLog)
+	logContent := fmt.Sprintf("模型倍率 %.3f，分组倍率 %.3f，补全倍率 %.3f(%s)", modelRatio, groupRatio, completionRatio, extraLog)
 	model.RecordConsumeLog(ctx, meta.UserId, meta.ChannelId, promptTokens, cachedTokens, completionTokens, textRequest.Model, meta.TokenName, quota, logContent)
 	model.UpdateUserUsedQuotaAndRequestCount(meta.UserId, quota)
 	model.UpdateChannelUsedQuota(meta.ChannelId, quota)

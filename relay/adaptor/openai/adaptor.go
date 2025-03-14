@@ -97,6 +97,15 @@ func (a *Adaptor) ConvertRequest(c *gin.Context, meta *meta.Meta, request *model
 	if strings.HasPrefix(meta.ActualModelName, "o") {
 		request.Temperature = nil
 	}
+	// web search
+	if strings.HasSuffix(meta.ActualModelName, "search-preview") {
+		meta.Extra["web_search"] = "true"
+		if request.WebSearchOptions == nil || request.WebSearchOptions.SearchContextSize == "" {
+			meta.Extra["search_context_size"] = "medium"
+		} else {
+			meta.Extra["search_context_size"] = request.WebSearchOptions.SearchContextSize
+		}
+	}
 	return request, nil
 }
 

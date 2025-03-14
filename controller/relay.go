@@ -119,7 +119,7 @@ func Relay(c *gin.Context) {
 	})
 
 	if bizErr.Code != "insufficient_user_quota" {
-		go logRespError(ctx, userId, originalModel, excludedChannels, bizErr.StatusCode, responseError, string(requestBody), requestId, c.GetString(ctxkey.BaseURL))
+		go logRespError(ctx, userId, originalModel, excludedChannels, bizErr.StatusCode, responseError, string(requestBody), requestId, c.Request.URL.Path)
 	}
 }
 
