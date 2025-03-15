@@ -142,9 +142,6 @@ func postConsumeQuota(ctx context.Context, usage *relaymodel.Usage, meta *meta.M
 
 	//tools cost
 	if meta.Extra["web_search"] == "true" {
-		if config.DebugUserIds[meta.UserId] {
-			logger.DebugForcef(ctx, "websearch费用计算。")
-		}
 		var searchQuota int64
 		switch meta.ActualModelName {
 		case "gpt-4o-search-preview":

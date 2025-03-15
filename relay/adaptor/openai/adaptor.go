@@ -106,6 +106,11 @@ func (a *Adaptor) ConvertRequest(c *gin.Context, meta *meta.Meta, request *model
 			meta.Extra["search_context_size"] = request.WebSearchOptions.SearchContextSize
 		}
 	}
+	// gemini web search
+	if strings.HasPrefix(meta.OriginModelName, "gemini") && strings.HasSuffix(meta.OriginModelName, "-search") {
+		meta.Extra["web_search"] = "true"
+	}
+
 	return request, nil
 }
 
