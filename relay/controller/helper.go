@@ -176,7 +176,7 @@ func postConsumeQuota(ctx context.Context, usage *relaymodel.Usage, meta *meta.M
 			searchQuota = 1750
 		}
 		searchCost := float64(searchQuota) / 1000 * 0.002
-		extraLog += fmt.Sprintf("Websearch费用$%.3f。", searchCost)
+		extraLog += fmt.Sprintf("Websearch费用$%.4f。", searchCost)
 		quota += searchQuota
 	}
 
