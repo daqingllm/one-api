@@ -172,8 +172,8 @@ func postConsumeQuota(ctx context.Context, usage *relaymodel.Usage, meta *meta.M
 			}
 		}
 		if strings.HasPrefix(meta.ActualModelName, "gemini") {
-			//$35 / 1K
-			searchQuota = 17500
+			//$3.5 / 1K
+			searchQuota = 1750
 		}
 		searchCost := float64(searchQuota) / 1000 * 0.002
 		extraLog += fmt.Sprintf("Websearch费用$%.3f。", searchCost)
