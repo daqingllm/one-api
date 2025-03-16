@@ -4,10 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/songquanpeng/one-api/relay/constant/role"
 	"math"
 	"net/http"
 	"strings"
+
+	"github.com/songquanpeng/one-api/relay/constant/role"
 
 	"github.com/gin-gonic/gin"
 	"github.com/songquanpeng/one-api/common"
@@ -33,7 +34,7 @@ func getAndValidateTextRequest(c *gin.Context, relayMode int) (*relaymodel.Gener
 		textRequest.Model = "text-moderation-latest"
 	}
 	if relayMode == relaymode.Embeddings && textRequest.Model == "" {
-		textRequest.Model = c.Param("model")
+		textRequest.Model = strings.TrimSpace(c.Param("model"))
 	}
 	err = validator.ValidateTextRequest(textRequest, relayMode)
 	if err != nil {

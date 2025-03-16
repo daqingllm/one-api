@@ -233,7 +233,7 @@ func ListModels(c *gin.Context) {
 }
 
 func RetrieveModel(c *gin.Context) {
-	modelId := c.Param("model")
+	modelId := strings.TrimSpace(c.Param("model"))
 	if model, ok := modelsMap[modelId]; ok {
 		c.JSON(200, model)
 	} else {
