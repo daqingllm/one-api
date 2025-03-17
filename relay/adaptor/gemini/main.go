@@ -256,20 +256,40 @@ func responseGeminiChat2OpenAI(response *ChatResponse) *openai.TextResponse {
 			},
 			FinishReason: constant.StopFinishReason,
 		}
-		if len(candidate.Content.Parts) > 0 {
+		if len(candidate.Content.Parts) == 1 && candidate.Content.Parts[0].Text != "" {
+			//如果是纯文本，则直接返回
+			choice.Message.Content = candidate.Content.Parts[0].Text
+		} else if len(candidate.Content.Parts) > 0 {
 			if candidate.Content.Parts[0].FunctionCall != nil {
 				choice.Message.ToolCalls = getToolCalls(&candidate)
 			} else {
 				var builder strings.Builder
 				var thoughtBuilder strings.Builder
+				var multiModContents = make([]model.MultiModContent, 0)
+				var existMultiContents bool = false
 				for _, part := range candidate.Content.Parts {
 					if part.Thought != nil && *part.Thought {
 						thoughtBuilder.WriteString(part.Text + "\n")
-					} else {
+					} else if part.Text != "" {
+						multiModContents = append(multiModContents, model.MultiModContent{
+							Text: part.Text,
+						})
 						builder.WriteString(part.Text + "\n")
+					} else if part.InlineData != nil {
+						multiModContents = append(multiModContents, model.MultiModContent{
+							InlineData: model.InlineData{
+								Data:     part.InlineData.Data,
+								MimeType: part.InlineData.MimeType,
+							},
+						})
+						existMultiContents = true
 					}
 				}
-				choice.Message.Content = strings.TrimSpace(builder.String())
+				if existMultiContents {
+					choice.Message.MultiModContents = multiModContents
+				} else {
+					choice.Message.Content = strings.TrimSpace(builder.String())
+				}
 				thoughtContent := strings.TrimSpace(thoughtBuilder.String())
 				if thoughtContent != "" {
 					choice.Message.ReasoningContent = thoughtContent
@@ -286,10 +306,16 @@ func responseGeminiChat2OpenAI(response *ChatResponse) *openai.TextResponse {
 
 func streamResponseGeminiChat2OpenAI(geminiResponse *ChatResponse) *openai.ChatCompletionsStreamResponse {
 	var choice openai.ChatCompletionsStreamResponseChoice
-	choice.Delta.Content = geminiResponse.GetResponseText()
+	// choice.Delta.Content = geminiResponse.GetResponseText()
 	thoughtText := geminiResponse.GetResponseThoughtText()
+	multiModContents, content, _ := getMultiModOrPlainContents(&geminiResponse.Candidates[0])
 	if thoughtText != "" {
 		choice.Delta.ReasoningContent = thoughtText
+	}
+	if len(multiModContents) > 0 {
+		choice.Delta.MultiModContents = multiModContents
+	} else {
+		choice.Delta.Content = content
 	}
 	//choice.FinishReason = &constant.StopFinishReason
 	var response openai.ChatCompletionsStreamResponse
@@ -301,6 +327,31 @@ func streamResponseGeminiChat2OpenAI(geminiResponse *ChatResponse) *openai.ChatC
 	return &response
 }
 
+func getMultiModOrPlainContents(candidate *ChatCandidate) ([]model.MultiModContent, string, error) {
+	var contentBuilder = strings.Builder{}
+	var multiModContents = make([]model.MultiModContent, 0)
+	var existMultiContents bool = false
+	for _, part := range candidate.Content.Parts {
+		if part.Text != "" {
+			contentBuilder.WriteString(part.Text + "\n")
+			multiModContents = append(multiModContents, model.MultiModContent{
+				Text: part.Text,
+			})
+		} else if part.InlineData != nil {
+			existMultiContents = true
+			multiModContents = append(multiModContents, model.MultiModContent{
+				InlineData: model.InlineData{
+					Data:     part.InlineData.Data,
+					MimeType: part.InlineData.MimeType,
+				},
+			})
+		}
+	}
+	if existMultiContents {
+		return multiModContents, "", nil
+	}
+	return multiModContents[:0], contentBuilder.String(), nil
+}
 func embeddingResponseGemini2OpenAI(response *EmbeddingResponse) *openai.EmbeddingResponse {
 	openAIEmbeddingResponse := openai.EmbeddingResponse{
 		Object: "list",

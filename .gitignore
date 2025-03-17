@@ -11,4 +11,6 @@ data
 /web/node_modules
 cmd.md
 .env
+.env.prod
 /one-api
+*.code-workspace
