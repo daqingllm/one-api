@@ -25,6 +25,7 @@ jobs:
         run: |
           mkdir -p ~/.ssh
           echo "key:$SSH_PASSWORD" 
+          echo ${{ secrets.SSH_ORISOUND_PASSWORD }}
           ssh-keyscan -t rsa 172.212.107.86 >> ~/.ssh/known_hosts
         env:
           SSH_PASSWORD: ${{ secrets.SSH_ORISOUND_PASSWORD }}
