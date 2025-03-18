@@ -24,6 +24,7 @@ jobs:
       - name: Install SSH key
         run: |
           mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_ORISOUND_PASSWORD }}" 
           ssh-keyscan -t rsa 172.212.107.86 >> ~/.ssh/known_hosts
 
       - name: Execute commands on Azure VM
