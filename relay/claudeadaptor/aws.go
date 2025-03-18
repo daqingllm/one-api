@@ -222,14 +222,14 @@ func AwsStreamHandler(c *gin.Context, request *anthropic.Request, client *bedroc
 				logger.SysError("error unmarshalling stream response: " + err.Error())
 				return false
 			}
-			jsonStr, err := json.Marshal(claudeResp)
-			if err != nil {
-				logger.SysError("error marshalling stream response: " + err.Error())
-				return true
-			}
+			//jsonStr, err := json.Marshal(claudeResp)
+			//if err != nil {
+			//	logger.SysError("error marshalling stream response: " + err.Error())
+			//	return true
+			//}
 			eventType := claudeResp.Type
 			render.RawData(c, "event: "+eventType)
-			render.RawData(c, "data: "+string(jsonStr))
+			render.RawData(c, "data: "+string(v.Value.Bytes))
 			render.RawData(c, "")
 
 			if claudeResp.Message != nil {
