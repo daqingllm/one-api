@@ -4,7 +4,7 @@ type Message struct {
 	Role             string            `json:"role,omitempty"`
 	Content          any               `json:"content,omitempty"`
 	ReasoningContent any               `json:"reasoning_content,omitempty"`
-	MultiModContents []MultiModContent `json:"mm_content,omitempty"`
+	MultiModContents []MultiModContent `json:"multi_mod_content,omitempty"`
 	Refusal          *string           `json:"refusal,omitempty"`
 	Name             *string           `json:"name,omitempty"`
 	FunctionCall     *Function         `json:"function_call,omitempty"`
