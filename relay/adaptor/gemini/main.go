@@ -287,9 +287,9 @@ func responseGeminiChat2OpenAI(response *ChatResponse) *openai.TextResponse {
 				}
 				if existMultiContents {
 					choice.Message.MultiModContents = multiModContents
-				} else {
-					choice.Message.Content = strings.TrimSpace(builder.String())
 				}
+				// 提取多模态中的文本进行填充
+				choice.Message.Content = strings.TrimSpace(builder.String())
 				thoughtContent := strings.TrimSpace(thoughtBuilder.String())
 				if thoughtContent != "" {
 					choice.Message.ReasoningContent = thoughtContent
@@ -314,9 +314,8 @@ func streamResponseGeminiChat2OpenAI(geminiResponse *ChatResponse) *openai.ChatC
 	}
 	if len(multiModContents) > 0 {
 		choice.Delta.MultiModContents = multiModContents
-	} else {
-		choice.Delta.Content = content
 	}
+	choice.Delta.Content = content
 	//choice.FinishReason = &constant.StopFinishReason
 	var response openai.ChatCompletionsStreamResponse
 	response.Id = fmt.Sprintf("chatcmpl-%s", random.GetUUID())
@@ -348,7 +347,7 @@ func getMultiModOrPlainContents(candidate *ChatCandidate) ([]model.MultiModConte
 		}
 	}
 	if existMultiContents {
-		return multiModContents, "", nil
+		return multiModContents, contentBuilder.String(), nil
 	}
 	return multiModContents[:0], contentBuilder.String(), nil
 }
