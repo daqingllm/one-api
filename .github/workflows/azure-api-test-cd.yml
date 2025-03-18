@@ -28,7 +28,7 @@ jobs:
 
       - name: Execute commands on Azure VM
         run: |
-          sshpass -p "$SSH_PASSWORD" ssh -o StrictHostKeyChecking=no tiger@172.212.107.86 << 'EOF'
+          sshpass -p "$SSH_ORISOUND_PASSWORD" ssh -o StrictHostKeyChecking=no tiger@172.212.107.86 << 'EOF'
             echo "Hello from Azure VM"
             cd one-api
             git checkout test 
