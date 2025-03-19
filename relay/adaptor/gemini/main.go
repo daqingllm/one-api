@@ -75,6 +75,10 @@ func ConvertRequest(textRequest model.GeneralOpenAIRequest) *ChatRequest {
 			geminiRequest.GenerationConfig.ResponseMimeType = mimeTypeMap["json_object"]
 		}
 	}
+	if textRequest.Modalities != nil {
+		geminiRequest.GenerationConfig.ResponseModalities = textRequest.Modalities
+
+	}
 	if textRequest.Tools != nil {
 		functions := make([]model.Function, 0, len(textRequest.Tools))
 		for _, tool := range textRequest.Tools {
