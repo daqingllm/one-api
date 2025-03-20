@@ -87,9 +87,6 @@ func (a *Adaptor) ConvertRequest(c *gin.Context, meta *meta.Meta, request *model
 		} else if strings.HasPrefix(meta.ActualModelName, "gemini-2.0-flash-thinking-exp") {
 			geminiRequest.GenerationConfig.ThinkingConfig = &ThinkingConfig{IncludeThoughts: true}
 		}
-		if strings.HasPrefix(meta.ActualModelName, "gemini-2.0-flash-exp") {
-			geminiRequest.GenerationConfig.ResponseModalities = []string{"text", "image"}
-		}
 		return geminiRequest, nil
 	}
 }
