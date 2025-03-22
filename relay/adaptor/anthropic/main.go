@@ -221,6 +221,8 @@ func StreamResponseClaude2OpenAI(claudeResponse *StreamResponse, toolcounter *To
 			}
 		}
 		choice.Delta.Role = "assistant"
+	case "ping":
+		return nil, nil
 	case "content_block_delta":
 		if claudeResponse.Delta != nil {
 			responseText = claudeResponse.Delta.Text
