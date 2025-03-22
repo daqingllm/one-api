@@ -191,7 +191,7 @@ func StreamHandler(c *gin.Context, awsCli *bedrockruntime.Client) (*relaymodel.E
 	}
 	c.Stream(func(w io.Writer) bool {
 		if !*started {
-			c.Writer.Header().Set("Content-Type", "text/event-stream")
+			common.SetEventStreamHeaders(c)
 			a := true
 			started = &a
 			return streamEventHandler(c, &firstEvent, toolCounter, &lastToolCallChoice, &usage, createdTime)
