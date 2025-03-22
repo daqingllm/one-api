@@ -254,6 +254,7 @@ func streamEventHandler(c *gin.Context, event *types.ResponseStream, toolCounter
 		}
 
 		c.Render(-1, common.CustomEvent{Data: "data: " + string(jsonStr)})
+		c.Writer.Flush()
 		return true
 	case *types.UnknownUnionMember:
 		logger.Errorf(c.Request.Context(), "unknown tag: %s", v.Tag)
