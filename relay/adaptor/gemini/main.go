@@ -336,7 +336,7 @@ func getMultiModOrPlainContents(candidate *ChatCandidate) ([]model.MultiModConte
 	var existMultiContents bool = false
 	for _, part := range candidate.Content.Parts {
 		if part.Text != "" {
-			contentBuilder.WriteString(part.Text + "\n")
+			contentBuilder.WriteString(part.Text)
 			multiModContents = append(multiModContents, model.MultiModContent{
 				Text: part.Text,
 			})
