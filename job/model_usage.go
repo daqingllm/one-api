@@ -19,6 +19,9 @@ func CalcModelUsageSchedule() {
 	now := time.Now().In(location)
 	// 计算下一个任务执行时间
 	next := now.Add(time.Hour * 24)
+	if now.Hour() < 4 {
+		next = now
+	}
 	next = time.Date(next.Year(), next.Month(), next.Day(), 4, 0, 0, 0, next.Location())
 
 	// 计算当前时间到下一个执行时间的等待时间

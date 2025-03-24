@@ -125,6 +125,10 @@ func relayTextHelper(c *gin.Context) *relay_model.ErrorWithStatusCode {
 	}
 
 	adaptor := getAdaptor(meta.APIType)
+	if adaptor == nil {
+		logger.Errorf(ctx, "getAdaptor failed: %d", meta.APIType)
+		return openai.ErrorWrapper(errors.New("model is not supported for claude api"), "in", http.StatusBadRequest)
+	}
 	usage, bizError := adaptor.DoRequest(c, request, meta)
 	if bizError != nil {
 		logger.Errorf(ctx, "respErr is not nil: %+v", bizError)

@@ -199,6 +199,7 @@ func StreamResponseClaude2OpenAI(claudeResponse *StreamResponse, toolcounter *To
 	var responseText string
 	var stopReason string
 	tools := make([]model.Tool, 0)
+	var choice openai.ChatCompletionsStreamResponseChoice
 
 	switch claudeResponse.Type {
 	case "message_start":
@@ -219,6 +220,9 @@ func StreamResponseClaude2OpenAI(claudeResponse *StreamResponse, toolcounter *To
 				})
 			}
 		}
+		choice.Delta.Role = "assistant"
+	case "ping":
+		return nil, nil
 	case "content_block_delta":
 		if claudeResponse.Delta != nil {
 			responseText = claudeResponse.Delta.Text
@@ -249,15 +253,13 @@ func StreamResponseClaude2OpenAI(claudeResponse *StreamResponse, toolcounter *To
 	case "message_stop":
 		return nil, nil
 	}
-	var choice openai.ChatCompletionsStreamResponseChoice
 	choice.Delta.Content = responseText
 	if len(tools) > 0 {
 		choice.Delta.Content = nil // compatible with other OpenAI derivative applications, like LobeOpenAICompatibleFactory ...
 		choice.Delta.ToolCalls = tools
 	}
-	choice.Delta.Role = "assistant"
 	finishReason := stopReasonClaude2OpenAI(&stopReason)
-	if finishReason != "null" {
+	if finishReason != "null" && finishReason != "" {
 		choice.FinishReason = &finishReason
 	}
 	var openaiResponse openai.ChatCompletionsStreamResponse
@@ -326,6 +328,7 @@ func StreamHandler(c *gin.Context, resp *http.Response) (*model.ErrorWithStatusC
 	var usage model.Usage
 	var modelName string
 	var id string
+	var fingerprint string
 	var lastToolCallChoice openai.ChatCompletionsStreamResponseChoice
 	toolCounter := &ToolCounter{}
 
@@ -351,6 +354,7 @@ func StreamHandler(c *gin.Context, resp *http.Response) (*model.ErrorWithStatusC
 			if len(meta.Id) > 0 { // only message_start has an id, otherwise it's a finish_reason event.
 				modelName = meta.Model
 				id = fmt.Sprintf("chatcmpl-%s", meta.Id)
+				fingerprint = fmt.Sprintf("fp-%s", meta.Id)
 				continue
 			} else { // finish_reason case
 				if len(lastToolCallChoice.Delta.ToolCalls) > 0 {
@@ -370,6 +374,7 @@ func StreamHandler(c *gin.Context, resp *http.Response) (*model.ErrorWithStatusC
 		response.Id = id
 		response.Model = modelName
 		response.Created = createdTime
+		response.SystemFingerprint = fingerprint
 
 		for _, choice := range response.Choices {
 			if len(choice.Delta.ToolCalls) > 0 {

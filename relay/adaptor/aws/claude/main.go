@@ -191,7 +191,7 @@ func StreamHandler(c *gin.Context, awsCli *bedrockruntime.Client) (*relaymodel.E
 	}
 	c.Stream(func(w io.Writer) bool {
 		if !*started {
-			c.Writer.Header().Set("Content-Type", "text/event-stream")
+			common.SetEventStreamHeaders(c)
 			a := true
 			started = &a
 			return streamEventHandler(c, &firstEvent, toolCounter, &lastToolCallChoice, &usage, createdTime)
@@ -254,6 +254,7 @@ func streamEventHandler(c *gin.Context, event *types.ResponseStream, toolCounter
 		}
 
 		c.Render(-1, common.CustomEvent{Data: "data: " + string(jsonStr)})
+		c.Writer.Flush()
 		return true
 	case *types.UnknownUnionMember:
 		logger.Errorf(c.Request.Context(), "unknown tag: %s", v.Tag)
