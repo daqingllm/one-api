@@ -320,6 +320,10 @@ func streamResponseGeminiChat2OpenAI(geminiResponse *ChatResponse) *openai.ChatC
 		choice.Delta.MultiModContents = multiModContents
 	}
 	choice.Delta.Content = content
+
+	if geminiResponse.Candidates[0].Content.Parts[0].FunctionCall != nil {
+		choice.Delta.ToolCalls = getToolCalls(&geminiResponse.Candidates[0])
+	}
 	//choice.FinishReason = &constant.StopFinishReason
 	var response openai.ChatCompletionsStreamResponse
 	response.Id = fmt.Sprintf("chatcmpl-%s", random.GetUUID())
