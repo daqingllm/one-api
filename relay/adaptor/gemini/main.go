@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"reflect"
 	"strings"
 
 	"github.com/songquanpeng/one-api/common/render"
@@ -82,6 +83,9 @@ func ConvertRequest(textRequest model.GeneralOpenAIRequest) *ChatRequest {
 	if textRequest.Tools != nil {
 		functions := make([]model.Function, 0, len(textRequest.Tools))
 		for _, tool := range textRequest.Tools {
+			if tool.Function.Parameters != nil && isEmptyObject(tool.Function.Parameters) {
+				tool.Function.Parameters = nil
+			}
 			functions = append(functions, tool.Function)
 		}
 		geminiRequest.Tools = []ChatTools{
@@ -158,6 +162,14 @@ func ConvertRequest(textRequest model.GeneralOpenAIRequest) *ChatRequest {
 	return &geminiRequest
 }
 
+// 检查参数是否为空对象
+func isEmptyObject(v any) bool {
+	val := reflect.ValueOf(v)
+	if val.Kind() != reflect.Map || val.IsNil() {
+		return false
+	}
+	return val.Len() == 0
+}
 func ConvertEmbeddingRequest(request model.GeneralOpenAIRequest) *BatchEmbeddingRequest {
 	inputs := request.ParseInput()
 	requests := make([]EmbeddingRequest, len(inputs))
