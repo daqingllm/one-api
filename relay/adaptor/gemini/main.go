@@ -421,7 +421,10 @@ func StreamHandler(c *gin.Context, resp *http.Response, modelName string) (*mode
 		if response == nil {
 			continue
 		}
-
+		if config.DebugUserIds[c.GetInt(ctxkey.Id)] {
+			responseText, _ := json.Marshal(response)
+			logger.DebugForcef(c.Request.Context(), "gemini Stream Response: %s userId: %d", string(responseText), c.GetInt(ctxkey.Id))
+		}
 		responseText += response.Choices[0].Delta.StringContent() + response.Choices[0].Delta.StringReasoningContent()
 
 		err = render.ObjectData(c, response)
