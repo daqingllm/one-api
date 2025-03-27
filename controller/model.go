@@ -48,7 +48,6 @@ type OpenAIModels struct {
 
 type EnhancedModelConfig struct {
 	model.ModelConfig
-	Tags       []model.Tag             `json:"tags"`
 	Parameters []*model.ModelParameter `json:"parameters"`
 }
 
@@ -153,15 +152,6 @@ func GetModelInfo(c *gin.Context) {
 	for _, m := range models {
 		m.ModelRatio = ratio.GetModelRatio(m.Model, channeltype.OpenAI) * ratio.GetGroupRatio("default")
 		m.CompletionRatio = ratio.GetCompletionRatio(m.Model, channeltype.OpenAI)
-		tags, err := model.GetModelTags(ctx, m.Model)
-		if err != nil {
-			logger.Error(ctx, err.Error())
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": err.Error(),
-			})
-			return
-		}
 		parameters, err := model.GetModelParameters(ctx, m.Model)
 		if err != nil {
 			logger.Error(ctx, err.Error())
@@ -173,7 +163,6 @@ func GetModelInfo(c *gin.Context) {
 		}
 		EnhancedModels = append(EnhancedModels, EnhancedModelConfig{
 			ModelConfig: m,
-			Tags:        tags,
 			Parameters:  parameters,
 		})
 	}
