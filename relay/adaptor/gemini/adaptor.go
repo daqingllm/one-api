@@ -1,12 +1,14 @@
 package gemini
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/songquanpeng/one-api/common/logger"
 	"io"
 	"net/http"
 	"strings"
+
+	"github.com/songquanpeng/one-api/common/logger"
 
 	"github.com/gin-gonic/gin"
 	"github.com/songquanpeng/one-api/common/config"
@@ -86,6 +88,10 @@ func (a *Adaptor) ConvertRequest(c *gin.Context, meta *meta.Meta, request *model
 			}
 		} else if strings.HasPrefix(meta.ActualModelName, "gemini-2.0-flash-thinking-exp") {
 			geminiRequest.GenerationConfig.ThinkingConfig = &ThinkingConfig{IncludeThoughts: true}
+		}
+		if config.DebugUserIds[meta.UserId] {
+			geminiRequestJSON, _ := json.Marshal(geminiRequest)
+			logger.DebugForcef(c.Request.Context(), "gemini request: %s ,uid: %d", string(geminiRequestJSON), meta.UserId)
 		}
 		return geminiRequest, nil
 	}
