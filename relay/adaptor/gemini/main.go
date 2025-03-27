@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/songquanpeng/one-api/common/ctxkey"
 	"github.com/songquanpeng/one-api/common/render"
 
 	"github.com/songquanpeng/one-api/common"
@@ -277,6 +278,8 @@ func responseGeminiChat2OpenAI(response *ChatResponse) *openai.TextResponse {
 		} else if len(candidate.Content.Parts) > 0 {
 			if candidate.Content.Parts[0].FunctionCall != nil {
 				choice.Message.ToolCalls = getToolCalls(&candidate)
+				choice.FinishReason = constant.ToolCallsFinishReason
+
 			} else {
 				var builder strings.Builder
 				var thoughtBuilder strings.Builder
@@ -334,6 +337,10 @@ func streamResponseGeminiChat2OpenAI(geminiResponse *ChatResponse) *openai.ChatC
 
 	if geminiResponse.Candidates[0].Content.Parts[0].FunctionCall != nil {
 		choice.Delta.ToolCalls = getToolCalls(&geminiResponse.Candidates[0])
+		choice.FinishReason = &constant.ToolCallsFinishReason
+	}
+	if geminiResponse.Candidates[0].FinishReason == "stop" {
+		choice.FinishReason = &constant.StopFinishReason
 	}
 	//choice.FinishReason = &constant.StopFinishReason
 	var response openai.ChatCompletionsStreamResponse
@@ -474,6 +481,11 @@ func Handler(c *gin.Context, resp *http.Response, promptTokens int, modelName st
 	jsonResponse, err := json.Marshal(fullTextResponse)
 	if err != nil {
 		return openai.ErrorWrapper(err, "marshal_response_body_failed", http.StatusInternalServerError), nil
+	}
+	uid := c.GetInt(ctxkey.Id)
+	if config.DebugUserIds[uid] {
+		logger.DebugForcef(c, "gemini response: %s userId: %d", string(jsonResponse), uid)
+
 	}
 	c.Writer.Header().Set("Content-Type", "application/json")
 	c.Writer.WriteHeader(resp.StatusCode)
