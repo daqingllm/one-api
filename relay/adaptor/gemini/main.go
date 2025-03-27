@@ -109,62 +109,88 @@ func ConvertRequest(textRequest model.GeneralOpenAIRequest) *ChatRequest {
 		}
 	}
 	shouldAddDummyModelMessage := false
+	toolCallIdMap := make(map[string]string)
 	for _, message := range textRequest.Messages {
-		content := ChatContent{
-			Role: message.Role,
-			Parts: []Part{
-				{
-					Text: message.StringContent(),
+		content := ChatContent{}
+		switch message.GetMessageType() {
+
+		case model.ToolMessage:
+			content.Role = "user"
+			content.Parts = append(content.Parts, Part{
+				FunctionResponse: &FunctionResponse{
+					Id:       message.ToolCallId,
+					Name:     toolCallIdMap[message.ToolCallId],
+					Response: message.Content,
 				},
-			},
-		}
-		openaiContent := message.ParseContent()
-		var parts []Part
-		imageNum := 0
-		for _, part := range openaiContent {
-			if part.Type == model.ContentTypeText {
-				parts = append(parts, Part{
-					Text: part.Text,
-				})
-			} else if part.Type == model.ContentTypeImageURL {
-				imageNum += 1
-				if imageNum > VisionMaxImageNum {
-					continue
-				}
-				mimeType, data, _ := image.GetImageFromUrl(part.ImageURL.Url)
-				parts = append(parts, Part{
-					InlineData: &InlineData{
-						MimeType: mimeType,
-						Data:     data,
+			})
+			geminiRequest.Contents = append(geminiRequest.Contents, content)
+		case model.ToolCallMessage:
+			content.Role = "model"
+			for _, toolCall := range message.ToolCalls {
+				toolCallIdMap[toolCall.Id] = toolCall.Function.Name
+				content.Parts = append(content.Parts, Part{
+					FunctionCall: &FunctionCall{
+						Id:           toolCall.Id,
+						FunctionName: toolCall.Function.Name,
+						Arguments:    toolCall.Function.Arguments,
 					},
 				})
 			}
-		}
-		content.Parts = parts
-
-		// there's no assistant role in gemini and API shall vomit if Role is not user or model
-		if content.Role == "assistant" {
-			content.Role = "model"
-		}
-		// Converting system prompt to prompt from user for the same reason
-		if content.Role == "system" {
+			geminiRequest.Contents = append(geminiRequest.Contents, content)
+		case model.ContentMessage:
 			content.Role = "user"
-			shouldAddDummyModelMessage = true
-		}
-		geminiRequest.Contents = append(geminiRequest.Contents, content)
-
-		// If a system message is the last message, we need to add a dummy model message to make gemini happy
-		if shouldAddDummyModelMessage {
-			geminiRequest.Contents = append(geminiRequest.Contents, ChatContent{
-				Role: "model",
-				Parts: []Part{
-					{
-						Text: "Okay",
-					},
-				},
+			content.Parts = append(content.Parts, Part{
+				Text: message.StringContent(),
 			})
-			shouldAddDummyModelMessage = false
+			openaiContent := message.ParseContent()
+			var parts []Part
+			imageNum := 0
+			for _, part := range openaiContent {
+				if part.Type == model.ContentTypeText {
+					parts = append(parts, Part{
+						Text: part.Text,
+					})
+				} else if part.Type == model.ContentTypeImageURL {
+					imageNum += 1
+					if imageNum > VisionMaxImageNum {
+						continue
+					}
+					mimeType, data, _ := image.GetImageFromUrl(part.ImageURL.Url)
+					parts = append(parts, Part{
+						InlineData: &InlineData{
+							MimeType: mimeType,
+							Data:     data,
+						},
+					})
+				}
+			}
+			content.Parts = parts
+
+			// there's no assistant role in gemini and API shall vomit if Role is not user or model
+			if content.Role == "assistant" {
+				content.Role = "model"
+			}
+			// Converting system prompt to prompt from user for the same reason
+			if content.Role == "system" {
+				content.Role = "user"
+				shouldAddDummyModelMessage = true
+			}
+			geminiRequest.Contents = append(geminiRequest.Contents, content)
+
+			// If a system message is the last message, we need to add a dummy model message to make gemini happy
+			if shouldAddDummyModelMessage {
+				geminiRequest.Contents = append(geminiRequest.Contents, ChatContent{
+					Role: "model",
+					Parts: []Part{
+						{
+							Text: "Okay",
+						},
+					},
+				})
+				shouldAddDummyModelMessage = false
+			}
 		}
+
 	}
 
 	return &geminiRequest
