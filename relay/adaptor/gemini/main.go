@@ -116,11 +116,39 @@ func ConvertRequest(textRequest model.GeneralOpenAIRequest) *ChatRequest {
 
 		case model.ToolMessage:
 			content.Role = "user"
+
+			// if arr, ok := message.Content.([]any); ok {
+			// 	responseObj = arr
+			// } else if obj, ok := message.Content.(map[string]interface{}); ok {
+			// 	responseObj = obj
+			// } else {
+			// 	contentStr, ok := message.Content.(string)
+			// 	if ok && contentStr != "" {
+			// 		// 尝试解析为数组
+			// 		var arr []interface{}
+			// 		if err := json.Unmarshal([]byte(contentStr), &arr); err == nil {
+			// 			responseObj = arr
+			// 		} else {
+			// 			// 解析为对象
+			// 			var obj map[string]interface{}
+			// 			if err := json.Unmarshal([]byte(contentStr), &obj); err == nil {
+			// 				responseObj = obj
+			// 			} else {
+			// 				logger.SysError("Failed to parse tool message content: " + err.Error())
+			// 				responseObj = []any{} // 默认空数组
+			// 			}
+			// 		}
+			// 	} else {
+			// 		responseObj = []any{} // 默认空数组
+			// 	}
+			// }
+			responseMap := make(map[string]interface{}, 1)
+			responseMap["content"] = message.Content
 			content.Parts = append(content.Parts, Part{
 				FunctionResponse: &FunctionResponse{
 					Id:       message.ToolCallId,
 					Name:     toolCallIdMap[message.ToolCallId],
-					Response: message.Content,
+					Response: responseMap,
 				},
 			})
 			geminiRequest.Contents = append(geminiRequest.Contents, content)
@@ -128,11 +156,28 @@ func ConvertRequest(textRequest model.GeneralOpenAIRequest) *ChatRequest {
 			content.Role = "model"
 			for _, toolCall := range message.ToolCalls {
 				toolCallIdMap[toolCall.Id] = toolCall.Function.Name
+				var argumentsMap map[string]interface{}
+
+				// 与ToolMessage保持一致的解析逻辑
+				if argsMap, ok := toolCall.Function.Arguments.(map[string]any); ok {
+					argumentsMap = argsMap
+				} else {
+					argsStr, ok := toolCall.Function.Arguments.(string)
+					if !ok {
+						logger.SysError("toolCall arguments is not string type")
+						argsStr = "{}"
+					}
+					err := json.Unmarshal([]byte(argsStr), &argumentsMap)
+					if err != nil {
+						logger.SysError("Failed to unmarshal toolCall arguments: " + err.Error())
+						argumentsMap = make(map[string]interface{})
+					}
+				}
 				content.Parts = append(content.Parts, Part{
 					FunctionCall: &FunctionCall{
 						Id:           toolCall.Id,
 						FunctionName: toolCall.Function.Name,
-						Arguments:    toolCall.Function.Arguments,
+						Arguments:    argumentsMap,
 					},
 				})
 			}
