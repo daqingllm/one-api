@@ -21,7 +21,16 @@ type ModelConfig struct {
 	Order           int     `json:"order"`
 	Flag            int     `json:"flag"`
 	ContextLength   string  `json:"context_length"`
-	ParametersCount string  `json:"parameters_count"`
+	InputImages     string  `json:"input_images"`
+	InputAudios     string  `json:"input_audios"`
+	Latency         float64 `json:"latency"`
+	Throughput      float64 `json:"throughput"`
+	Usage           string  `json:"usage"`
+	UsageEn         string  `json:"usage_en"`
+	Modalities      string  `json:"modalities"`
+	Features        string  `json:"features"`
+	Tags            string  `json:"tags"`
+	Types           string  `json:"types"`
 }
 
 type ModelProvider struct {
