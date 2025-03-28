@@ -145,6 +145,7 @@ func ConvertRequest(textRequest model.GeneralOpenAIRequest) *ChatRequest {
 			responseMap := make(map[string]interface{}, 1)
 			responseMap["content"] = message.Content
 			content.Parts = append(content.Parts, Part{
+				Text: "",
 				FunctionResponse: &FunctionResponse{
 					Id:       message.ToolCallId,
 					Name:     toolCallIdMap[message.ToolCallId],
@@ -174,6 +175,7 @@ func ConvertRequest(textRequest model.GeneralOpenAIRequest) *ChatRequest {
 					}
 				}
 				content.Parts = append(content.Parts, Part{
+					Text: "",
 					FunctionCall: &FunctionCall{
 						Id:           toolCall.Id,
 						FunctionName: toolCall.Function.Name,
