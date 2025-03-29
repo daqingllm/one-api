@@ -116,35 +116,10 @@ func ConvertRequest(textRequest model.GeneralOpenAIRequest) *ChatRequest {
 
 		case model.ToolMessage:
 			content.Role = "user"
-
-			// if arr, ok := message.Content.([]any); ok {
-			// 	responseObj = arr
-			// } else if obj, ok := message.Content.(map[string]interface{}); ok {
-			// 	responseObj = obj
-			// } else {
-			// 	contentStr, ok := message.Content.(string)
-			// 	if ok && contentStr != "" {
-			// 		// 尝试解析为数组
-			// 		var arr []interface{}
-			// 		if err := json.Unmarshal([]byte(contentStr), &arr); err == nil {
-			// 			responseObj = arr
-			// 		} else {
-			// 			// 解析为对象
-			// 			var obj map[string]interface{}
-			// 			if err := json.Unmarshal([]byte(contentStr), &obj); err == nil {
-			// 				responseObj = obj
-			// 			} else {
-			// 				logger.SysError("Failed to parse tool message content: " + err.Error())
-			// 				responseObj = []any{} // 默认空数组
-			// 			}
-			// 		}
-			// 	} else {
-			// 		responseObj = []any{} // 默认空数组
-			// 	}
-			// }
 			responseMap := make(map[string]interface{}, 1)
 			responseMap["content"] = message.Content
 			content.Parts = append(content.Parts, Part{
+				Text: "",
 				FunctionResponse: &FunctionResponse{
 					Id:       message.ToolCallId,
 					Name:     toolCallIdMap[message.ToolCallId],
@@ -174,6 +149,7 @@ func ConvertRequest(textRequest model.GeneralOpenAIRequest) *ChatRequest {
 					}
 				}
 				content.Parts = append(content.Parts, Part{
+					Text: "",
 					FunctionCall: &FunctionCall{
 						Id:           toolCall.Id,
 						FunctionName: toolCall.Function.Name,

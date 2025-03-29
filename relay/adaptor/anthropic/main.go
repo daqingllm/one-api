@@ -102,7 +102,7 @@ func ConvertRequest(textRequest model.GeneralOpenAIRequest) *Request {
 			Role: message.Role,
 		}
 		var content ContentReq
-		if message.IsStringContent() {
+		if message.IsStringContent() || message.IsToolCallMessage() || message.IsToolMessage() {
 			var contents []ContentReq
 			if message.Role == "tool" {
 				claudeMessage.Role = "user"
