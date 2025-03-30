@@ -49,7 +49,7 @@ func ConvertRequest(textRequest model.GeneralOpenAIRequest) *Request {
 			claudeTools = append(claudeTools, Tool{
 				Name:        tool.Function.Name,
 				Description: tool.Function.Description,
-				InputSchema: InputSchema{
+				InputSchema: &InputSchema{
 					Type:       params["type"].(string),
 					Properties: params["properties"],
 				},
