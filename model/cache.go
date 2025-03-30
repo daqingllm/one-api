@@ -288,6 +288,16 @@ func CacheGetChannelById(id int) (*Channel, error) {
 	return channel, nil
 }
 
+func CacheGetRandomSatisfiedChannels(group string, model string) ([]*Channel, error) {
+	channelSyncLock.RLock()
+	defer channelSyncLock.RUnlock()
+	if len(group2model2channels[group][model]) == 0 {
+		return nil, errors.New("channel not found")
+	}
+	//todo deep copy and order channels 
+	return group2model2channels[group][model], nil
+}
+
 func CacheGetRandomSatisfiedChannel(group string, model string, excludedChannelIds []int) (*Channel, error) {
 	channelSyncLock.RLock()
 	defer channelSyncLock.RUnlock()

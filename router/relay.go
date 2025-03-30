@@ -3,6 +3,9 @@ package router
 import (
 	"github.com/songquanpeng/one-api/controller"
 	"github.com/songquanpeng/one-api/middleware"
+	"github.com/songquanpeng/one-api/relay/rproxy"
+	"github.com/songquanpeng/one-api/relay/rproxy/ideogram"
+	"github.com/songquanpeng/one-api/relay/rproxy/oai"
 
 	"github.com/gin-gonic/gin"
 )
@@ -21,6 +24,12 @@ func SetRelayRouter(router *gin.Engine) {
 	claudeV1Router.Use(middleware.RelayPanicRecover(), middleware.TokenAuthClaude(), middleware.DistributeClaude(), middleware.RelayTime())
 	{
 		claudeV1Router.POST("/messages", controller.ClaudeMessages)
+	}
+	directRproxyRouter := router.Group("/")
+	directRproxyRouter.Use(middleware.RelayPanicRecover(), middleware.RelayTime())
+	{
+		directRproxyRouter.POST("/v1/responses", controller.RelayRProxy(&oai.OAIResponseWeaverFactory{}))
+		directRproxyRouter.POST("/generate", controller.RelayRProxy(&ideogram.IdeoGramWeaverFactory{}))
 	}
 	relayV1Router := router.Group("/v1")
 	relayV1Router.Use(middleware.RelayPanicRecover(), middleware.TokenAuth(), middleware.Distribute(), middleware.RelayTime())
