@@ -27,11 +27,11 @@ type Anthropic struct{}
 
 func (a *Anthropic) DoRequest(c *gin.Context, request *anthropic.Request, meta *meta.Meta) (*anthropic.Usage, *model.ErrorWithStatusCode) {
 	ctx := c.Request.Context()
-	jsonData, _ := json.Marshal(request)
-	requestBody := bytes.NewBuffer(jsonData)
+	reqBody, _ := common.GetRequestBody(c)
 	if config.DebugUserIds[c.GetInt(ctxkey.Id)] {
-		logger.DebugForcef(ctx, "Antropic request: %s", string(jsonData))
+		logger.DebugForcef(ctx, "Antropic request: %s", string(reqBody))
 	}
+	requestBody := bytes.NewBuffer(reqBody)
 	fullRequestURL := fmt.Sprintf("%s/v1/messages", meta.BaseURL)
 	req, err := http.NewRequest(c.Request.Method, fullRequestURL, requestBody)
 	if err != nil {
