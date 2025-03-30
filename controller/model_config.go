@@ -7,9 +7,7 @@ import (
 
 type EnhancedModelConfigOperate struct {
 	model.ModelConfig
-	Tags             []*model.ModelTag       `json:"tags"`
 	Parameters       []*model.ModelParameter `json:"parameters"`
-	DeleteTags       []int                   `json:"delete_tags"`
 	DeleteParameters []int                   `json:"delete_parameters"`
 }
 
@@ -34,14 +32,6 @@ func GetModelOptions(context *gin.Context) {
 	EnhancedModels := []EnhancedModelConfigOperate{}
 	// 循环遍历models，获取每个model的tags和parameters
 	for _, m := range modelConfigs {
-		tags, err := model.GetModelTagsRelative(ctx, m.Model)
-		if err != nil {
-			context.JSON(200, gin.H{
-				"success": false,
-				"message": err.Error(),
-			})
-			return
-		}
 		parameters, err := model.GetModelParameters(ctx, m.Model)
 		if err != nil {
 			context.JSON(200, gin.H{
@@ -52,7 +42,6 @@ func GetModelOptions(context *gin.Context) {
 		}
 		EnhancedModels = append(EnhancedModels, EnhancedModelConfigOperate{
 			ModelConfig: *m,
-			Tags:        tags,
 			Parameters:  parameters,
 		})
 	}
@@ -109,12 +98,6 @@ func UpsertModelOption(context *gin.Context) {
 	// 保存模型配置
 	if err := model.SaveModelConfig(ctx, &modelConfig.ModelConfig); err != nil {
 		handleError(context, 200, err) // 使用 500 Internal Server Error
-		return
-	}
-
-	// 处理标签
-	if err := UpsertTags(context, modelConfig.Tags, modelConfig.DeleteTags); err != nil {
-		handleError(context, 200, err)
 		return
 	}
 
