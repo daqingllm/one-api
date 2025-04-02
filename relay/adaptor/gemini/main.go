@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/songquanpeng/one-api/common/ctxkey"
 	"github.com/songquanpeng/one-api/common/render"
 
 	"github.com/songquanpeng/one-api/common"
@@ -82,6 +83,17 @@ func ConvertRequest(textRequest model.GeneralOpenAIRequest) *ChatRequest {
 	if textRequest.Tools != nil {
 		functions := make([]model.Function, 0, len(textRequest.Tools))
 		for _, tool := range textRequest.Tools {
+			if tool.Function.Parameters != nil && common.IsEmptyObject(tool.Function.Parameters) {
+				tool.Function.Parameters = nil
+			} else if tool.Function.Parameters != nil {
+				// 兼容gemini不能传空对象
+				if params, ok := tool.Function.Parameters.(map[string]any); ok {
+					if params["type"] == "object" && common.IsEmptyObject(params["properties"]) {
+						tool.Function.Parameters = nil
+					}
+				}
+
+			}
 			functions = append(functions, tool.Function)
 		}
 		geminiRequest.Tools = []ChatTools{
@@ -97,62 +109,109 @@ func ConvertRequest(textRequest model.GeneralOpenAIRequest) *ChatRequest {
 		}
 	}
 	shouldAddDummyModelMessage := false
+	toolCallIdMap := make(map[string]string)
 	for _, message := range textRequest.Messages {
-		content := ChatContent{
-			Role: message.Role,
-			Parts: []Part{
-				{
-					Text: message.StringContent(),
+		content := ChatContent{}
+		switch message.GetMessageType() {
+
+		case model.ToolMessage:
+			content.Role = "user"
+			responseMap := make(map[string]interface{}, 1)
+			responseMap["content"] = message.Content
+			content.Parts = append(content.Parts, Part{
+				Text: "",
+				FunctionResponse: &FunctionResponse{
+					Id:       message.ToolCallId,
+					Name:     toolCallIdMap[message.ToolCallId],
+					Response: responseMap,
 				},
-			},
-		}
-		openaiContent := message.ParseContent()
-		var parts []Part
-		imageNum := 0
-		for _, part := range openaiContent {
-			if part.Type == model.ContentTypeText {
-				parts = append(parts, Part{
-					Text: part.Text,
-				})
-			} else if part.Type == model.ContentTypeImageURL {
-				imageNum += 1
-				if imageNum > VisionMaxImageNum {
-					continue
+			})
+			geminiRequest.Contents = append(geminiRequest.Contents, content)
+		case model.ToolCallMessage:
+			content.Role = "model"
+			for _, toolCall := range message.ToolCalls {
+				toolCallIdMap[toolCall.Id] = toolCall.Function.Name
+				var argumentsMap map[string]interface{}
+
+				// 与ToolMessage保持一致的解析逻辑
+				if argsMap, ok := toolCall.Function.Arguments.(map[string]any); ok {
+					argumentsMap = argsMap
+				} else {
+					argsStr, ok := toolCall.Function.Arguments.(string)
+					if !ok {
+						logger.SysError("toolCall arguments is not string type")
+						argsStr = "{}"
+					}
+					err := json.Unmarshal([]byte(argsStr), &argumentsMap)
+					if err != nil {
+						logger.SysError("Failed to unmarshal toolCall arguments: " + err.Error())
+						argumentsMap = make(map[string]interface{})
+					}
 				}
-				mimeType, data, _ := image.GetImageFromUrl(part.ImageURL.Url)
-				parts = append(parts, Part{
-					InlineData: &InlineData{
-						MimeType: mimeType,
-						Data:     data,
+				content.Parts = append(content.Parts, Part{
+					Text: "",
+					FunctionCall: &FunctionCall{
+						Id:           toolCall.Id,
+						FunctionName: toolCall.Function.Name,
+						Arguments:    argumentsMap,
 					},
 				})
 			}
-		}
-		content.Parts = parts
-
-		// there's no assistant role in gemini and API shall vomit if Role is not user or model
-		if content.Role == "assistant" {
-			content.Role = "model"
-		}
-		// Converting system prompt to prompt from user for the same reason
-		if content.Role == "system" {
+			geminiRequest.Contents = append(geminiRequest.Contents, content)
+		case model.ContentMessage:
 			content.Role = "user"
-			shouldAddDummyModelMessage = true
-		}
-		geminiRequest.Contents = append(geminiRequest.Contents, content)
-
-		// If a system message is the last message, we need to add a dummy model message to make gemini happy
-		if shouldAddDummyModelMessage {
-			geminiRequest.Contents = append(geminiRequest.Contents, ChatContent{
-				Role: "model",
-				Parts: []Part{
-					{
-						Text: "Okay",
-					},
-				},
+			content.Parts = append(content.Parts, Part{
+				Text: message.StringContent(),
 			})
-			shouldAddDummyModelMessage = false
+			openaiContent := message.ParseContent()
+			var parts []Part
+			imageNum := 0
+			for _, part := range openaiContent {
+				if part.Type == model.ContentTypeText {
+					parts = append(parts, Part{
+						Text: part.Text,
+					})
+				} else if part.Type == model.ContentTypeImageURL {
+					imageNum += 1
+					if imageNum > VisionMaxImageNum {
+						continue
+					}
+					mimeType, data, _ := image.GetImageFromUrl(part.ImageURL.Url)
+					parts = append(parts, Part{
+						InlineData: &InlineData{
+							MimeType: mimeType,
+							Data:     data,
+						},
+					})
+				}
+			}
+			content.Parts = parts
+
+			// there's no assistant role in gemini and API shall vomit if Role is not user or model
+			if content.Role == "assistant" {
+				content.Role = "model"
+			}
+			// Converting system prompt to prompt from user for the same reason
+			if content.Role == "system" {
+				content.Role = "user"
+				shouldAddDummyModelMessage = true
+			}
+			geminiRequest.Contents = append(geminiRequest.Contents, content)
+
+			// If a system message is the last message, we need to add a dummy model message to make gemini happy
+			if shouldAddDummyModelMessage {
+				geminiRequest.Contents = append(geminiRequest.Contents, ChatContent{
+					Role: "model",
+					Parts: []Part{
+						{
+							Text: "Okay",
+						},
+					},
+				})
+				shouldAddDummyModelMessage = false
+			}
 		}
+
 	}
 
 	return &geminiRequest
@@ -266,6 +325,8 @@ func responseGeminiChat2OpenAI(response *ChatResponse) *openai.TextResponse {
 		} else if len(candidate.Content.Parts) > 0 {
 			if candidate.Content.Parts[0].FunctionCall != nil {
 				choice.Message.ToolCalls = getToolCalls(&candidate)
+				choice.FinishReason = constant.ToolCallsFinishReason
+
 			} else {
 				var builder strings.Builder
 				var thoughtBuilder strings.Builder
@@ -312,6 +373,9 @@ func streamResponseGeminiChat2OpenAI(geminiResponse *ChatResponse) *openai.ChatC
 	var choice openai.ChatCompletionsStreamResponseChoice
 	// choice.Delta.Content = geminiResponse.GetResponseText()
 	thoughtText := geminiResponse.GetResponseThoughtText()
+	if len(geminiResponse.Candidates) <= 0 {
+		return nil
+	}
 	multiModContents, content, _ := getMultiModOrPlainContents(&geminiResponse.Candidates[0])
 	if thoughtText != "" {
 		choice.Delta.ReasoningContent = thoughtText
@@ -320,6 +384,14 @@ func streamResponseGeminiChat2OpenAI(geminiResponse *ChatResponse) *openai.ChatC
 		choice.Delta.MultiModContents = multiModContents
 	}
 	choice.Delta.Content = content
+
+	if geminiResponse.Candidates[0].Content.Parts[0].FunctionCall != nil {
+		choice.Delta.ToolCalls = getToolCalls(&geminiResponse.Candidates[0])
+		choice.FinishReason = &constant.ToolCallsFinishReason
+	}
+	if geminiResponse.Candidates[0].FinishReason == "stop" {
+		choice.FinishReason = &constant.StopFinishReason
+	}
 	//choice.FinishReason = &constant.StopFinishReason
 	var response openai.ChatCompletionsStreamResponse
 	response.Id = fmt.Sprintf("chatcmpl-%s", random.GetUUID())
@@ -336,7 +408,7 @@ func getMultiModOrPlainContents(candidate *ChatCandidate) ([]model.MultiModConte
 	var existMultiContents bool = false
 	for _, part := range candidate.Content.Parts {
 		if part.Text != "" {
-			contentBuilder.WriteString(part.Text + "\n")
+			contentBuilder.WriteString(part.Text)
 			multiModContents = append(multiModContents, model.MultiModContent{
 				Text: part.Text,
 			})
@@ -399,7 +471,10 @@ func StreamHandler(c *gin.Context, resp *http.Response, modelName string) (*mode
 		if response == nil {
 			continue
 		}
-
+		if config.DebugUserIds[c.GetInt(ctxkey.Id)] {
+			responseText, _ := json.Marshal(response)
+			logger.DebugForcef(c.Request.Context(), "gemini Stream Response: %s userId: %d", string(responseText), c.GetInt(ctxkey.Id))
+		}
 		responseText += response.Choices[0].Delta.StringContent() + response.Choices[0].Delta.StringReasoningContent()
 
 		err = render.ObjectData(c, response)
@@ -459,6 +534,11 @@ func Handler(c *gin.Context, resp *http.Response, promptTokens int, modelName st
 	jsonResponse, err := json.Marshal(fullTextResponse)
 	if err != nil {
 		return openai.ErrorWrapper(err, "marshal_response_body_failed", http.StatusInternalServerError), nil
+	}
+	uid := c.GetInt(ctxkey.Id)
+	if config.DebugUserIds[uid] {
+		logger.DebugForcef(c, "gemini response: %s userId: %d", string(jsonResponse), uid)
+
 	}
 	c.Writer.Header().Set("Content-Type", "application/json")
 	c.Writer.WriteHeader(resp.StatusCode)

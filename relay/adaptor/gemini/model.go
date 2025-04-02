@@ -40,15 +40,28 @@ type InlineData struct {
 }
 
 type FunctionCall struct {
+	Id           string `json:"id,omitempty"`
 	FunctionName string `json:"name"`
-	Arguments    any    `json:"args"`
+	Arguments    any    `json:"args,omitempty"`
+}
+
+type FileData struct {
+	MimeType string `json:"mimeType,omitempty"`
+	FileUri  string `json:"fileUri,omitempty"`
+}
+
+type FunctionResponse struct {
+	Id       string `json:"id,omitempty"`
+	Name     string `json:"name,omitempty"`
+	Response any    `json:"response,omitempty"`
 }
 
 type Part struct {
-	Text         string        `json:"text,omitempty"`
-	Thought      *bool         `json:"thought,omitempty"`
-	InlineData   *InlineData   `json:"inlineData,omitempty"`
-	FunctionCall *FunctionCall `json:"functionCall,omitempty"`
+	Text             string            `json:"text,omitempty"`
+	Thought          *bool             `json:"thought,omitempty"`
+	InlineData       *InlineData       `json:"inlineData,omitempty"`
+	FunctionCall     *FunctionCall     `json:"functionCall,omitempty"`
+	FunctionResponse *FunctionResponse `json:"functionResponse,omitempty"`
 }
 
 type ChatContent struct {
