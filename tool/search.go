@@ -31,7 +31,7 @@ func EnhanceSearchPrompt(c *gin.Context, textRequest *relaymodel.GeneralOpenAIRe
 		return nil
 	}
 	if c.GetString(ctxkey.SurfingContext) != "" {
-		lastUserMessage.Content = c.GetString(ctxkey.SurfingContext)
+		textRequest.Messages[len(textRequest.Messages)-1].Content = c.GetString(ctxkey.SurfingContext)
 		return nil
 	}
 
@@ -62,7 +62,7 @@ func EnhanceSearchPrompt(c *gin.Context, textRequest *relaymodel.GeneralOpenAIRe
 	// replace {query} with the query, {json} with the json
 	prompt := strings.ReplaceAll(promptTemplate, "{query}", query)
 	prompt = strings.ReplaceAll(prompt, "{json}", string(searchResJson))
-	lastUserMessage.Content = prompt
+	textRequest.Messages[len(textRequest.Messages)-1].Content = prompt
 	// set the prompt to the context
 	c.Set(ctxkey.SurfingContext, prompt)
 	return nil
