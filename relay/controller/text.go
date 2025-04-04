@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/songquanpeng/one-api/common/config"
 	"github.com/songquanpeng/one-api/common/ctxkey"
 	"github.com/songquanpeng/one-api/common/logger"
 	"github.com/songquanpeng/one-api/relay"
@@ -43,6 +44,9 @@ func RelayTextHelper(c *gin.Context) *model.ErrorWithStatusCode {
 
 	// enrich search Context
 	if c.GetBool(ctxkey.Surfing) {
+		if config.DebugUserIds[c.GetInt(ctxkey.Id)] {
+			logger.Debugf(ctx, "relay text: surfing %s", textRequest.Model)
+		}
 		err := tool.EnhanceSearchPrompt(c, textRequest)
 		if err != nil {
 			logger.Errorf(ctx, "EnhanceSearchPrompt failed: %s", err.Error())
