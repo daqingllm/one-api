@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/songquanpeng/one-api/common/ctxkey"
 	"github.com/songquanpeng/one-api/relay/constant/role"
 	"math"
 	"net/http"
@@ -29,6 +30,8 @@ func getAndValidateTextRequest(c *gin.Context, relayMode int) (*relaymodel.Gener
 	if err != nil {
 		return nil, err
 	}
+	textRequest.Model = c.GetString(ctxkey.RequestModel)
+
 	if relayMode == relaymode.Moderations && textRequest.Model == "" {
 		textRequest.Model = "text-moderation-latest"
 	}

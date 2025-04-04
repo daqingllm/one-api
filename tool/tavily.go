@@ -40,11 +40,11 @@ type TavilyImageResponse struct {
 }
 
 type TavilySearchResult struct {
-	Title      string  `json:"title"`
-	Url        string  `json:"url"`
-	Content    string  `json:"content"`
-	Score      float64 `json:"score"`
-	RawContent string  `json:"raw_content"`
+	Title      string  `json:"title,omitempty"`
+	Url        string  `json:"url,omitempty"`
+	Content    string  `json:"content,omitempty"`
+	Score      float64 `json:"score,omitempty"`
+	RawContent string  `json:"raw_content,omitempty"`
 }
 
 func SearchByTavily(query string) (*TavilyResponse, error) {
