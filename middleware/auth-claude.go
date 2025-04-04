@@ -44,6 +44,14 @@ func TokenAuthClaude() func(c *gin.Context) {
 			abortWithMessageClaude(c, http.StatusBadRequest, err.Error())
 			return
 		}
+		if strings.Contains(requestModel, ":surfing") {
+			c.Set(ctxkey.Surfing, true)
+			requestModel = strings.Replace(requestModel, ":surfing", "", -1)
+		}
+		if strings.Contains(requestModel, ":thinking") {
+			c.Set(ctxkey.Thinking, true)
+			requestModel = strings.Replace(requestModel, ":thinking", "", -1)
+		}
 		c.Set(ctxkey.RequestModel, requestModel)
 		if token.Models != nil && *token.Models != "" {
 			c.Set(ctxkey.AvailableModels, *token.Models)
