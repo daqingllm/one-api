@@ -124,7 +124,9 @@ func getSearchPrompt(c *gin.Context, query string) (string, error) {
 	searchResJson, _ := json.Marshal(searchResults)
 
 	// write a prompt template and translate to English: "请根据参考资料回答问题\n\n## 标注规则：\n- 请在适当的情况下在句子末尾引用上下文。\n- 请按照引用编号[number]的格式在答案中对应部分引用上下文。\n- 如果一句话源自多个上下文，请列出所有相关的引用编号，例如[1][2]，切记不要将引用集中在最后返回引用编号，而是在答案对应部分列出。\n\n## 我的问题是：\n\n{query}\n\n## 参考资料：\n\n```json\n[\n  {\n    \"id\": {id},\n    \"content\": \"{content}\",\n    \"sourceUrl\": \"{source_url}\",\n    \"type\": \"url\"\n  }\n]\n```\n\n请使用同用户问题相同的语言进行回答。\n"
-	promptTemplate := "Please answer the question based on the reference materials\n\n## Annotation Rules:\n- Please quote the context at the end of the sentence when appropriate.\n- Please quote the context in the answer in the format of citation number [number].\n- If a sentence comes from multiple contexts, please list all relevant citation numbers, such as [1][2], and remember not to concentrate the citations at the end of the answer, but list them in the corresponding part of the answer.\n\n## My question is:\n\n{query}\n\n## Reference Materials:\n\n```json\n{json}\n```\n\nPlease answer in the same language as the user question.\n"
+	promptTemplate := "Please answer the question based on the reference materials\n\n" +
+		//"## Annotation Rules:\n- Please quote the context at the end of the sentence when appropriate.\n- Please quote the context in the answer in the format of citation number [number].\n- If a sentence comes from multiple contexts, please list all relevant citation numbers, such as [1][2], and remember not to concentrate the citations at the end of the answer, but list them in the corresponding part of the answer.\n\n" +
+		"## My question is:\n\n{query}\n\n## Reference Materials:\n\n```json\n{json}\n```\n\nPlease answer in the same language as the user question.\n"
 	// replace {query} with the query, {json} with the json
 	prompt := strings.ReplaceAll(promptTemplate, "{query}", query)
 	prompt = strings.ReplaceAll(prompt, "{json}", string(searchResJson))
