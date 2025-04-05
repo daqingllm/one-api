@@ -1,10 +1,12 @@
 package ideogram
 
 import (
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
 
+	"github.com/songquanpeng/one-api/common/logger"
 	"github.com/songquanpeng/one-api/model"
 	"github.com/songquanpeng/one-api/relay/channeltype"
 	relaymodel "github.com/songquanpeng/one-api/relay/model"
@@ -21,6 +23,7 @@ func GetName(path string) string {
 }
 func init() {
 	//url-channeltype
+	logger.SysLogf("register ideogram channel type start %s", channeltype.IdeoGram)
 	registry := rproxy.GetChannelAdaptorRegistry()
 	var adaptorBuilder = common.DefaultHttpAdaptorBuilder{
 		SetHeaderFunc: SetHeaderFunc,
@@ -31,4 +34,6 @@ func init() {
 	registry.Register(GetName("/upscale"), adaptorBuilder)
 	registry.Register(GetName("/describe"), adaptorBuilder)
 	registry.Register(GetName("/reframe"), adaptorBuilder)
+	logger.SysLogf("register ideogram channel type end %s", channeltype.IdeoGram)
+
 }

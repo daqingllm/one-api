@@ -1,8 +1,10 @@
 package rproxy
 
 import (
+	"log"
 	"net/http"
 
+	"github.com/songquanpeng/one-api/common/logger"
 	"github.com/songquanpeng/one-api/relay/model"
 )
 
@@ -28,6 +30,7 @@ func (w *DefaultWeaver) Weave() (err *model.ErrorWithStatusCode) {
 	if w.ContextInitializer == nil || w.TokenRetriever == nil {
 		return model.NewErrorWithStatusCode(http.StatusInternalServerError, "weaver_struct_error", "weaver struct error ")
 	}
+	logger.Infof(w.RproxyContext.SrcContext, "weave start")
 	if err := w.ContextInitializer.Initialize(w.RproxyContext); err != nil {
 		return err
 	}
