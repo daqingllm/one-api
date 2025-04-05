@@ -71,7 +71,7 @@ type Tool struct {
 	Name         string        `json:"name"`
 	Type         string        `json:"type,omitempty"`
 	Description  string        `json:"description,omitempty"`
-	InputSchema  InputSchema   `json:"input_schema"`
+	InputSchema  *InputSchema  `json:"input_schema,omitempty"`
 	CacheControl *CacheControl `json:"cache_control,omitempty"`
 
 	//computerUseTool

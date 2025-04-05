@@ -373,6 +373,9 @@ func streamResponseGeminiChat2OpenAI(geminiResponse *ChatResponse) *openai.ChatC
 	var choice openai.ChatCompletionsStreamResponseChoice
 	// choice.Delta.Content = geminiResponse.GetResponseText()
 	thoughtText := geminiResponse.GetResponseThoughtText()
+	if len(geminiResponse.Candidates) <= 0 {
+		return nil
+	}
 	multiModContents, content, _ := getMultiModOrPlainContents(&geminiResponse.Candidates[0])
 	if thoughtText != "" {
 		choice.Delta.ReasoningContent = thoughtText
