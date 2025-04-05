@@ -22,7 +22,7 @@ func GetName(path string) string {
 }
 func init() {
 	//url-channeltype
-	logger.SysLogf("register ideogram channel type start %s", channeltype.IdeoGram)
+	logger.SysLogf("register ideogram channel type start %d", channeltype.IdeoGram)
 	registry := rproxy.GetChannelAdaptorRegistry()
 	var adaptorBuilder = common.DefaultHttpAdaptorBuilder{
 		SetHeaderFunc: SetHeaderFunc,
@@ -33,6 +33,6 @@ func init() {
 	registry.Register(GetName("/upscale"), adaptorBuilder)
 	registry.Register(GetName("/describe"), adaptorBuilder)
 	registry.Register(GetName("/reframe"), adaptorBuilder)
-	logger.SysLogf("register ideogram channel type end %s", channeltype.IdeoGram)
+	logger.SysLogf("register ideogram channel type end %d", channeltype.IdeoGram)
 
 }

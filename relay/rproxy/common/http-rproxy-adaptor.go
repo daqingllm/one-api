@@ -30,6 +30,7 @@ func (a *HttpRproxyAdaptor) DoRequest(context *rproxy.RproxyContext) (response r
 	if err != nil {
 		return nil, err
 	}
+	logger.Infof(context.SrcContext, "Request : %v", newReq)
 	resp, error := adaptor.DoRequest(context.SrcContext, newReq.(*http.Request))
 	err = a.GetErrorHandler().HandleError(context, resp, error)
 	if err != nil {
@@ -75,7 +76,8 @@ func (r *DefaultErrorHandler) HandleError(context *rproxy.RproxyContext, resp rp
 	if !ok {
 		return relaymodel.NewErrorWithStatusCode(http.StatusInternalServerError, "invalid_response", "invalid_response")
 	}
-	if e != nil || httpResp.StatusCode != http.StatusOK {
+	logger.SysLogf("http response %v", httpResp)
+	if httpResp.StatusCode != http.StatusOK {
 		return controller.RelayErrorHandler(httpResp)
 	}
 	return nil
