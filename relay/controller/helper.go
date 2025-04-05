@@ -215,7 +215,6 @@ func postConsumeQuota(c *gin.Context, ctx context.Context, usage *relaymodel.Usa
 		logContent = fmt.Sprintf("模型倍率 %.3f，分组倍率 %.3f，补全倍率 %.3f(%s)", modelRatio, groupRatio, completionRatio, extraLog)
 	} else {
 		logContent = fmt.Sprintf("模型倍率 %.3f，分组倍率 %.3f，补全倍率 %.3f", modelRatio, groupRatio, completionRatio)
-
 	}
 	model.RecordConsumeLog(ctx, meta.UserId, meta.ChannelId, promptTokens, cachedTokens, completionTokens, textRequest.Model, meta.TokenName, quota, logContent)
 	model.UpdateUserUsedQuotaAndRequestCount(meta.UserId, quota)
