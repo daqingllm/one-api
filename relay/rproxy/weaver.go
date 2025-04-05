@@ -1,7 +1,6 @@
 package rproxy
 
 import (
-	"log"
 	"net/http"
 
 	"github.com/songquanpeng/one-api/common/logger"
