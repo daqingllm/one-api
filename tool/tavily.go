@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/songquanpeng/one-api/common/config"
+	"github.com/songquanpeng/one-api/common/logger"
 	"io"
 	"net/http"
 	"time"
@@ -48,6 +50,9 @@ type TavilySearchResult struct {
 }
 
 func SearchByTavily(query string) (*TavilyResponse, error) {
+	if len(config.TavilyKeys) == 0 {
+		return nil, fmt.Errorf("no Tavily keys configured")
+	}
 	// Create request payload
 	reqPayload := TavilyRequest{
 		Query:                    query,
@@ -78,21 +83,30 @@ func SearchByTavily(query string) (*TavilyResponse, error) {
 
 	// Add headers
 	req.Header.Set("Content-Type", "application/json")
-	// You'll need to set an API key. If it's stored in config, add it here
-	req.Header.Set("Authorization", "Bearer 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")
-
-	// Send request
-	client := &http.Client{Timeout: 30 * time.Second}
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("request failed: %w", err)
+	var resp *http.Response
+	for _, key := range config.TavilyKeys {
+		req.Header.Set("Authorization", key) // Send request
+		client := &http.Client{Timeout: 30 * time.Second}
+		resp, err = client.Do(req)
+		if err != nil {
+			logger.SysErrorf("Tavily request failed: %s", err.Error())
+			continue
+		}
+		// Handle error response
+		if resp.StatusCode != http.StatusOK {
+			bodyBytes, _ := io.ReadAll(resp.Body)
+			logger.SysErrorf("Tavily request failed with status %d: %s", resp.StatusCode, string(bodyBytes))
+			continue
+		}
+	}
+	if resp == nil {
+		return nil, fmt.Errorf("all Tavily keys failed")
 	}
 	defer resp.Body.Close()
 
 	// Handle error response
 	if resp.StatusCode != http.StatusOK {
-		bodyBytes, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("tavily API error (status %d): %s", resp.StatusCode, string(bodyBytes))
+		return nil, fmt.Errorf("tavily API error (status %d)", resp.StatusCode)
 	}
 
 	// Parse response

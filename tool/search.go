@@ -6,6 +6,7 @@ import (
 	"github.com/songquanpeng/one-api/common/config"
 	"github.com/songquanpeng/one-api/common/ctxkey"
 	"github.com/songquanpeng/one-api/common/logger"
+	"github.com/songquanpeng/one-api/relay/adaptor/anthropic"
 	relaymodel "github.com/songquanpeng/one-api/relay/model"
 	"strings"
 )
@@ -40,13 +41,74 @@ func EnhanceSearchPrompt(c *gin.Context, textRequest *relaymodel.GeneralOpenAIRe
 	}
 
 	query := lastUserMessage.Content.(string)
-	resp, err := SearchByTavily(query)
+	prompt, err := getSearchPrompt(c, query)
 	if err != nil {
+		logger.Errorf(c.Request.Context(), "getSearchPrompt error: %s", err)
 		return err
 	}
-	if len(resp.Results) == 0 {
-		logger.SysError("Tavily no search results")
+
+	textRequest.Messages[len(textRequest.Messages)-1].Content = prompt
+	if config.DebugUserIds[c.GetInt(ctxkey.Id)] {
+		logger.Debugf(c.Request.Context(), "prompt: %s", prompt)
+	}
+	// set the prompt to the context
+	c.Set(ctxkey.SurfingContext, prompt)
+	if config.DebugUserIds[c.GetInt(ctxkey.Id)] {
+		logger.Debugf(c.Request.Context(), "request: %s", textRequest)
+	}
+	return nil
+}
+
+func EnhanceClaudeSearchPrompt(c *gin.Context, textRequest *anthropic.Request) error {
+	// Get last user message
+	if len(textRequest.Messages) == 0 {
 		return nil
+	}
+	lastUserMessage := textRequest.Messages[len(textRequest.Messages)-1]
+	if lastUserMessage.Role != "user" {
+		return nil
+	}
+	// Check if the last user message is a string and not empty
+	if _, ok := lastUserMessage.Content.(string); !ok {
+		return nil
+	} else if lastUserMessage.Content == "" {
+		return nil
+	}
+	if c.GetString(ctxkey.SurfingContext) != "" {
+		textRequest.Messages[len(textRequest.Messages)-1].Content = c.GetString(ctxkey.SurfingContext)
+		if config.DebugUserIds[c.GetInt(ctxkey.Id)] {
+			logger.Debugf(c.Request.Context(), "request: %s", textRequest)
+		}
+		return nil
+	}
+
+	query := lastUserMessage.Content.(string)
+	prompt, err := getSearchPrompt(c, query)
+	if err != nil {
+		logger.Errorf(c.Request.Context(), "getSearchPrompt error: %s", err)
+		return err
+	}
+
+	textRequest.Messages[len(textRequest.Messages)-1].Content = prompt
+	if config.DebugUserIds[c.GetInt(ctxkey.Id)] {
+		logger.Debugf(c.Request.Context(), "prompt: %s", prompt)
+	}
+	// set the prompt to the context
+	c.Set(ctxkey.SurfingContext, prompt)
+	if config.DebugUserIds[c.GetInt(ctxkey.Id)] {
+		logger.Debugf(c.Request.Context(), "request: %s", textRequest)
+	}
+	return nil
+}
+
+func getSearchPrompt(c *gin.Context, query string) (string, error) {
+	resp, err := SearchByTavily(query)
+	if err != nil {
+		return "", err
+	}
+	if len(resp.Results) == 0 {
+		logger.Errorf(c.Request.Context(), "Tavily no search results")
+		return "", nil
 	}
 	// contruct SearchResult
 	var searchResults []SearchResult
@@ -66,14 +128,5 @@ func EnhanceSearchPrompt(c *gin.Context, textRequest *relaymodel.GeneralOpenAIRe
 	// replace {query} with the query, {json} with the json
 	prompt := strings.ReplaceAll(promptTemplate, "{query}", query)
 	prompt = strings.ReplaceAll(prompt, "{json}", string(searchResJson))
-	textRequest.Messages[len(textRequest.Messages)-1].Content = prompt
-	if config.DebugUserIds[c.GetInt(ctxkey.Id)] {
-		logger.Debugf(c.Request.Context(), "prompt: %s", prompt)
-	}
-	// set the prompt to the context
-	c.Set(ctxkey.SurfingContext, prompt)
-	if config.DebugUserIds[c.GetInt(ctxkey.Id)] {
-		logger.Debugf(c.Request.Context(), "request: %s", textRequest)
-	}
-	return nil
+	return prompt, nil
 }

@@ -255,6 +255,11 @@ func updateOptionMap(key string, value string) (err error) {
 			i, _ := strconv.Atoi(v)
 			config.DebugUserIds[i] = true
 		}
+	case "TavilyKeys":
+		config.TavilyKeys = make([]string, 0)
+		for _, v := range strings.Split(value, ",") {
+			config.TavilyKeys = append(config.TavilyKeys, v)
+		}
 	}
 	return err
 }
