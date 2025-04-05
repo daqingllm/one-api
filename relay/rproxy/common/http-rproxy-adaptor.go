@@ -193,10 +193,7 @@ func (r *DefaultResponseHandler) Handle(context *rproxy.RproxyContext, resp rpro
 	if e != nil {
 		return relaymodel.NewErrorWithStatusCode(http.StatusInternalServerError, "read_response_body_failed", "read_response_body_failed")
 	}
-	e = httpResp.Body.Close()
-	if e != nil {
-		return relaymodel.NewErrorWithStatusCode(http.StatusInternalServerError, "close_response_body_failed", "close_response_body_failed")
-	}
+	defer httpResp.Body.Close()
 
 	httpResp.Body = io.NopCloser(bytes.NewBuffer(responseBody))
 	for k, v := range httpResp.Header {
@@ -205,11 +202,10 @@ func (r *DefaultResponseHandler) Handle(context *rproxy.RproxyContext, resp rpro
 	context.SrcContext.Writer.WriteHeader(httpResp.StatusCode)
 	_, e = io.Copy(context.SrcContext.Writer, httpResp.Body)
 	if e != nil {
+		logger.Errorf(context.SrcContext, "Failed to copy response body: %v", e)
+
 		return relaymodel.NewErrorWithStatusCode(http.StatusInternalServerError, "copy_response_body_failed", "copy_response_body_failed")
 	}
-	e = httpResp.Body.Close()
-	if e != nil {
-		return relaymodel.NewErrorWithStatusCode(http.StatusInternalServerError, "close_response_body_failed", "close_response_body_failed")
-	}
+	logger.Infof(context.SrcContext, "Response successfully processed and written")
 	return nil
 }
