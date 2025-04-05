@@ -90,7 +90,7 @@ func RelayTextHelper(c *gin.Context) *model.ErrorWithStatusCode {
 		return respErr
 	}
 	// post-consume quota
-	go postConsumeQuota(ctx, usage, meta, textRequest, ratio, preConsumedQuota, modelRatio, groupRatio, systemPromptReset)
+	go postConsumeQuota(c, ctx, usage, meta, textRequest, ratio, preConsumedQuota, modelRatio, groupRatio, systemPromptReset)
 	return nil
 }
 
