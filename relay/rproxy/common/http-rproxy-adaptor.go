@@ -37,6 +37,8 @@ func (a *HttpRproxyAdaptor) DoRequest(context *rproxy.RproxyContext) (response r
 		go a.BillingCalculator.RollBackPreCalAndExecute(context)
 		return nil, err
 	}
+	logger.Infof(context.SrcContext, "Response No error : %v", resp)
+
 	e := a.GetResponseHandler().Handle(context, resp)
 	if e != nil {
 		return nil, e
