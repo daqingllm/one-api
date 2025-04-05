@@ -337,6 +337,16 @@ var ModelRatio = map[string]float64{
 	"mistralai/mistral-7b-instruct-v0.2":        0.050 * USD,
 	"mistralai/mistral-7b-v0.1":                 0.050 * USD,
 	"mistralai/mixtral-8x7b-instruct-v0.1":      0.300 * USD,
+
+	//https://about.ideogram.ai/api-pricing
+	"V_1":         0.06 * USD,
+	"V_1_TURBO":   0.02 * USD,
+	"V_2":         0.08 * USD,
+	"V_2_TURBO":   0.05 * USD,
+	"V_2A":        0.04 * USD,
+	"V_2A_TURBO":  0.025 * USD,
+	"V_2_E":       0.08 * USD,
+	"V_2_TURBO_E": 0.05 * USD,
 }
 
 var CompletionRatio = map[string]float64{

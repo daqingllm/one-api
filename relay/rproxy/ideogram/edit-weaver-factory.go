@@ -6,14 +6,14 @@ import (
 	"github.com/songquanpeng/one-api/relay/rproxy/common"
 )
 
-type IdeoGramWeaverFactory struct {
+type IdeoGramEditWeaverFactory struct {
 }
 
-func (f *IdeoGramWeaverFactory) GetWeaver(ctx *gin.Context) (weaver rproxy.Weaver) {
+func (f *IdeoGramEditWeaverFactory) GetWeaver(ctx *gin.Context) (weaver rproxy.Weaver) {
 	weaver = common.
 		NewWeaverBuilder(ctx).
 		TokenRetriever(&IdeoGramTokenRetriever{}).
-		ModelRetriever(&IdeoGramModelRetriever{}).
+		ModelRetriever(&IdeoGramEditModelRetriever{}).
 		Build()
 	return
 }

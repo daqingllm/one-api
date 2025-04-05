@@ -14,7 +14,7 @@ type OAIAuthChecker struct {
 }
 
 // check implements rproxy.AuthChecker.
-func (authChecker OAIAuthChecker) Check() (result bool, err *relaymodel.ErrorWithStatusCode) {
+func (authChecker *OAIAuthChecker) Check() (result bool, err *relaymodel.ErrorWithStatusCode) {
 	key := authChecker.ctx.Request.Header.Get("Authorization")
 	key = strings.TrimPrefix(key, "Bearer ")
 	key = strings.TrimPrefix(key, "sk-")

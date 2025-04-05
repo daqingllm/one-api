@@ -6,5 +6,5 @@ import (
 )
 
 type ChannelSelector interface {
-	SelectChannel(context *RproxyContext) (orderedChannels []*model.Channel, err *relaymodel.Error)
+	SelectChannel(context *RproxyContext) (orderedChannels []*model.Channel, err *relaymodel.ErrorWithStatusCode)
 }

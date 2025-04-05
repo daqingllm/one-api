@@ -32,3 +32,16 @@ type ErrorWithStatusCode struct {
 	Error
 	StatusCode int `json:"status_code"`
 }
+
+func NewErrorWithStatusCode(statusCode int, code any, message string) *ErrorWithStatusCode {
+	return &ErrorWithStatusCode{
+		IsChannelResponseError: true,
+		Error: Error{
+			Message: message,
+			Type:    "",
+			Param:   "",
+			Code:    code,
+		},
+		StatusCode: statusCode,
+	}
+}

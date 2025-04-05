@@ -49,4 +49,5 @@ const (
 	//XAI
 	//Replicate
 	Perplexity = 48
+	IdeoGram   = 49
 )
