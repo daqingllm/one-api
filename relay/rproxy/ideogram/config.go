@@ -1,7 +1,6 @@
 package ideogram
 
 import (
-	"log"
 	"net/http"
 	"strconv"
 	"strings"
