@@ -22,4 +22,8 @@ const (
 	AvailableModels   = "available_models"
 	KeyRequestBody    = "key_request_body"
 	SystemPrompt      = "system_prompt"
+	Surfing           = "surfing"
+	SurfingContext    = "surfing_context"
+	Thinking          = "thinking"
+	ThinkingContext   = "thinking_context"
 )
