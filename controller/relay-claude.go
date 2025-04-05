@@ -21,6 +21,7 @@ import (
 	claude_adaptor "github.com/songquanpeng/one-api/relay/claudeadaptor"
 	"github.com/songquanpeng/one-api/relay/meta"
 	relay_model "github.com/songquanpeng/one-api/relay/model"
+	"github.com/songquanpeng/one-api/tool"
 	"io"
 	"math"
 	"net/http"
@@ -115,6 +116,13 @@ func relayTextHelper(c *gin.Context) *relay_model.ErrorWithStatusCode {
 	modelRatio := billingratio.GetModelRatio(request.Model, meta.ChannelType)
 	groupRatio := billingratio.GetGroupRatio(meta.Group)
 	ratio := modelRatio * groupRatio
+	// enrich search Context
+	if c.GetBool(ctxkey.Surfing) {
+		err := tool.EnhanceClaudeSearchPrompt(c, request)
+		if err != nil {
+			logger.Errorf(ctx, "EnhanceClaudeSearchPrompt failed: %s", err.Error())
+		}
+	}
 	// pre-consume quota
 	promptTokens := getPromptTokens(request)
 	meta.PromptTokens = promptTokens
@@ -171,6 +179,7 @@ func getAndValidateRequest(c *gin.Context, mode int) (*anthropic.Request, error)
 	if err != nil {
 		return nil, err
 	}
+	request.Model = c.GetString(ctxkey.RequestModel)
 	if request.Model == "" {
 		return nil, errors.New("model is required")
 	}
