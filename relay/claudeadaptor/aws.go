@@ -62,6 +62,15 @@ func AwsHandler(c *gin.Context, request *anthropic.Request, client *bedrockrunti
 		logger.Errorf(ctx, "copy request error: %v", err)
 		return nil, utils.WrapErr(errors.Wrap(err, "copy request"))
 	}
+	// if awsClaudeReq.Tool has an item name of "computer"
+	if len(awsClaudeReq.Tools) > 0 {
+		for _, tool := range awsClaudeReq.Tools {
+			if tool.Name == "computer" {
+				awsClaudeReq.AnthropicBeta = []string{"computer-use-2024-10-22"}
+				break
+			}
+		}
+	}
 
 	awsReq.Body, err = json.Marshal(awsClaudeReq)
 	if err != nil {
