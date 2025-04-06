@@ -453,6 +453,9 @@ func StreamHandler(c *gin.Context, resp *http.Response, modelName string) (*mode
 
 	for scanner.Scan() {
 		data := scanner.Text()
+		if config.DebugUserIds[c.GetInt(ctxkey.Id)] {
+			logger.DebugForcef(c.Request.Context(), "gemini Stream Response: %s", data)
+		}
 		data = strings.TrimSpace(data)
 		if !strings.HasPrefix(data, "data: ") {
 			continue
