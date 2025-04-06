@@ -2,6 +2,7 @@ package common
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 
 	"github.com/songquanpeng/one-api/common/logger"
@@ -75,5 +76,7 @@ func (b *DefaultBillingCalculator) RollBackPreCalAndExecute(context *rproxy.Rpro
 }
 func (b *DefaultBillingCalculator) PostCalcAndExecute(context *rproxy.RproxyContext) *relaymodel.ErrorWithStatusCode {
 	//todo add post-consumed quota
+	logContent := fmt.Sprintf("分组倍率 %.3f，", b.groupRatio)
+	model.RecordConsumeLog(context.SrcContext, context.GetUserId(), b.GetChannel().Id, int(b.preConsumedQuota), 0, 0, context.Meta.OriginModelName, context.Meta.TokenName, b.preConsumedQuota, logContent)
 	return nil
 }
