@@ -57,7 +57,7 @@ var EmailDomainWhitelist = []string{
 var DebugEnabled = strings.ToLower(os.Getenv("DEBUG")) == "true"
 var DebugSQLEnabled = strings.ToLower(os.Getenv("DEBUG_SQL")) == "true"
 var DebugUserIds = map[int]bool{7397: true, 14178: false, 16165: true, 10970: true}
-var TavilyKeys = []string{"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"}
+var TavilyKeys = []string{"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", "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"}
 
 var LogConsumeEnabled = true
 
