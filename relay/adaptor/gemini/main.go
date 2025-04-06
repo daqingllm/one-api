@@ -81,20 +81,32 @@ func ConvertRequest(textRequest model.GeneralOpenAIRequest) *ChatRequest {
 
 	}
 	if textRequest.Tools != nil {
-		functions := make([]model.Function, 0, len(textRequest.Tools))
+		functions := make([]FunctionDeclaration, 0, len(textRequest.Tools))
 		for _, tool := range textRequest.Tools {
-			if tool.Function.Parameters != nil && common.IsEmptyObject(tool.Function.Parameters) {
-				tool.Function.Parameters = nil
-			} else if tool.Function.Parameters != nil {
-				// 兼容gemini不能传空对象
-				if params, ok := tool.Function.Parameters.(map[string]any); ok {
-					if params["type"] == "object" && common.IsEmptyObject(params["properties"]) {
-						tool.Function.Parameters = nil
-					}
-				}
+			jsonBytes, err := json.Marshal(tool.Function)
+			if err != nil {
+				logger.SysError("Failed to marshal tool function: " + err.Error())
+				continue
+			}
+			var functionDeclaration = FunctionDeclaration{}
+			err = json.Unmarshal(jsonBytes, &functionDeclaration)
+			if err != nil {
+				logger.SysError("Failed to unmarshal tool function: " + err.Error())
+				continue
 
 			}
-			functions = append(functions, tool.Function)
+			// if tool.Function.Parameters != nil && common.IsEmptyObject(tool.Function.Parameters) {
+			// 	tool.Function.Parameters = nil
+			// } else if tool.Function.Parameters != nil {
+			// 	// 兼容gemini不能传空对象
+			// 	if params, ok := tool.Function.Parameters.(map[string]any); ok {
+			// 		if params["type"] == "object" && common.IsEmptyObject(params["properties"]) {
+			// 			tool.Function.Parameters = nil
+			// 		}
+			// 	}
+
+			// }
+			functions = append(functions, functionDeclaration)
 		}
 		geminiRequest.Tools = []ChatTools{
 			{
@@ -102,9 +114,18 @@ func ConvertRequest(textRequest model.GeneralOpenAIRequest) *ChatRequest {
 			},
 		}
 	} else if textRequest.Functions != nil {
+		jsonBytes, err := json.Marshal(textRequest.Functions)
+		if err != nil {
+			logger.SysError("Failed to marshal tool function: " + err.Error())
+		}
+		var functionDeclarations = []FunctionDeclaration{}
+		err = json.Unmarshal(jsonBytes, &functionDeclarations)
+		if err != nil {
+			logger.SysError("Failed to unmarshal tool function: " + err.Error())
+		}
 		geminiRequest.Tools = []ChatTools{
 			{
-				FunctionDeclarations: textRequest.Functions,
+				FunctionDeclarations: functionDeclarations,
 			},
 		}
 	}
