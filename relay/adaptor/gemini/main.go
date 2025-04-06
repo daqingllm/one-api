@@ -454,7 +454,7 @@ func StreamHandler(c *gin.Context, resp *http.Response, modelName string) (*mode
 	for scanner.Scan() {
 		data := scanner.Text()
 		if config.DebugUserIds[c.GetInt(ctxkey.Id)] {
-			logger.DebugForcef(c.Request.Context(), "gemini Stream Response: %s", data)
+			logger.DebugForcef(c.Request.Context(), "Gemini raw stream resp: %s", data)
 		}
 		data = strings.TrimSpace(data)
 		if !strings.HasPrefix(data, "data: ") {
@@ -508,6 +508,9 @@ func Handler(c *gin.Context, resp *http.Response, promptTokens int, modelName st
 	err = resp.Body.Close()
 	if err != nil {
 		return openai.ErrorWrapper(err, "close_response_body_failed", http.StatusInternalServerError), nil
+	}
+	if config.DebugUserIds[c.GetInt(ctxkey.Id)] {
+		logger.DebugForcef(c, "Gemini raw resp: %s", string(responseBody))
 	}
 	var geminiResponse ChatResponse
 	err = json.Unmarshal(responseBody, &geminiResponse)
