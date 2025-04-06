@@ -31,8 +31,8 @@ func SetRelayRouter(router *gin.Engine) {
 		directRproxyRouter.POST("/generate", controller.RelayRProxy(&ideogram.IdeoGramWeaverFactory{}))
 		directRproxyRouter.POST("/edit", controller.RelayRProxy(&ideogram.IdeoGramWeaverFactory{}))
 		directRproxyRouter.POST("/remix", controller.RelayRProxy(&ideogram.IdeoGramRemixWeaverFactory{}))
-		directRproxyRouter.POST("/upscale", controller.RelayRProxy(&ideogram.IdeoGramWeaverFactory{}))
-		directRproxyRouter.POST("/describe", controller.RelayRProxy(&ideogram.IdeoGramWeaverFactory{}))
+		directRproxyRouter.POST("/upscale", controller.RelayRProxy(&ideogram.IdeoGramPathWeaverFactory{}))
+		directRproxyRouter.POST("/describe", controller.RelayRProxy(&ideogram.IdeoGramPathWeaverFactory{}))
 		directRproxyRouter.POST("/reframe", controller.RelayRProxy(&ideogram.IdeoGramWeaverFactory{}))
 	}
 	relayV1Router := router.Group("/v1")

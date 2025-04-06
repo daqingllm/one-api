@@ -31,6 +31,7 @@ func (c DefaultChannelSelector) SelectChannel(context *rproxy.RproxyContext) (or
 		return []*model.Channel{channel}, nil
 	} else {
 		orderedChannels = make([]*model.Channel, 0)
+		//根据能力选择供应商
 		recentChannelId := model.CacheGetRecentChannel(context.SrcContext.Request.Context(), context.GetUserId(), context.GetRequestModel())
 		if recentChannelId > 0 {
 			channel, err := model.CacheGetChannelById(recentChannelId)
