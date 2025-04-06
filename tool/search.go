@@ -35,7 +35,7 @@ func EnhanceSearchPrompt(c *gin.Context, textRequest *relaymodel.GeneralOpenAIRe
 	if c.GetString(ctxkey.SurfingContext) != "" {
 		textRequest.Messages[len(textRequest.Messages)-1].Content = c.GetString(ctxkey.SurfingContext)
 		if config.DebugUserIds[c.GetInt(ctxkey.Id)] {
-			logger.Debugf(c.Request.Context(), "request: %s", textRequest)
+			logger.Debugf(c.Request.Context(), "request: %v", textRequest)
 		}
 		return nil
 	}
@@ -54,7 +54,7 @@ func EnhanceSearchPrompt(c *gin.Context, textRequest *relaymodel.GeneralOpenAIRe
 	// set the prompt to the context
 	c.Set(ctxkey.SurfingContext, prompt)
 	if config.DebugUserIds[c.GetInt(ctxkey.Id)] {
-		logger.Debugf(c.Request.Context(), "request: %s", textRequest)
+		logger.Debugf(c.Request.Context(), "request: %v", textRequest)
 	}
 	return nil
 }
@@ -77,7 +77,7 @@ func EnhanceClaudeSearchPrompt(c *gin.Context, textRequest *anthropic.Request) e
 	if c.GetString(ctxkey.SurfingContext) != "" {
 		textRequest.Messages[len(textRequest.Messages)-1].Content = c.GetString(ctxkey.SurfingContext)
 		if config.DebugUserIds[c.GetInt(ctxkey.Id)] {
-			logger.Debugf(c.Request.Context(), "request: %s", textRequest)
+			logger.Debugf(c.Request.Context(), "request: %v", textRequest)
 		}
 		return nil
 	}
@@ -96,7 +96,7 @@ func EnhanceClaudeSearchPrompt(c *gin.Context, textRequest *anthropic.Request) e
 	// set the prompt to the context
 	c.Set(ctxkey.SurfingContext, prompt)
 	if config.DebugUserIds[c.GetInt(ctxkey.Id)] {
-		logger.Debugf(c.Request.Context(), "request: %s", textRequest)
+		logger.Debugf(c.Request.Context(), "request: %v", textRequest)
 	}
 	return nil
 }

@@ -98,6 +98,7 @@ func SearchByTavily(query string) (*TavilyResponse, error) {
 			logger.SysErrorf("Tavily request failed with status %d: %s", resp.StatusCode, string(bodyBytes))
 			continue
 		}
+		break
 	}
 	if resp == nil {
 		return nil, fmt.Errorf("all Tavily keys failed")

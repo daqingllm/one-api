@@ -18,4 +18,5 @@ type Request struct {
 	StopSequences    []string            `json:"stop_sequences,omitempty"`
 	Tools            []anthropic.Tool    `json:"tools,omitempty"`
 	ToolChoice       any                 `json:"tool_choice,omitempty"`
+	AnthropicBeta    []string            `json:"anthropic_beta,omitempty"`
 }
