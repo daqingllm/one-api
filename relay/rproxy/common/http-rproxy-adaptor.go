@@ -30,15 +30,12 @@ func (a *HttpRproxyAdaptor) DoRequest(context *rproxy.RproxyContext) (response r
 	if err != nil {
 		return nil, err
 	}
-	logger.Infof(context.SrcContext, "Request : %v", newReq)
 	resp, error := adaptor.DoRequest(context.SrcContext, newReq.(*http.Request))
 	err = a.GetErrorHandler().HandleError(context, resp, error)
 	if err != nil {
 		go a.BillingCalculator.RollBackPreCalAndExecute(context)
 		return nil, err
 	}
-	logger.Infof(context.SrcContext, "Response No error : %v", resp)
-
 	e := a.GetResponseHandler().Handle(context, resp)
 	if e != nil {
 		return nil, e
@@ -78,7 +75,6 @@ func (r *DefaultErrorHandler) HandleError(context *rproxy.RproxyContext, resp rp
 	if !ok {
 		return relaymodel.NewErrorWithStatusCode(http.StatusInternalServerError, "invalid_response", "invalid_response")
 	}
-	logger.SysLogf("http response %v", httpResp)
 	if httpResp.StatusCode != http.StatusOK {
 		return controller.RelayErrorHandler(httpResp)
 	}
@@ -99,7 +95,6 @@ func (r *DefaultRequestHandler) Handle(context *rproxy.RproxyContext) (req rprox
 	}
 	contentType := originalReq.Header.Get("Content-Type")
 	if strings.HasPrefix(contentType, "multipart/form-data") {
-		// // 提取原始boundary
 		if originalReq.MultipartForm == nil {
 			e := originalReq.ParseMultipartForm(32 << 20)
 			if e != nil {
@@ -145,12 +140,8 @@ func (r *DefaultRequestHandler) Handle(context *rproxy.RproxyContext) (req rprox
 		if e != nil {
 			return nil, relaymodel.NewErrorWithStatusCode(http.StatusInternalServerError, "new_request_failed", "new_request_failed")
 		}
-		// 显式设置 Content-Length
 		contentLength := body.Len()
 		newReq.Header.Set("Content-Length", fmt.Sprintf("%d", contentLength))
-		// 打印新请求信息
-		logger.Infof(context.SrcContext, "New Request Method: %s", newReq.Method)
-		logger.Infof(context.SrcContext, "New Request URL: %s", newReq.URL.String())
 		for k, v := range originalReq.Header {
 			if k != "Content-Type" {
 				newReq.Header.Set(k, v[0])
@@ -208,6 +199,5 @@ func (r *DefaultResponseHandler) Handle(context *rproxy.RproxyContext, resp rpro
 
 		return relaymodel.NewErrorWithStatusCode(http.StatusInternalServerError, "copy_response_body_failed", "copy_response_body_failed")
 	}
-	logger.Infof(context.SrcContext, "Response successfully processed and written")
 	return nil
 }

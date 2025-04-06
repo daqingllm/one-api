@@ -19,3 +19,27 @@ func (f *IdeoGramWeaverFactory) GetWeaver(ctx *gin.Context) (weaver rproxy.Weave
 		Build()
 	return
 }
+
+type IdeoGramRemixWeaverFactory struct {
+}
+
+func (f *IdeoGramRemixWeaverFactory) GetWeaver(ctx *gin.Context) (weaver rproxy.Weaver) {
+	weaver = common.
+		NewWeaverBuilder(ctx).
+		TokenRetriever(&IdeoGramTokenRetriever{}).
+		ModelRetriever(&IdeoGramRemixModelRetriever{}).
+		Build()
+	return
+}
+
+type IdeoGramPathWeaverFactory struct {
+}
+
+func (f *IdeoGramPathWeaverFactory) GetWeaver(ctx *gin.Context) (weaver rproxy.Weaver) {
+	weaver = common.
+		NewWeaverBuilder(ctx).
+		TokenRetriever(&IdeoGramTokenRetriever{}).
+		ModelRetriever(&IdeoGramPathModelRetriever{}).
+		Build()
+	return
+}

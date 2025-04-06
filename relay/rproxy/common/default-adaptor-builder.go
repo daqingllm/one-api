@@ -11,7 +11,7 @@ import (
 type DefaultHttpAdaptorBuilder struct {
 	GetUrlFunc       func(context *rproxy.RproxyContext, channel *model.Channel) (url string, err *relaymodel.ErrorWithStatusCode)
 	SetHeaderFunc    func(context *rproxy.RproxyContext, channel *model.Channel, request *http.Request) (err *relaymodel.ErrorWithStatusCode)
-	CalcStrategyFunc func(context *rproxy.RproxyContext, ratio float64) (preConsumedQuota int64, err *relaymodel.ErrorWithStatusCode)
+	CalcStrategyFunc func(context *rproxy.RproxyContext, channel *model.Channel, groupRatio float64) (preConsumedQuota int64, err *relaymodel.ErrorWithStatusCode)
 }
 
 func SetNopHeaderFunc(context *rproxy.RproxyContext, channel *model.Channel, request *http.Request) (err *relaymodel.ErrorWithStatusCode) {

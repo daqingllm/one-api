@@ -9,10 +9,10 @@ import (
 	"github.com/tidwall/gjson"
 )
 
-type IdeoGramEditModelRetriever struct {
+type IdeoGramRemixModelRetriever struct {
 }
 
-func (r *IdeoGramEditModelRetriever) Retrieve(context *rproxy.RproxyContext) (modelName string, err *relaymodel.ErrorWithStatusCode) {
+func (r *IdeoGramRemixModelRetriever) Retrieve(context *rproxy.RproxyContext) (modelName string, err *relaymodel.ErrorWithStatusCode) {
 	srcCtx := context.SrcContext
 	contentType := srcCtx.Request.Header.Get("Content-Type")
 	if strings.Contains(contentType, "multipart/form-data") || strings.Contains(contentType, "application/x-www-form-urlencoded") {

@@ -13,12 +13,11 @@ import (
 )
 
 type DefaultBillingCalculator struct {
-	modelRatio       float64
 	groupRatio       float64
 	ratio            float64
 	adaptor          rproxy.RproxyAdaptor
 	preConsumedQuota int64
-	CalcStrategyFunc func(context *rproxy.RproxyContext, ratio float64) (preConsumedQuota int64, err *relaymodel.ErrorWithStatusCode)
+	CalcStrategyFunc func(context *rproxy.RproxyContext, channel *model.Channel, groupRatio float64) (preConsumedQuota int64, err *relaymodel.ErrorWithStatusCode)
 }
 
 func (b *DefaultBillingCalculator) GetChannel() *model.Channel {
@@ -36,12 +35,12 @@ func (b *DefaultBillingCalculator) PreCalAndExecute(context *rproxy.RproxyContex
 		return openai.ErrorWrapper(errors.New("channel is nil"), "channel_is_nil", http.StatusInternalServerError)
 
 	}
-	b.modelRatio = ratio.GetModelRatio(context.GetOriginalModel(), channel.Type)
+	// b.modelRatio = ratio.GetModelRatio(context.GetOriginalModel(), channel.Type)
 	b.groupRatio = ratio.GetGroupRatio(context.Meta.Group)
-	b.ratio = b.modelRatio * b.groupRatio
-	var preConsumedQuota int64 = int64(b.ratio)
+	// b.ratio = b.modelRatio * b.groupRatio
+	var preConsumedQuota int64 = int64(b.groupRatio)
 	if b.CalcStrategyFunc != nil {
-		quota, e := b.CalcStrategyFunc(context, b.ratio)
+		quota, e := b.CalcStrategyFunc(context, channel, b.groupRatio)
 		if e != nil {
 			return e
 		}
