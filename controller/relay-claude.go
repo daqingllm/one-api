@@ -21,6 +21,7 @@ import (
 	claude_adaptor "github.com/songquanpeng/one-api/relay/claudeadaptor"
 	"github.com/songquanpeng/one-api/relay/meta"
 	relay_model "github.com/songquanpeng/one-api/relay/model"
+	"github.com/songquanpeng/one-api/tool"
 	"io"
 	"math"
 	"net/http"
@@ -115,6 +116,13 @@ func relayTextHelper(c *gin.Context) *relay_model.ErrorWithStatusCode {
 	modelRatio := billingratio.GetModelRatio(request.Model, meta.ChannelType)
 	groupRatio := billingratio.GetGroupRatio(meta.Group)
 	ratio := modelRatio * groupRatio
+	// enrich search Context
+	if c.GetBool(ctxkey.Surfing) {
+		err := tool.EnhanceClaudeSearchPrompt(c, request)
+		if err != nil {
+			logger.Errorf(ctx, "EnhanceClaudeSearchPrompt failed: %s", err.Error())
+		}
+	}
 	// pre-consume quota
 	promptTokens := getPromptTokens(request)
 	meta.PromptTokens = promptTokens
@@ -135,7 +143,7 @@ func relayTextHelper(c *gin.Context) *relay_model.ErrorWithStatusCode {
 		return bizError
 	}
 
-	go postConsumeQuota(ctx, usage, meta, request, ratio, modelRatio, groupRatio)
+	go postConsumeQuota(c, ctx, usage, meta, request, ratio, modelRatio, groupRatio)
 	return nil
 }
 
@@ -171,6 +179,7 @@ func getAndValidateRequest(c *gin.Context, mode int) (*anthropic.Request, error)
 	if err != nil {
 		return nil, err
 	}
+	request.Model = c.GetString(ctxkey.RequestModel)
 	if request.Model == "" {
 		return nil, errors.New("model is required")
 	}
@@ -202,7 +211,7 @@ func getAdaptor(apiType int) claude_adaptor.Adaptor {
 	}
 }
 
-func postConsumeQuota(ctx context.Context, usage *anthropic.Usage, meta *meta.Meta, textRequest *anthropic.Request, ratio float64, modelRatio float64, groupRatio float64) {
+func postConsumeQuota(c *gin.Context, ctx context.Context, usage *anthropic.Usage, meta *meta.Meta, textRequest *anthropic.Request, ratio float64, modelRatio float64, groupRatio float64) {
 	if usage == nil {
 		logger.Error(ctx, "usage is nil, which is unexpected")
 		return
@@ -214,6 +223,14 @@ func postConsumeQuota(ctx context.Context, usage *anthropic.Usage, meta *meta.Me
 		float64(usage.CacheReadInputTokens)*0.1 + float64(usage.OutputTokens)*completionRatio) * ratio))
 	if ratio != 0 && quota <= 0 {
 		quota = 1
+	}
+	var extraLog string
+	// surfing cost
+	if c.GetString(ctxkey.SurfingContext) != "" {
+		// $6 / 1k calls
+		surfingQuota := int64(3000)
+		extraLog += fmt.Sprintf("Surfing费用$%.4f。", float64(surfingQuota)/1000*0.002)
+		quota += surfingQuota
 	}
 	totalTokens := usage.InputTokens + usage.OutputTokens + usage.CacheReadInputTokens + usage.CacheCreationInputTokens
 	if totalTokens == 0 {
@@ -229,7 +246,12 @@ func postConsumeQuota(ctx context.Context, usage *anthropic.Usage, meta *meta.Me
 	if err != nil {
 		logger.Error(ctx, "error update user quota cache: "+err.Error())
 	}
-	logContent := fmt.Sprintf("模型倍率 %.3f，分组倍率 %.3f，补全倍率 %.3f", modelRatio, groupRatio, completionRatio)
+	var logContent string
+	if extraLog != "" {
+		logContent = fmt.Sprintf("模型倍率 %.3f，分组倍率 %.3f，补全倍率 %.3f(%s)", modelRatio, groupRatio, completionRatio, extraLog)
+	} else {
+		logContent = fmt.Sprintf("模型倍率 %.3f，分组倍率 %.3f，补全倍率 %.3f", modelRatio, groupRatio, completionRatio)
+	}
 	model.RecordConsumeLog(ctx, meta.UserId, meta.ChannelId, usage.InputTokens+usage.CacheCreationInputTokens+usage.CacheReadInputTokens, usage.CacheReadInputTokens, usage.OutputTokens, textRequest.Model, meta.TokenName, quota, logContent)
 	model.UpdateUserUsedQuotaAndRequestCount(meta.UserId, quota)
 	model.UpdateChannelUsedQuota(meta.ChannelId, quota)
