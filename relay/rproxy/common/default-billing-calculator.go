@@ -76,6 +76,9 @@ func (b *DefaultBillingCalculator) RollBackPreCalAndExecute(context *rproxy.Rpro
 }
 func (b *DefaultBillingCalculator) PostCalcAndExecute(context *rproxy.RproxyContext) *relaymodel.ErrorWithStatusCode {
 	//todo add post-consumed quota
+	if b.preConsumedQuota <= 0 {
+		return nil
+	}
 	logContent := fmt.Sprintf("分组倍率 %.3f，", b.groupRatio)
 	model.RecordConsumeLog(context.SrcContext, context.GetUserId(), b.GetChannel().Id, int(b.preConsumedQuota), 0, 0, context.Meta.OriginModelName, context.Meta.TokenName, b.preConsumedQuota, logContent)
 	return nil

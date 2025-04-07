@@ -28,12 +28,12 @@ func SetRelayRouter(router *gin.Engine) {
 	directRproxyRouter.Use(middleware.RelayPanicRecover(), middleware.RelayTime())
 	{
 		directRproxyRouter.POST("/v1/responses", controller.RelayRProxy(&oai.OAIResponseWeaverFactory{}))
-		directRproxyRouter.POST("/generate", controller.RelayRProxy(&ideogram.IdeoGramWeaverFactory{}))
-		directRproxyRouter.POST("/edit", controller.RelayRProxy(&ideogram.IdeoGramWeaverFactory{}))
-		directRproxyRouter.POST("/remix", controller.RelayRProxy(&ideogram.IdeoGramRemixWeaverFactory{}))
-		directRproxyRouter.POST("/upscale", controller.RelayRProxy(&ideogram.IdeoGramPathWeaverFactory{}))
-		directRproxyRouter.POST("/describe", controller.RelayRProxy(&ideogram.IdeoGramPathWeaverFactory{}))
-		directRproxyRouter.POST("/reframe", controller.RelayRProxy(&ideogram.IdeoGramWeaverFactory{}))
+		directRproxyRouter.POST("/ideogram/generate", controller.RelayRProxy(&ideogram.IdeoGramWeaverFactory{}))
+		directRproxyRouter.POST("/ideogram/edit", controller.RelayRProxy(&ideogram.IdeoGramWeaverFactory{}))
+		directRproxyRouter.POST("/ideogram/remix", controller.RelayRProxy(&ideogram.IdeoGramRemixWeaverFactory{}))
+		directRproxyRouter.POST("/ideogram/upscale", controller.RelayRProxy(&ideogram.IdeoGramPathWeaverFactory{}))
+		directRproxyRouter.POST("/ideogram/describe", controller.RelayRProxy(&ideogram.IdeoGramPathWeaverFactory{}))
+		directRproxyRouter.POST("/ideogram/reframe", controller.RelayRProxy(&ideogram.IdeoGramWeaverFactory{}))
 	}
 	relayV1Router := router.Group("/v1")
 	relayV1Router.Use(middleware.RelayPanicRecover(), middleware.TokenAuth(), middleware.Distribute(), middleware.RelayTime())
