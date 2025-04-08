@@ -90,7 +90,7 @@ func preConsumeQuota(ctx context.Context, textRequest *relaymodel.GeneralOpenAIR
 	return preConsumedQuota, nil
 }
 
-func postConsumeQuota(ctx context.Context, usage *relaymodel.Usage, meta *meta.Meta, textRequest *relaymodel.GeneralOpenAIRequest, ratio float64, preConsumedQuota int64, modelRatio float64, groupRatio float64, systemPromptReset bool) {
+func postConsumeQuota(c *gin.Context, ctx context.Context, usage *relaymodel.Usage, meta *meta.Meta, textRequest *relaymodel.GeneralOpenAIRequest, ratio float64, preConsumedQuota int64, modelRatio float64, groupRatio float64, systemPromptReset bool) {
 	defer func() {
 		if r := recover(); r != nil {
 			logger.Error(ctx, fmt.Sprintf("panic in postConsumeQuota: %v", r))
@@ -144,6 +144,7 @@ func postConsumeQuota(ctx context.Context, usage *relaymodel.Usage, meta *meta.M
 	var extraLog string
 
 	//tools cost
+	// origin web search
 	if meta.Extra["web_search"] == "true" {
 		var searchQuota int64
 		switch meta.ActualModelName {
@@ -183,6 +184,14 @@ func postConsumeQuota(ctx context.Context, usage *relaymodel.Usage, meta *meta.M
 		quota += searchQuota
 	}
 
+	// surfing cost
+	if c.GetString(ctxkey.SurfingContext) != "" {
+		// $6 / 1k calls
+		surfingQuota := int64(3000)
+		extraLog += fmt.Sprintf("Surfing费用$%.4f。", float64(surfingQuota)/1000*0.002)
+		quota += surfingQuota
+	}
+
 	totalTokens := promptTokens + completionTokens
 	if totalTokens == 0 {
 		// in this case, must be some error happened
@@ -206,7 +215,6 @@ func postConsumeQuota(ctx context.Context, usage *relaymodel.Usage, meta *meta.M
 		logContent = fmt.Sprintf("模型倍率 %.3f，分组倍率 %.3f，补全倍率 %.3f(%s)", modelRatio, groupRatio, completionRatio, extraLog)
 	} else {
 		logContent = fmt.Sprintf("模型倍率 %.3f，分组倍率 %.3f，补全倍率 %.3f", modelRatio, groupRatio, completionRatio)
-
 	}
 	model.RecordConsumeLog(ctx, meta.UserId, meta.ChannelId, promptTokens, cachedTokens, completionTokens, textRequest.Model, meta.TokenName, quota, logContent)
 	model.UpdateUserUsedQuotaAndRequestCount(meta.UserId, quota)

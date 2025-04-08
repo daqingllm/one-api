@@ -76,9 +76,33 @@ type ChatSafetySettings struct {
 
 type Empty struct{}
 
+type Schema struct {
+	Type             string             `json:"type"`
+	Format           string             `json:"format,omitempty"`
+	Title            string             `json:"title,omitempty"`
+	Description      string             `json:"description,omitempty"`
+	Nullable         bool               `json:"nullable,omitempty"`
+	Enum             []string           `json:"enum,omitempty"`
+	MaxItems         string             `json:"maxItems,omitempty"`
+	MinItems         string             `json:"minItems,omitempty"`
+	Properties       map[string]*Schema `json:"properties"` // map[string]any
+	Required         []string           `json:"required,omitempty"`
+	Items            *Schema            `json:"items,omitempty"` // map[string]any
+	Mininum          string             `json:"minimum,omitempty"`
+	Maxinum          string             `json:"maximum,omitempty"`
+	Anyof            []Schema           `json:"anyOf,omitempty"`
+	PropertyOrdering []string           `json:"propertyOrdering,omitempty"`
+}
+type FunctionDeclaration struct {
+	Name        string  `json:"name,omitempty"`
+	Description string  `json:"description,omitempty"`
+	Parameters  *Schema `json:"parameters,omitempty"`
+	Response    *Schema `json:"response,omitempty"`
+}
+
 type ChatTools struct {
-	FunctionDeclarations any    `json:"function_declarations,omitempty"`
-	GoogleSearch         *Empty `json:"google_search,omitempty"`
+	FunctionDeclarations []FunctionDeclaration `json:"function_declarations,omitempty"`
+	GoogleSearch         *Empty                `json:"google_search,omitempty"`
 }
 
 type ThinkingConfig struct {

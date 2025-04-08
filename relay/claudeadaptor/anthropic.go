@@ -39,6 +39,14 @@ func (a *Anthropic) DoRequest(c *gin.Context, request *anthropic.Request, meta *
 		return nil, openai.ErrorWrapper(fmt.Errorf("new request failed: %w", err), "do_request_failed", http.StatusInternalServerError)
 	}
 	err = setupRequestHeader(c, req, meta)
+	if len(request.Tools) > 0 {
+		for _, tool := range request.Tools {
+			if tool.Name == "computer" {
+				req.Header.Set("anthropic-beta", "computer-use-2025-01-24")
+				break
+			}
+		}
+	}
 	if err != nil {
 		logger.Errorf(ctx, "DoRequest failed: %s", err.Error())
 		return nil, openai.ErrorWrapper(fmt.Errorf("setup request header failed: %w", err), "do_request_failed", http.StatusInternalServerError)
