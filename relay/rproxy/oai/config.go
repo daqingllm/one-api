@@ -54,7 +54,7 @@ func CalcStrategyFunc(context *rproxy.RproxyContext, channel *model.Channel, gro
 	}
 	lastSegment := parts[len(parts)-1]
 
-	return int64(abilityChannelModelPrices[strings.Join([]string{lastSegment, "ideogram", context.Meta.OriginModelName}, "-")] * groupRatio), nil
+	return int64(abilityChannelModelPrices[strings.Join([]string{lastSegment, "ideogram", context.Meta.OriginModelName}, "-")] * groupRatio * 1000), nil
 
 }
 func GetName(path string) string {
