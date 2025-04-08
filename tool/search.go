@@ -131,14 +131,5 @@ func getSearchPrompt(c *gin.Context, query string) (string, error) {
 	// replace {query} with the query, {json} with the json
 	prompt := strings.ReplaceAll(promptTemplate, "{query}", query)
 	prompt = strings.ReplaceAll(prompt, "{json}", string(searchResJson))
-	textRequest.Messages[len(textRequest.Messages)-1].Content = prompt
-	if config.DebugUserIds[c.GetInt(ctxkey.Id)] {
-		logger.Debugf(c.Request.Context(), "prompt: %s", prompt)
-	}
-	// set the prompt to the context
-	c.Set(ctxkey.SurfingContext, prompt)
-	if config.DebugUserIds[c.GetInt(ctxkey.Id)] {
-		logger.Debugf(c.Request.Context(), "request: %s", textRequest)
-	}
-	return nil
+	return prompt, nil
 }
