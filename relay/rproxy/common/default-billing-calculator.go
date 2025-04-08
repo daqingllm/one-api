@@ -81,5 +81,6 @@ func (b *DefaultBillingCalculator) PostCalcAndExecute(context *rproxy.RproxyCont
 	}
 	logContent := fmt.Sprintf("分组倍率 %.3f，", b.groupRatio)
 	model.RecordConsumeLog(context.SrcContext, context.GetUserId(), b.GetChannel().Id, int(b.preConsumedQuota), 0, 0, context.Meta.OriginModelName, context.Meta.TokenName, b.preConsumedQuota, logContent)
+	model.UpdateChannelUsedQuota(b.GetChannel().Id, b.preConsumedQuota)
 	return nil
 }
