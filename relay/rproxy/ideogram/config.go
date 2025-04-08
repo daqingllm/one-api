@@ -59,7 +59,7 @@ func CalcStrategyFunc(context *rproxy.RproxyContext, channel *model.Channel, gro
 	if e != nil {
 		return 0, e
 	}
-	return int64(abilityChannelModelPrices[strings.Join([]string{lastSegment, "ideogram", context.Meta.OriginModelName}, "-")] * groupRatio * batchNums), nil
+	return int64(abilityChannelModelPrices[strings.Join([]string{lastSegment, "ideogram", context.Meta.OriginModelName}, "-")] * groupRatio * batchNums * 1000), nil
 
 }
 
