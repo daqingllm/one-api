@@ -33,14 +33,14 @@ func (a *HttpRproxyAdaptor) DoRequest(context *rproxy.RproxyContext) (response r
 	resp, error := adaptor.DoRequest(context.SrcContext, newReq.(*http.Request))
 	err = a.GetErrorHandler().HandleError(context, resp, error)
 	if err != nil {
-		go a.BillingCalculator.RollBackPreCalAndExecute(context)
+		a.BillingCalculator.RollBackPreCalAndExecute(context)
 		return nil, err
 	}
 	e := a.GetResponseHandler().Handle(context, resp)
 	if e != nil {
 		return nil, e
 	}
-	go a.BillingCalculator.PostCalcAndExecute(context)
+	a.BillingCalculator.PostCalcAndExecute(context)
 	return nil, nil
 }
 
