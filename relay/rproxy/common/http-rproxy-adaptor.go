@@ -25,7 +25,10 @@ type HttpRproxyAdaptor struct {
 }
 
 func (a *HttpRproxyAdaptor) DoRequest(context *rproxy.RproxyContext) (response rproxy.Response, err *relaymodel.ErrorWithStatusCode) {
-	a.BillingCalculator.PreCalAndExecute(context)
+	err = a.BillingCalculator.PreCalAndExecute(context)
+	if err != nil {
+		return nil, err
+	}
 	newReq, err := a.GetRequestHandler().Handle(context)
 	if err != nil {
 		return nil, err

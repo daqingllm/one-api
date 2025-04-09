@@ -39,27 +39,25 @@ func (b *DefaultBillingCalculator) PreCalAndExecute(context *rproxy.RproxyContex
 	// b.modelRatio = ratio.GetModelRatio(context.GetOriginalModel(), channel.Type)
 	b.groupRatio = ratio.GetGroupRatio(context.Meta.Group)
 	// b.ratio = b.modelRatio * b.groupRatio
-	var preConsumedQuota int64 = int64(b.groupRatio)
 	if b.CalcStrategyFunc != nil {
 		quota, e := b.CalcStrategyFunc(context, channel, b.groupRatio)
 		if e != nil {
 			return e
 		}
-		preConsumedQuota = quota
+		b.preConsumedQuota = quota
 	}
 
 	userQuota, err := model.CacheGetUserQuota(context.SrcContext, context.GetUserId())
 	if err != nil {
 		return openai.ErrorWrapper(err, "get_user_quota_failed", http.StatusInternalServerError)
 	}
-	if userQuota-preConsumedQuota < 0 {
+	if userQuota-b.preConsumedQuota < 0 {
 		return openai.ErrorWrapper(errors.New("user quota is not enough"), "insufficient_user_quota", http.StatusForbidden)
 	}
-	err = model.CacheDecreaseUserQuota(context.GetUserId(), preConsumedQuota)
+	err = model.CacheDecreaseUserQuota(context.GetUserId(), b.preConsumedQuota)
 	if err != nil {
 		return openai.ErrorWrapper(err, "decrease_user_quota_failed", http.StatusInternalServerError)
 	}
-	b.preConsumedQuota = preConsumedQuota
 	return nil
 }
 func (b *DefaultBillingCalculator) RollBackPreCalAndExecute(context *rproxy.RproxyContext) *relaymodel.ErrorWithStatusCode {

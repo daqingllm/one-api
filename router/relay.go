@@ -3,6 +3,7 @@ package router
 import (
 	"github.com/songquanpeng/one-api/controller"
 	"github.com/songquanpeng/one-api/middleware"
+	"github.com/songquanpeng/one-api/relay/rproxy"
 	"github.com/songquanpeng/one-api/relay/rproxy/ideogram"
 
 	"github.com/gin-gonic/gin"
@@ -27,12 +28,24 @@ func SetRelayRouter(router *gin.Engine) {
 	directRproxyRouter.Use(middleware.RelayPanicRecover(), middleware.RelayTime())
 	{
 		// directRproxyRouter.POST("/v1/responses", controller.RelayRProxy(&oai.OAIResponseWeaverFactory{}))
-		directRproxyRouter.POST("/ideogram/generate", controller.RelayRProxy(&ideogram.IdeoGramWeaverFactory{}))
-		directRproxyRouter.POST("/ideogram/edit", controller.RelayRProxy(&ideogram.IdeoGramWeaverFactory{}))
-		directRproxyRouter.POST("/ideogram/remix", controller.RelayRProxy(&ideogram.IdeoGramRemixWeaverFactory{}))
-		directRproxyRouter.POST("/ideogram/upscale", controller.RelayRProxy(&ideogram.IdeoGramPathWeaverFactory{}))
-		directRproxyRouter.POST("/ideogram/describe", controller.RelayRProxy(&ideogram.IdeoGramPathWeaverFactory{}))
-		directRproxyRouter.POST("/ideogram/reframe", controller.RelayRProxy(&ideogram.IdeoGramWeaverFactory{}))
+		directRproxyRouter.POST("/ideogram/generate", controller.RelayRProxy(func() rproxy.WeaverFactory {
+			return &ideogram.IdeoGramWeaverFactory{}
+		}))
+		directRproxyRouter.POST("/ideogram/edit", controller.RelayRProxy(func() rproxy.WeaverFactory {
+			return &ideogram.IdeoGramWeaverFactory{}
+		}))
+		directRproxyRouter.POST("/ideogram/remix", controller.RelayRProxy(func() rproxy.WeaverFactory {
+			return &ideogram.IdeoGramRemixWeaverFactory{}
+		}))
+		directRproxyRouter.POST("/ideogram/upscale", controller.RelayRProxy(func() rproxy.WeaverFactory {
+			return &ideogram.IdeoGramPathWeaverFactory{}
+		}))
+		directRproxyRouter.POST("/ideogram/describe", controller.RelayRProxy(func() rproxy.WeaverFactory {
+			return &ideogram.IdeoGramPathWeaverFactory{}
+		}))
+		directRproxyRouter.POST("/ideogram/reframe", controller.RelayRProxy(func() rproxy.WeaverFactory {
+			return &ideogram.IdeoGramWeaverFactory{}
+		}))
 	}
 	relayV1Router := router.Group("/v1")
 	relayV1Router.Use(middleware.RelayPanicRecover(), middleware.TokenAuth(), middleware.Distribute(), middleware.RelayTime())

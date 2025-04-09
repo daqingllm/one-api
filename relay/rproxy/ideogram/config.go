@@ -59,7 +59,7 @@ func CalcStrategyFunc(context *rproxy.RproxyContext, channel *model.Channel, gro
 	if e != nil {
 		return 0, e
 	}
-	return int64(abilityChannelModelPrices[strings.Join([]string{lastSegment, "ideogram", context.Meta.OriginModelName}, "-")] * groupRatio * batchNums), nil
+	return int64(abilityChannelModelPrices[strings.Join([]string{lastSegment, "ideogram", context.Meta.OriginModelName}, "-")] * groupRatio * batchNums * 1000), nil
 
 }
 
@@ -75,6 +75,9 @@ func getPicNums(context *rproxy.RproxyContext) (picNum float64, err *relaymodel.
 		}
 		srcCtx.Request.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
 		numImagesStr := gjson.GetBytes(bodyBytes, "image_request.num_images").String()
+		if numImagesStr == "" {
+			return 1, nil
+		}
 		numImages, err := strconv.Atoi(numImagesStr)
 		if err != nil {
 			return 1, &relaymodel.ErrorWithStatusCode{

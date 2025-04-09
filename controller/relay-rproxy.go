@@ -9,8 +9,9 @@ import (
 
 // https://platform.openai.com/docs/api-reference/chat
 
-func RelayRProxy(weaverFactory rproxy.WeaverFactory) gin.HandlerFunc {
+func RelayRProxy(weaverFactoryFunc func() rproxy.WeaverFactory) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		weaverFactory := weaverFactoryFunc()
 		err := weaverFactory.GetWeaver(c).Weave()
 		if err != nil {
 			c.JSON(err.StatusCode, gin.H{
