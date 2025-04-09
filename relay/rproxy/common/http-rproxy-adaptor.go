@@ -25,7 +25,10 @@ type HttpRproxyAdaptor struct {
 }
 
 func (a *HttpRproxyAdaptor) DoRequest(context *rproxy.RproxyContext) (response rproxy.Response, err *relaymodel.ErrorWithStatusCode) {
-	a.BillingCalculator.PreCalAndExecute(context)
+	err = a.BillingCalculator.PreCalAndExecute(context)
+	if err != nil {
+		return nil, err
+	}
 	newReq, err := a.GetRequestHandler().Handle(context)
 	if err != nil {
 		return nil, err
@@ -33,14 +36,14 @@ func (a *HttpRproxyAdaptor) DoRequest(context *rproxy.RproxyContext) (response r
 	resp, error := adaptor.DoRequest(context.SrcContext, newReq.(*http.Request))
 	err = a.GetErrorHandler().HandleError(context, resp, error)
 	if err != nil {
-		a.BillingCalculator.RollBackPreCalAndExecute(context)
+		go a.BillingCalculator.RollBackPreCalAndExecute(context)
 		return nil, err
 	}
 	e := a.GetResponseHandler().Handle(context, resp)
 	if e != nil {
 		return nil, e
 	}
-	a.BillingCalculator.PostCalcAndExecute(context)
+	go a.BillingCalculator.PostCalcAndExecute(context)
 	return nil, nil
 }
 
