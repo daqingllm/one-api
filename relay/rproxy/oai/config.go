@@ -34,11 +34,15 @@ var abilityWebSearchPrice = map[string]float64{
 }
 
 func GetUrlFunc(context *rproxy.RproxyContext, channel *model.Channel) (url string, err *relaymodel.ErrorWithStatusCode) {
+	var baseURL string = *channel.BaseURL
+	if baseURL == "" {
+		baseURL = "https://api.openai.com"
+	}
 	if channel.Type == 3 {
 		modifiedPath := strings.Replace(context.SrcContext.Request.URL.Path, "/v1", "/openai", 1)
-		return *channel.BaseURL + modifiedPath + "?api-version=" + *channel.Other, nil
+		return baseURL + modifiedPath + "?api-version=" + *channel.Other, nil
 	}
-	return *channel.BaseURL + context.SrcContext.Request.URL.Path, nil
+	return baseURL + context.SrcContext.Request.URL.Path, nil
 
 }
 
