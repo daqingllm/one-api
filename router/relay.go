@@ -5,6 +5,7 @@ import (
 	"github.com/songquanpeng/one-api/middleware"
 	"github.com/songquanpeng/one-api/relay/rproxy"
 	"github.com/songquanpeng/one-api/relay/rproxy/ideogram"
+	"github.com/songquanpeng/one-api/relay/rproxy/oai"
 
 	"github.com/gin-gonic/gin"
 )
@@ -28,6 +29,19 @@ func SetRelayRouter(router *gin.Engine) {
 	directRproxyRouter.Use(middleware.RelayPanicRecover(), middleware.RelayTime())
 	{
 		// directRproxyRouter.POST("/v1/responses", controller.RelayRProxy(&oai.OAIResponseWeaverFactory{}))
+		directRproxyRouter.POST("/v1/responses", controller.RelayRProxy(func() rproxy.WeaverFactory {
+			return &oai.OAIResponseWeaverFactory{}
+		}))
+
+		directRproxyRouter.GET("/v1/responses/:response_id", controller.RelayRProxy(func() rproxy.WeaverFactory {
+			return &oai.OAIGetInfoWeaverFactory{}
+		}))
+		directRproxyRouter.DELETE("/v1/responses/:response_id", controller.RelayRProxy(func() rproxy.WeaverFactory {
+			return &oai.OAIGetInfoWeaverFactory{}
+		}))
+		directRproxyRouter.GET("/v1/responses/:response_id/input_items", controller.RelayRProxy(func() rproxy.WeaverFactory {
+			return &oai.OAIGetInfoWeaverFactory{}
+		}))
 		directRproxyRouter.POST("/ideogram/generate", controller.RelayRProxy(func() rproxy.WeaverFactory {
 			return &ideogram.IdeoGramWeaverFactory{}
 		}))

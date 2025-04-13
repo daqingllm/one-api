@@ -4,15 +4,16 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/songquanpeng/one-api/common"
-	"github.com/songquanpeng/one-api/common/config"
-	"github.com/songquanpeng/one-api/common/logger"
 	"math/rand"
 	"sort"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/songquanpeng/one-api/common"
+	"github.com/songquanpeng/one-api/common/config"
+	"github.com/songquanpeng/one-api/common/logger"
 )
 
 var (
@@ -288,14 +289,26 @@ func CacheGetChannelById(id int) (*Channel, error) {
 	return channel, nil
 }
 
-func CacheGetRandomSatisfiedChannels(group string, model string, excludedChannelIds []int) ([]*Channel, error) {
+func CacheGetOrderedChannels(group string, model string, excludedChannelIds []int) ([]*Channel, error) {
 	channelSyncLock.RLock()
 	defer channelSyncLock.RUnlock()
-	if len(group2model2channels[group][model]) == 0 {
+
+	channels, ok := group2model2channels[group][model]
+	if !ok || len(channels) == 0 {
 		return nil, errors.New("channel not found")
 	}
-	//todo deep copy and order channels
-	return group2model2channels[group][model], nil
+	validateChannels := append([]*Channel{}, channels...)
+
+	if len(validateChannels) == 0 {
+		return nil, errors.New("channel not found")
+	}
+	sort.Slice(validateChannels, func(i, j int) bool {
+		if validateChannels[i].GetPriority() == validateChannels[j].GetPriority() {
+			return getChannelWeight(validateChannels[i]) > getChannelWeight(validateChannels[j])
+		}
+		return validateChannels[i].GetPriority() > validateChannels[j].GetPriority()
+	})
+	return validateChannels, nil
 }
 
 func CacheGetRandomSatisfiedChannel(group string, model string, excludedChannelIds []int) (*Channel, error) {

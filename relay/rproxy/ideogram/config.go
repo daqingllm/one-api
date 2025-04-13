@@ -47,20 +47,27 @@ func GetUrlFunc(context *rproxy.RproxyContext, channel *model.Channel) (url stri
 
 }
 
-func CalcStrategyFunc(context *rproxy.RproxyContext, channel *model.Channel, groupRatio float64) (preConsumedQuota int64, err *relaymodel.ErrorWithStatusCode) {
+func PreCalcStrategyFunc(context *rproxy.RproxyContext, channel *model.Channel, bill *common.Bill) (err *relaymodel.ErrorWithStatusCode) {
 	path := context.SrcContext.Request.URL.Path
 	parts := strings.FieldsFunc(path, func(c rune) bool { return c == '/' })
 	if len(parts) == 0 {
-		return 0, relaymodel.NewErrorWithStatusCode(http.StatusBadRequest, "invalid_path", "invalid_path")
+		return relaymodel.NewErrorWithStatusCode(http.StatusBadRequest, "invalid_path", "invalid_path")
 
 	}
 	lastSegment := parts[len(parts)-1]
 	batchNums, e := getPicNums(context)
 	if e != nil {
-		return 0, e
+		return e
 	}
-	return int64(abilityChannelModelPrices[strings.Join([]string{lastSegment, "ideogram", context.Meta.OriginModelName}, "-")] * groupRatio * batchNums * 1000), nil
-
+	var quantity float64 = abilityChannelModelPrices[strings.Join([]string{lastSegment, "ideogram", context.Meta.OriginModelName}, "-")] * 1000 * batchNums
+	bill.PreBillItems = append(bill.PreBillItems, &common.BillItem{
+		ID:        0,
+		Name:      "PromptTokens",
+		Quantity:  quantity,
+		UnitPrice: 1,
+		Quota:     int64(quantity * 1),
+	})
+	return nil
 }
 
 func getPicNums(context *rproxy.RproxyContext) (picNum float64, err *relaymodel.ErrorWithStatusCode) {
@@ -120,24 +127,25 @@ func getPicNums(context *rproxy.RproxyContext) (picNum float64, err *relaymodel.
 	}
 	return 1, nil
 }
-func GetName(path string) string {
-	return strings.Join([]string{path, strconv.Itoa(int(channeltype.IdeoGram))}, "-")
+
+func getKey(path string) string {
+	return strings.Join([]string{path, "POST", strconv.Itoa(int(channeltype.IdeoGram))}, "-")
 }
 func init() {
 	//url-channeltype
 	logger.SysLogf("register ideogram channel type start %d", channeltype.IdeoGram)
 	registry := rproxy.GetChannelAdaptorRegistry()
 	var adaptorBuilder = common.DefaultHttpAdaptorBuilder{
-		SetHeaderFunc:    SetHeaderFunc,
-		CalcStrategyFunc: CalcStrategyFunc,
-		GetUrlFunc:       GetUrlFunc,
+		SetHeaderFunc:       SetHeaderFunc,
+		PreCalcStrategyFunc: PreCalcStrategyFunc,
+		GetUrlFunc:          GetUrlFunc,
 	}
-	registry.Register(GetName("/ideogram/generate"), adaptorBuilder)
-	registry.Register(GetName("/ideogram/edit"), adaptorBuilder)
-	registry.Register(GetName("/ideogram/remix"), adaptorBuilder)
-	registry.Register(GetName("/ideogram/upscale"), adaptorBuilder)
-	registry.Register(GetName("/ideogram/describe"), adaptorBuilder)
-	registry.Register(GetName("/ideogram/reframe"), adaptorBuilder)
+	registry.Register(getKey("/ideogram/generate"), adaptorBuilder)
+	registry.Register(getKey("/ideogram/edit"), adaptorBuilder)
+	registry.Register(getKey("/ideogram/remix"), adaptorBuilder)
+	registry.Register(getKey("/ideogram/upscale"), adaptorBuilder)
+	registry.Register(getKey("/ideogram/describe"), adaptorBuilder)
+	registry.Register(getKey("/ideogram/reframe"), adaptorBuilder)
 	logger.SysLogf("register ideogram channel type end %d", channeltype.IdeoGram)
 
 }

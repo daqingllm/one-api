@@ -17,3 +17,15 @@ func (f *OAIResponseWeaverFactory) GetWeaver(ctx *gin.Context) (weaver rproxy.We
 		Build()
 	return
 }
+
+type OAIGetInfoWeaverFactory struct {
+}
+
+func (f *OAIGetInfoWeaverFactory) GetWeaver(ctx *gin.Context) (weaver rproxy.Weaver) {
+	weaver = common.
+		NewWeaverBuilder(ctx).
+		TokenRetriever(&OAITokenRetriever{}).
+		ModelRetriever(&common.NopModelRetriever{}).
+		Build()
+	return
+}

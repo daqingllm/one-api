@@ -1,6 +1,9 @@
 package rproxy
 
-import "sync"
+import (
+	"strings"
+	"sync"
+)
 
 var (
 	instance = &ChannelAdaptorRegistry{
@@ -18,6 +21,7 @@ type AdaptorBuilder interface {
 }
 
 func (r *ChannelAdaptorRegistry) Register(name string, builder AdaptorBuilder) {
+	name = strings.ToLower(name)
 	if r.adaptorBuilders[name] != nil {
 		return
 	}
@@ -25,6 +29,7 @@ func (r *ChannelAdaptorRegistry) Register(name string, builder AdaptorBuilder) {
 }
 
 func (r *ChannelAdaptorRegistry) GetAdaptor(name string) RproxyAdaptor {
+	name = strings.ToLower(name)
 	if r.adaptorBuilders[name] == nil {
 		return nil
 	}

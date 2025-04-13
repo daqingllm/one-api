@@ -14,6 +14,7 @@ import (
 	"github.com/songquanpeng/one-api/relay/controller"
 	relaymodel "github.com/songquanpeng/one-api/relay/model"
 	"github.com/songquanpeng/one-api/relay/rproxy"
+	"github.com/songquanpeng/one-api/relay/util"
 )
 
 type HttpRproxyAdaptor struct {
@@ -31,6 +32,7 @@ func (a *HttpRproxyAdaptor) DoRequest(context *rproxy.RproxyContext) (response r
 	}
 	newReq, err := a.GetRequestHandler().Handle(context)
 	if err != nil {
+		go a.BillingCalculator.RollBackPreCalAndExecute(context)
 		return nil, err
 	}
 	resp, error := adaptor.DoRequest(context.SrcContext, newReq.(*http.Request))
@@ -85,9 +87,10 @@ func (r *DefaultErrorHandler) HandleError(context *rproxy.RproxyContext, resp rp
 }
 
 type DefaultRequestHandler struct {
-	Adaptor       rproxy.RproxyAdaptor
-	GetUrlFunc    func(context *rproxy.RproxyContext, channel *model.Channel) (url string, err *relaymodel.ErrorWithStatusCode)
-	SetHeaderFunc func(context *rproxy.RproxyContext, channel *model.Channel, request *http.Request) (err *relaymodel.ErrorWithStatusCode)
+	Adaptor               rproxy.RproxyAdaptor
+	GetUrlFunc            func(context *rproxy.RproxyContext, channel *model.Channel) (url string, err *relaymodel.ErrorWithStatusCode)
+	SetHeaderFunc         func(context *rproxy.RproxyContext, channel *model.Channel, request *http.Request) (err *relaymodel.ErrorWithStatusCode)
+	ReplaceBodyParamsFunc func(context *rproxy.RproxyContext, channel *model.Channel, body []byte) (replacedBody []byte, err *relaymodel.ErrorWithStatusCode)
 }
 
 func (r *DefaultRequestHandler) Handle(context *rproxy.RproxyContext) (req rproxy.Request, err *relaymodel.ErrorWithStatusCode) {
@@ -162,7 +165,12 @@ func (r *DefaultRequestHandler) Handle(context *rproxy.RproxyContext) (req rprox
 		return nil, relaymodel.NewErrorWithStatusCode(http.StatusInternalServerError, "read_request_body_failed", "read_request_body_failed")
 	}
 	defer context.SrcContext.Request.Body.Close() // 确保关闭 Body
-
+	if r.ReplaceBodyParamsFunc != nil {
+		newRequestBody, _ := r.ReplaceBodyParamsFunc(context, r.Adaptor.GetChannel(), requestBody)
+		if newRequestBody != nil {
+			requestBody = newRequestBody
+		}
+	}
 	newReq, e := http.NewRequest(originalReq.Method, fullRequestURL, bytes.NewBuffer(requestBody))
 	//copy header
 	for k, v := range originalReq.Header {
@@ -185,22 +193,13 @@ func (r *DefaultResponseHandler) Handle(context *rproxy.RproxyContext, resp rpro
 	if !ok {
 		return relaymodel.NewErrorWithStatusCode(http.StatusInternalServerError, "invalid_response", "invalid_response")
 	}
-	responseBody, e := io.ReadAll(httpResp.Body)
-	if e != nil {
-		return relaymodel.NewErrorWithStatusCode(http.StatusInternalServerError, "read_response_body_failed", "read_response_body_failed")
-	}
-	defer httpResp.Body.Close()
+	var result any
+	if context.Meta.IsStream {
+		result, err = util.StreamResponseHandle(context.SrcContext, httpResp)
 
-	httpResp.Body = io.NopCloser(bytes.NewBuffer(responseBody))
-	for k, v := range httpResp.Header {
-		context.SrcContext.Writer.Header().Set(k, v[0])
+	} else {
+		result, err = util.ResponseHandle(context.SrcContext, httpResp)
 	}
-	context.SrcContext.Writer.WriteHeader(httpResp.StatusCode)
-	_, e = io.Copy(context.SrcContext.Writer, httpResp.Body)
-	if e != nil {
-		logger.Errorf(context.SrcContext, "Failed to copy response body: %v", e)
-
-		return relaymodel.NewErrorWithStatusCode(http.StatusInternalServerError, "copy_response_body_failed", "copy_response_body_failed")
-	}
-	return nil
+	context.ResolvedResponse = result
+	return
 }

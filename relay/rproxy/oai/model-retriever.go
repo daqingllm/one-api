@@ -32,8 +32,9 @@ func (r *OAIModelRetriever) Retrieve(context *rproxy.RproxyContext) (modelName s
 		if modelName == "" {
 			return "", nil
 		}
+		//todo  fixme
+		context.ResolvedRequest = bodyBytes
 		return modelName, nil
-
 	}
 	return "", &relaymodel.ErrorWithStatusCode{
 		StatusCode: http.StatusUnsupportedMediaType,

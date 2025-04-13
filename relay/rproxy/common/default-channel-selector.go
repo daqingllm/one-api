@@ -39,8 +39,8 @@ func (c DefaultChannelSelector) SelectChannel(context *rproxy.RproxyContext) (or
 				orderedChannels = append(orderedChannels, channel)
 			}
 		}
-		//按照优先级获取渠道
-		channels, err := dbmodel.CacheGetRandomSatisfiedChannels(context.GetGroup(), context.GetOriginalModel(), append(make([]int, 1), recentChannelId))
+		//按照优先级和weight获取渠道
+		channels, err := dbmodel.CacheGetOrderedChannels(context.GetGroup(), context.GetOriginalModel(), append(make([]int, 1), recentChannelId))
 		if err != nil && len(orderedChannels) <= 0 {
 			return nil, relaymodel.NewErrorWithStatusCode(http.StatusInternalServerError, "no_valid_channel_error", "no_valid_channel_error")
 		}

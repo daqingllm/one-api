@@ -30,19 +30,21 @@ func (f *FailOverTolerancer) FaultTolerance(context *RproxyContext) (err *relaym
 	}
 	if len(orderedChannels) == 0 {
 		return relaymodel.NewErrorWithStatusCode(http.StatusInternalServerError, "no_channel_available", "通道访问失败")
-
 	}
 	f.channels = orderedChannels
 	for _, channel := range f.channels {
 		if channel.Status != 1 {
 			continue
 		}
-		e := f.handler.Handle(channel, context)
-		if e != nil {
-			return e
+		err = f.handler.Handle(channel, context)
+		if err == nil {
+			model.CacheSetRecentChannel(context.SrcContext, context.GetUserId(), context.GetOriginalModel(), channel.Id)
+			return nil
 		}
+		logger.Errorf(context.SrcContext, "error handling request: "+err.Message)
 	}
-	return nil
+	model.CacheSetRecentChannel(context.SrcContext, context.GetUserId(), context.GetOriginalModel(), 0)
+	return
 }
 
 func (f *FailOverTolerancer) GetHandler() Handler {
