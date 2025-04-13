@@ -159,11 +159,12 @@ func PostCalcStrategyFunc(context *rproxy.RproxyContext, channel *model.Channel,
 	}
 
 	if totalUsage.OutputTokens > 0 {
+		var completionRatio = ratio.GetCompletionRatio(context.GetOriginalModel(), channel.Type)
 		bill.BillItems = append(bill.BillItems, &common.BillItem{
 			Name:      "CompletionTokens",
-			UnitPrice: ratio.GetCompletionRatio(context.GetOriginalModel(), channel.Type), // 示例：补全token按70%折扣计费
+			UnitPrice: completionRatio,
 			Quantity:  float64(totalUsage.OutputTokens),
-			Quota:     int64(float64(totalUsage.OutputTokens)),
+			Quota:     int64(float64(totalUsage.OutputTokens) * completionRatio),
 		})
 	}
 
