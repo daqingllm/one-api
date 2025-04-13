@@ -15,11 +15,13 @@ type Ratio struct {
 }
 
 type RproxyContext struct {
-	Meta       *meta.Meta
-	SrcContext *gin.Context
-	UserGroup  string
-	Token      *model.Token
-	Ratio      *Ratio
+	Meta             *meta.Meta
+	SrcContext       *gin.Context
+	UserGroup        string
+	Token            *model.Token
+	Ratio            *Ratio
+	ResolvedRequest  any
+	ResolvedResponse any
 }
 
 func (c *RproxyContext) GetGroup() string {
