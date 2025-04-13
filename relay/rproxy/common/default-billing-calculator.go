@@ -175,7 +175,7 @@ func (b *DefaultBillingCalculator) PostCalcAndExecute(context *rproxy.RproxyCont
 	if err != nil {
 		logger.SysError("error update user quota cache: " + err.Error())
 	}
-	model.RecordConsumeLog(context.SrcContext, context.GetUserId(), b.GetChannel().Id, promptTokens, completionTokens, cachedTokens, b.Bill.ModelName, context.Meta.TokenName, b.Bill.TotalQuota, logContent)
+	model.RecordConsumeLog(context.SrcContext, context.GetUserId(), b.GetChannel().Id, promptTokens, cachedTokens, completionTokens, b.Bill.ModelName, context.Meta.TokenName, b.Bill.TotalQuota, logContent)
 	model.UpdateUserUsedQuotaAndRequestCount(context.GetUserId(), b.Bill.TotalQuota)
 	model.UpdateChannelUsedQuota(b.GetChannel().Id, b.Bill.TotalQuota)
 	return nil
