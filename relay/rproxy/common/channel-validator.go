@@ -17,7 +17,7 @@ func (c *ChannelValidator) Validate() *relaymodel.ErrorWithStatusCode {
 	if channel == "" {
 		return nil
 	}
-	if model.IsAdmin(c.ctx.GetUserId()) {
+	if !model.IsAdmin(c.ctx.GetUserId()) {
 		return relaymodel.NewErrorWithStatusCode(http.StatusForbidden, nil, "您没有权限访问该通道")
 	}
 	return nil
