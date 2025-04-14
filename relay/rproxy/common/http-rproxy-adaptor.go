@@ -184,6 +184,8 @@ func (r *DefaultRequestHandler) Handle(context *rproxy.RproxyContext) (req rprox
 		return nil, relaymodel.NewErrorWithStatusCode(http.StatusInternalServerError, "read_request_body_failed", "read_request_body_failed")
 	}
 	defer context.SrcContext.Request.Body.Close() // 确保关闭 Body
+	context.SrcContext.Request.Body = io.NopCloser(bytes.NewBuffer(requestBody))
+
 	if r.ReplaceBodyParamsFunc != nil {
 		newRequestBody, _ := r.ReplaceBodyParamsFunc(context, r.Adaptor.GetChannel(), requestBody)
 		if newRequestBody != nil {
