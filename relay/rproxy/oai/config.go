@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/songquanpeng/one-api/common/config"
 	"github.com/songquanpeng/one-api/common/logger"
 	"github.com/songquanpeng/one-api/model"
 	"github.com/songquanpeng/one-api/relay/adaptor/openai"
@@ -55,7 +56,7 @@ func SetHeaderFunc(context *rproxy.RproxyContext, channel *model.Channel, reques
 func PreCalcStrategyFunc(context *rproxy.RproxyContext, channel *model.Channel, bill *common.Bill) (err *relaymodel.ErrorWithStatusCode) {
 	parsed := gjson.ParseBytes(context.ResolvedRequest.([]byte))
 	input := parsed.Get("input").String()
-	promptTokens := openai.CountTokenInput(input, context.GetRequestModel())
+	promptTokens := int(config.PreConsumedQuota) + openai.CountTokenInput(input, context.GetRequestModel())
 
 	maxTokens := parsed.Get("max_output_tokens").Int()
 	if maxTokens != 0 {
@@ -160,12 +161,21 @@ func PostCalcStrategyFunc(context *rproxy.RproxyContext, channel *model.Channel,
 
 	if totalUsage.OutputTokens > 0 {
 		var completionRatio = ratio.GetCompletionRatio(context.GetOriginalModel(), channel.Type)
-		bill.BillItems = append(bill.BillItems, &common.BillItem{
+		billItem := &common.BillItem{
 			Name:      "CompletionTokens",
 			UnitPrice: completionRatio,
 			Quantity:  float64(totalUsage.OutputTokens),
 			Quota:     int64(float64(totalUsage.OutputTokens) * completionRatio),
-		})
+			Discount: &common.Discount{
+				ID:       "completion_ratio",
+				Name:     "完成倍率",
+				Type:     0, // 0 表示模型级折扣
+				Ratio:    completionRatio,
+				Describe: fmt.Sprintf(" %s 费率系数", context.GetOriginalModel()),
+			},
+		}
+		bill.BillItems = append(bill.BillItems, billItem)
+
 	}
 
 	// 添加搜索token费用
