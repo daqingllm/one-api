@@ -118,27 +118,14 @@ func PostCalcStrategyFunc(context *rproxy.RproxyContext, channel *model.Channel,
 	}
 
 	if context.IsStream() {
-		multiParsed := context.ResolvedResponse.([][]byte)
-		for _, chunk := range multiParsed {
-			parsed := gjson.ParseBytes(chunk)
-
-			// 解析每个chunk中的usage数据
-			if usage := parsed.Get("usage"); usage.Exists() {
-				totalUsage.InputTokens += int(usage.Get("input_tokens").Int())
-				totalUsage.OutputTokens += int(usage.Get("out_tokens").Int())
-
-				// 处理缓存token
-				if cached := usage.Get("cached_tokens").Int(); cached > 0 {
-					// totalUsage.CachedTokens += int(cached)
-				}
-
-				// 处理搜索token
-				if search := usage.Get("search_tokens").Int(); search > 0 {
-					// totalUsage.SearchTokens += int(search)
-				}
-			}
+		parsed := gjson.ParseBytes(context.ResolvedResponse.([]byte))
+		if config.DebugUserIds[context.GetUserId()] {
+			logger.DebugForcef(context.SrcContext, "usage:%s", parsed)
 		}
-
+		if usage := parsed.Get("response.usage"); usage.Exists() {
+			totalUsage.InputTokens += int(usage.Get("input_tokens").Int())
+			totalUsage.OutputTokens += int(usage.Get("output_tokens").Int())
+		}
 	} else {
 
 		parsed := gjson.ParseBytes(context.ResolvedResponse.([]byte))
