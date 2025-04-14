@@ -140,7 +140,11 @@ func PostCalcStrategyFunc(context *rproxy.RproxyContext, channel *model.Channel,
 		}
 
 	} else {
+
 		parsed := gjson.ParseBytes(context.ResolvedResponse.([]byte))
+		if config.DebugUserIds[context.GetUserId()] {
+			logger.DebugForcef(context.SrcContext, "usage:%v", parsed)
+		}
 		if usage := parsed.Get("usage"); usage.Exists() {
 			totalUsage.InputTokens += int(usage.Get("input_tokens").Int())
 			totalUsage.OutputTokens += int(usage.Get("output_tokens").Int())
@@ -168,7 +172,7 @@ func PostCalcStrategyFunc(context *rproxy.RproxyContext, channel *model.Channel,
 			Quota:     int64(float64(totalUsage.OutputTokens) * completionRatio),
 			Discount: &common.Discount{
 				ID:       "completion_ratio",
-				Name:     "完成倍率",
+				Name:     "补全倍率",
 				Type:     0, // 0 表示模型级折扣
 				Ratio:    completionRatio,
 				Describe: fmt.Sprintf(" %s 费率系数", context.GetOriginalModel()),
