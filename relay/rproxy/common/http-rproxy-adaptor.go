@@ -157,6 +157,7 @@ func (r *DefaultRequestHandler) Handle(context *rproxy.RproxyContext) (req rprox
 			r.SetHeaderFunc(context, r.Adaptor.GetChannel(), newReq)
 		}
 		newReq.Header.Set("Content-Type", writer.FormDataContentType())
+		newReq.Header.Del("Accept-Encoding")
 		return newReq, nil
 	}
 
