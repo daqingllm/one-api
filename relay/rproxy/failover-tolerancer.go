@@ -41,7 +41,7 @@ func (f *FailOverTolerancer) FaultTolerance(context *RproxyContext) (err *relaym
 			model.CacheSetRecentChannel(context.SrcContext, context.GetUserId(), context.GetOriginalModel(), channel.Id)
 			return nil
 		}
-		logger.Errorf(context.SrcContext, "error handling request: "+err.Message)
+		logger.Errorf(context.SrcContext, "channelId: %d ,error handling request: msg:%s ,err:%s", channel.Id, err.Message, err.Error.Message)
 	}
 	model.CacheSetRecentChannel(context.SrcContext, context.GetUserId(), context.GetOriginalModel(), 0)
 	return
