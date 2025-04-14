@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/songquanpeng/one-api/common/config"
 	"github.com/songquanpeng/one-api/common/logger"
 	"github.com/songquanpeng/one-api/model"
 	"github.com/songquanpeng/one-api/relay/adaptor/openai"
@@ -18,7 +19,7 @@ type BillItem struct {
 	Name          string
 	UnitPrice     float64
 	Quantity      float64
-	Discount      []*Discount
+	Discount      *Discount
 	DiscountQuota int64
 	Quota         int64
 }
@@ -113,14 +114,14 @@ func (b *DefaultBillingCalculator) PreCalAndExecute(context *rproxy.RproxyContex
 	if err != nil {
 		return openai.ErrorWrapper(err, "get_user_quota_failed", http.StatusInternalServerError)
 	}
-	if userQuota-b.Bill.TotalQuota < 0 {
+	if userQuota-b.Bill.PreTotalQuota < 0 {
 		return openai.ErrorWrapper(errors.New("user quota is not enough"), "insufficient_user_quota", http.StatusForbidden)
 	}
 	err = model.CacheDecreaseUserQuota(context.GetUserId(), b.Bill.PreTotalQuota)
 	if err != nil {
 		return openai.ErrorWrapper(err, "decrease_user_quota_failed", http.StatusInternalServerError)
 	}
-	e := model.PostConsumeTokenQuota(context.Meta.TokenId, b.Bill.PreDiscountQuota)
+	e := model.PostConsumeTokenQuota(context.Meta.TokenId, b.Bill.PreTotalQuota)
 	if e != nil {
 		logger.Error(context.SrcContext, "error return pre-consumed quota: "+e.Error())
 		return openai.ErrorWrapper(e, "decrease_user_quota_failed", http.StatusInternalServerError)
@@ -148,9 +149,17 @@ func (b *DefaultBillingCalculator) PostCalcAndExecute(context *rproxy.RproxyCont
 	if b.Bill.TotalQuota <= 0 {
 		return nil
 	}
+	if config.DebugUserIds[context.GetUserId()] {
+		logger.DebugForcef(context.SrcContext, "usage:%v", b.Bill)
+	}
 	var logContent string
 	for _, discount := range b.Bill.Discounts {
 		logContent += fmt.Sprintf("%s %.3f，", discount.Name, discount.Ratio)
+	}
+	for _, item := range b.Bill.BillItems {
+		if item.Discount != nil {
+			logContent += fmt.Sprintf("%s %.3f，", item.Discount.Name, item.Discount.Ratio)
+		}
 	}
 	var promptTokens int = 0
 	var completionTokens int = 0
@@ -196,7 +205,7 @@ func (b *DefaultBillingCalculator) calcPreTotalBill() {
 		ratio = ratio * discount.Ratio
 	}
 	b.Bill.PreOriginalQuota = totalPreOriginal
-	b.Bill.PreDiscountQuota = totalPreOriginal * int64(ratio)
+	b.Bill.PreDiscountQuota = int64(float64(totalPreOriginal) * ratio)
 	b.Bill.PreTotalQuota = b.Bill.PreDiscountQuota
 }
 func (b *DefaultBillingCalculator) calcTotalBill() {
@@ -218,6 +227,6 @@ func (b *DefaultBillingCalculator) calcTotalBill() {
 
 	}
 	b.Bill.OriginalQuota = totalOriginal
-	b.Bill.DiscountQuota = totalOriginal * int64(ratio)
+	b.Bill.DiscountQuota = int64(float64(totalOriginal) * ratio)
 	b.Bill.TotalQuota = b.Bill.DiscountQuota
 }

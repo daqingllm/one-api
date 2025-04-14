@@ -43,8 +43,10 @@ func (c *DefaultContextInitializer) Initialize(context *rproxy.RproxyContext) (e
 		context.SrcContext.Set(ctxkey.SpecificChannelId, channelId)
 	}
 	context.Meta = meta.GetByContext(context.SrcContext)
-	if err := context.ResolvedRequest.([]byte); err != nil {
-		context.Meta.IsStream = gjson.GetBytes(context.ResolvedRequest.([]byte), "stream").Bool()
+	if context.ResolvedRequest != nil {
+		if err := context.ResolvedRequest.([]byte); err != nil {
+			context.Meta.IsStream = gjson.GetBytes(context.ResolvedRequest.([]byte), "stream").Bool()
+		}
 	}
 	return nil
 }
