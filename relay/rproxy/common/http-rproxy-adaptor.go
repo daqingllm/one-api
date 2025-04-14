@@ -203,6 +203,7 @@ func (r *DefaultRequestHandler) Handle(context *rproxy.RproxyContext) (req rprox
 	if r.SetHeaderFunc != nil {
 		r.SetHeaderFunc(context, r.Adaptor.GetChannel(), newReq)
 	}
+	newReq.Header.Del("Accept-Encoding")
 	return newReq, nil
 }
 
