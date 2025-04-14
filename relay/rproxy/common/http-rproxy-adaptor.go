@@ -48,18 +48,16 @@ func (a *HttpRproxyAdaptor) DoRequest(context *rproxy.RproxyContext) (response r
 		req := newReq.(*http.Request)
 		// 结构化打印请求信息
 		logger.DebugForcef(context.SrcContext.Request.Context(),
-			"[Request Detail]\nMethod: %s\nURL: %s\nHeaders: %v\nBody: %s",
+			"[Request Detail]\nMethod: %s\nURL: %s\nHeaders: %v\n",
 			req.Method,
 			req.URL.String(),
 			req.Header,
-			string(context.ResolvedRequest.([]byte)),
 		)
 		// 结构化打印响应信息
 		logger.DebugForcef(context.SrcContext.Request.Context(),
-			"[Response Detail]\nStatus: %s\nHeaders: %v\nBody: %s",
+			"[Response Detail]\nStatus: %s\nHeaders: %v\n",
 			resp.Status,
 			resp.Header,
-			string(context.ResolvedResponse.([]byte)),
 		)
 	}
 	if e != nil {
