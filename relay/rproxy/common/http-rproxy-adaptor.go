@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/songquanpeng/one-api/common/config"
 	"github.com/songquanpeng/one-api/common/logger"
 	"github.com/songquanpeng/one-api/model"
 	"github.com/songquanpeng/one-api/relay/adaptor"
@@ -41,7 +42,26 @@ func (a *HttpRproxyAdaptor) DoRequest(context *rproxy.RproxyContext) (response r
 		go a.BillingCalculator.RollBackPreCalAndExecute(context)
 		return nil, err
 	}
+
 	e := a.GetResponseHandler().Handle(context, resp)
+	if config.DebugUserIds[context.GetUserId()] {
+		req := newReq.(*http.Request)
+		// 结构化打印请求信息
+		logger.DebugForcef(context.SrcContext.Request.Context(),
+			"[Request Detail]\nMethod: %s\nURL: %s\nHeaders: %v\nBody: %s",
+			req.Method,
+			req.URL.String(),
+			req.Header,
+			string(context.ResolvedRequest.([]byte)),
+		)
+		// 结构化打印响应信息
+		logger.DebugForcef(context.SrcContext.Request.Context(),
+			"[Response Detail]\nStatus: %s\nHeaders: %v\nBody: %s",
+			resp.Status,
+			resp.Header,
+			string(context.ResolvedResponse.([]byte)),
+		)
+	}
 	if e != nil {
 		return nil, e
 	}
