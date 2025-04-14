@@ -47,16 +47,16 @@ func StreamResponseHandle(c *gin.Context, resp *http.Response) (result any, e *m
 		return 0, nil, nil
 	})
 	common.SetEventStreamHeaders(c)
-	var datas []string
+	var completedResponse string
 	for scanner.Scan() {
 		data := scanner.Text()
 		render.RawData(c, data)
-		if len(data) < 6 || !strings.HasPrefix(data, "data:") {
+		if len(data) < 6 || !strings.HasPrefix(data, "data: {\"type\":\"response.completed\"") {
 			continue
 		}
 		data = strings.TrimPrefix(data, "data:")
 		data = strings.TrimSpace(data)
-		datas = append(datas, data)
+		completedResponse = data
 	}
-	return datas, nil
+	return []byte(completedResponse), nil
 }
