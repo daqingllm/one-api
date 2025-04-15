@@ -1,19 +1,17 @@
-package util
+package rproxy
 
 import (
 	"encoding/json"
-
-	dbmodel "github.com/songquanpeng/one-api/model"
 
 	"github.com/songquanpeng/one-api/common/config"
 	"github.com/songquanpeng/one-api/common/helper"
 	"github.com/songquanpeng/one-api/common/logger"
 	"github.com/songquanpeng/one-api/model"
-	relayModel "github.com/songquanpeng/one-api/relay/model"
-	"github.com/songquanpeng/one-api/relay/rproxy"
+	dbmodel "github.com/songquanpeng/one-api/model"
+	relaymodel "github.com/songquanpeng/one-api/relay/model"
 )
 
-func LogRespError(ctx rproxy.RproxyContext, channels []*model.Channel, err *relayModel.ErrorWithStatusCode) {
+func LogRespError(ctx *RproxyContext, channels []*model.Channel, err *relaymodel.ErrorWithStatusCode) {
 	userId := ctx.GetUserId()
 	originalModel := ctx.GetOriginalModel()
 	channelIds := make([]int, 0, len(channels))
