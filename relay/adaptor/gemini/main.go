@@ -80,6 +80,7 @@ func ConvertRequest(textRequest model.GeneralOpenAIRequest) *ChatRequest {
 		geminiRequest.GenerationConfig.ResponseModalities = textRequest.Modalities
 
 	}
+
 	if textRequest.Tools != nil {
 		functions := make([]FunctionDeclaration, 0, len(textRequest.Tools))
 		for _, tool := range textRequest.Tools {
@@ -128,6 +129,29 @@ func ConvertRequest(textRequest model.GeneralOpenAIRequest) *ChatRequest {
 				FunctionDeclarations: functionDeclarations,
 			},
 		}
+	}
+	if toolChoice := textRequest.ToolChoice; toolChoice != nil {
+		toolConfig := ToolConfig{
+			FunctionCallingConfig: FunctionCallingConfig{
+				Mode: "auto", // default mode
+			},
+		}
+		if str, ok := toolChoice.(string); ok {
+			switch str {
+			case "required":
+				toolConfig.FunctionCallingConfig.Mode = "any"
+				toolConfig.FunctionCallingConfig.AllowedFunctionNames = getAllowedFunctionNames(&geminiRequest)
+			case "auto":
+			}
+		} else if m, ok := toolChoice.(map[string]interface{}); ok {
+			if funcMap, ok := m["function"].(map[string]interface{}); ok {
+				if funcName, ok := funcMap["name"].(string); ok {
+					toolConfig.FunctionCallingConfig.Mode = "any"
+					toolConfig.FunctionCallingConfig.AllowedFunctionNames = []string{funcName}
+				}
+			}
+		}
+		geminiRequest.ToolConfig = toolConfig
 	}
 	shouldAddDummyModelMessage := false
 	toolCallIdMap := make(map[string]string)
@@ -236,6 +260,21 @@ func ConvertRequest(textRequest model.GeneralOpenAIRequest) *ChatRequest {
 	}
 
 	return &geminiRequest
+}
+
+func getAllowedFunctionNames(geminiRequest *ChatRequest) []string {
+	seen := make(map[string]bool)
+	var uniqueNames []string
+
+	for _, tool := range geminiRequest.Tools {
+		for _, fnDecl := range tool.FunctionDeclarations {
+			if !seen[fnDecl.Name] {
+				seen[fnDecl.Name] = true
+				uniqueNames = append(uniqueNames, fnDecl.Name)
+			}
+		}
+	}
+	return uniqueNames
 }
 
 func ConvertEmbeddingRequest(request model.GeneralOpenAIRequest) *BatchEmbeddingRequest {
@@ -394,10 +433,11 @@ func streamResponseGeminiChat2OpenAI(geminiResponse *ChatResponse) *openai.ChatC
 	var choice openai.ChatCompletionsStreamResponseChoice
 	// choice.Delta.Content = geminiResponse.GetResponseText()
 	thoughtText := geminiResponse.GetResponseThoughtText()
-	if len(geminiResponse.Candidates) <= 0 {
+	if len(geminiResponse.Candidates) == 0 {
 		return nil
 	}
-	multiModContents, content, _ := getMultiModOrPlainContents(&geminiResponse.Candidates[0])
+	firstCandidate := geminiResponse.Candidates[0]
+	multiModContents, content, _ := getMultiModOrPlainContents(&firstCandidate)
 	if thoughtText != "" {
 		choice.Delta.ReasoningContent = thoughtText
 	}
@@ -405,8 +445,11 @@ func streamResponseGeminiChat2OpenAI(geminiResponse *ChatResponse) *openai.ChatC
 		choice.Delta.MultiModContents = multiModContents
 	}
 	choice.Delta.Content = content
-
-	if geminiResponse.Candidates[0].Content.Parts[0].FunctionCall != nil {
+	var firstPart *Part
+	if len(firstCandidate.Content.Parts) > 0 {
+		firstPart = &firstCandidate.Content.Parts[0]
+	}
+	if firstPart != nil && firstPart.FunctionCall != nil {
 		choice.Delta.ToolCalls = getToolCalls(&geminiResponse.Candidates[0])
 		choice.FinishReason = &constant.ToolCallsFinishReason
 	}
@@ -492,7 +535,7 @@ func StreamHandler(c *gin.Context, resp *http.Response, modelName string) (*mode
 		}
 
 		response := streamResponseGeminiChat2OpenAI(&geminiResponse)
-		if response == nil {
+		if response == nil || len(response.Choices) == 0 {
 			continue
 		}
 		if config.DebugUserIds[c.GetInt(ctxkey.Id)] {
