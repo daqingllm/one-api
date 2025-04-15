@@ -35,7 +35,7 @@ type ErrorWithStatusCode struct {
 
 func NewErrorWithStatusCode(statusCode int, code any, message string) *ErrorWithStatusCode {
 	return &ErrorWithStatusCode{
-		IsChannelResponseError: true,
+		IsChannelResponseError: false,
 		Error: Error{
 			Message: message,
 			Type:    "",

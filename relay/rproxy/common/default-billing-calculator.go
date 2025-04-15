@@ -144,7 +144,7 @@ func (b *DefaultBillingCalculator) PostCalcAndExecute(context *rproxy.RproxyCont
 	if b.PostCalcStrategyFunc != nil {
 		b.PostCalcStrategyFunc(context, b.GetChannel(), b.Bill)
 	}
-	//计算总折扣
+	//计算总费率
 	b.calcTotalBill()
 	if b.Bill.TotalQuota <= 0 {
 		return nil

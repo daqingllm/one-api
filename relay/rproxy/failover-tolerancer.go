@@ -6,6 +6,7 @@ import (
 	"github.com/songquanpeng/one-api/common/logger"
 	"github.com/songquanpeng/one-api/model"
 	relaymodel "github.com/songquanpeng/one-api/relay/model"
+	"github.com/songquanpeng/one-api/relay/util"
 )
 
 type FailOverTolerancer struct {
@@ -42,8 +43,10 @@ func (f *FailOverTolerancer) FaultTolerance(context *RproxyContext) (err *relaym
 			return nil
 		}
 		logger.Errorf(context.SrcContext, "channelId: %d ,error handling request: msg:%s ,err:%s", channel.Id, err.Message, err.Error.Message)
+
 	}
 	model.CacheSetRecentChannel(context.SrcContext, context.GetUserId(), context.GetOriginalModel(), 0)
+	go util.LogRespError(context, orderedChannels, err)
 	return
 }
 
