@@ -300,9 +300,28 @@ func ConvertEmbeddingRequest(request model.GeneralOpenAIRequest) *BatchEmbedding
 	}
 }
 
+type ModalityTokenCount struct {
+	Modality   string `json:"modality"`
+	TokenCount int    `json:"tokenCount"`
+}
+
+type UsageMetadata struct {
+	PromptTokenCount           int                  `json:"promptTokenCount"`
+	CachedContentTokenCount    int                  `json:"cachedContentTokenCount"`
+	CandidatesTokenCount       int                  `json:"candidatesTokenCount"`
+	ToolUsePromptTokenCount    int                  `json:"toolUsePromptTokenCount"`
+	ThoughtsTokenCount         int                  `json:"thoughtsTokenCount"`
+	TotalTokenCount            int                  `json:"totalTokenCount"`
+	PromptTokensDetails        []ModalityTokenCount `json:"promptTokensDetails"`
+	CacheTokensDetails         []ModalityTokenCount `json:"cacheTokensDetails"`
+	CandidatesTokensDetails    []ModalityTokenCount `json:"candidatesTokensDetails"`
+	ToolUsePromptTokensDetails []ModalityTokenCount `json:"toolUsePromptTokensDetails"`
+}
+
 type ChatResponse struct {
 	Candidates     []ChatCandidate    `json:"candidates"`
 	PromptFeedback ChatPromptFeedback `json:"promptFeedback"`
+	UsageMetadata  UsageMetadata      `json:"usageMetadata"`
 }
 
 func (g *ChatResponse) GetResponseText() string {
@@ -426,6 +445,11 @@ func responseGeminiChat2OpenAI(response *ChatResponse) *openai.TextResponse {
 		}
 		fullTextResponse.Choices = append(fullTextResponse.Choices, choice)
 	}
+	fullTextResponse.Usage = model.Usage{
+		CompletionTokens: response.UsageMetadata.CandidatesTokenCount,
+		PromptTokens:     response.UsageMetadata.PromptTokenCount,
+		TotalTokens:      response.UsageMetadata.TotalTokenCount,
+	}
 	return &fullTextResponse
 }
 
@@ -508,13 +532,13 @@ func embeddingResponseGemini2OpenAI(response *EmbeddingResponse) *openai.Embeddi
 	return &openAIEmbeddingResponse
 }
 
-func StreamHandler(c *gin.Context, resp *http.Response, modelName string) (*model.ErrorWithStatusCode, string) {
+func StreamHandler(c *gin.Context, resp *http.Response, modelName string) (*model.ErrorWithStatusCode, *model.Usage) {
 	responseText := ""
 	scanner := bufio.NewScanner(resp.Body)
 	scanner.Split(bufio.ScanLines)
 
 	common.SetEventStreamHeaders(c)
-
+	usage := model.Usage{}
 	for scanner.Scan() {
 		data := scanner.Text()
 		data = strings.TrimSpace(data)
@@ -530,6 +554,10 @@ func StreamHandler(c *gin.Context, resp *http.Response, modelName string) (*mode
 			logger.SysError("error unmarshalling stream response: " + err.Error())
 			continue
 		}
+		//处理费用
+		usage.TotalTokens = geminiResponse.UsageMetadata.TotalTokenCount
+		usage.PromptTokens = geminiResponse.UsageMetadata.PromptTokenCount
+		usage.CompletionTokens = geminiResponse.UsageMetadata.CandidatesTokenCount
 
 		response := streamResponseGeminiChat2OpenAI(&geminiResponse)
 		if response == nil || len(response.Choices) == 0 {
@@ -555,10 +583,10 @@ func StreamHandler(c *gin.Context, resp *http.Response, modelName string) (*mode
 
 	err := resp.Body.Close()
 	if err != nil {
-		return openai.ErrorWrapper(err, "close_response_body_failed", http.StatusInternalServerError), ""
+		return openai.ErrorWrapper(err, "close_response_body_failed", http.StatusInternalServerError), &usage
 	}
 
-	return nil, responseText
+	return nil, &usage
 }
 
 func Handler(c *gin.Context, resp *http.Response, promptTokens int, modelName string) (*model.ErrorWithStatusCode, *model.Usage) {
@@ -588,13 +616,6 @@ func Handler(c *gin.Context, resp *http.Response, promptTokens int, modelName st
 	}
 	fullTextResponse := responseGeminiChat2OpenAI(&geminiResponse)
 	fullTextResponse.Model = modelName
-	completionTokens := openai.CountTokenText(geminiResponse.GetResponseText()+geminiResponse.GetResponseThoughtText(), modelName)
-	usage := model.Usage{
-		PromptTokens:     promptTokens,
-		CompletionTokens: completionTokens,
-		TotalTokens:      promptTokens + completionTokens,
-	}
-	fullTextResponse.Usage = usage
 	jsonResponse, err := json.Marshal(fullTextResponse)
 	if err != nil {
 		return openai.ErrorWrapper(err, "marshal_response_body_failed", http.StatusInternalServerError), nil
@@ -610,7 +631,7 @@ func Handler(c *gin.Context, resp *http.Response, promptTokens int, modelName st
 	if err != nil {
 		return openai.ErrorWrapper(err, "write_response_body_failed", http.StatusRequestTimeout), nil
 	}
-	return nil, &usage
+	return nil, &fullTextResponse.Usage
 }
 
 func EmbeddingHandler(c *gin.Context, resp *http.Response) (*model.ErrorWithStatusCode, *model.Usage) {
