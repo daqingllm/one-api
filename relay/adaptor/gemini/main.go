@@ -533,7 +533,6 @@ func embeddingResponseGemini2OpenAI(response *EmbeddingResponse) *openai.Embeddi
 }
 
 func StreamHandler(c *gin.Context, resp *http.Response, modelName string) (*model.ErrorWithStatusCode, *model.Usage) {
-	responseText := ""
 	scanner := bufio.NewScanner(resp.Body)
 	scanner.Split(bufio.ScanLines)
 
@@ -570,8 +569,7 @@ func StreamHandler(c *gin.Context, resp *http.Response, modelName string) (*mode
 			responseText, _ := json.Marshal(response)
 			logger.DebugForcef(c.Request.Context(), "gemini Stream Response: %s userId: %d", string(responseText), c.GetInt(ctxkey.Id))
 		}
-		responseText += response.Choices[0].Delta.StringContent() + response.Choices[0].Delta.StringReasoningContent()
-
+		response.Usage = &usage
 		err = render.ObjectData(c, response)
 		if err != nil {
 			logger.SysError(err.Error())
