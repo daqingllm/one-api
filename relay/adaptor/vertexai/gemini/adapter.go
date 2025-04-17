@@ -7,7 +7,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/songquanpeng/one-api/common/ctxkey"
 	"github.com/songquanpeng/one-api/relay/adaptor/gemini"
-	"github.com/songquanpeng/one-api/relay/adaptor/openai"
 	"github.com/songquanpeng/one-api/relay/relaymode"
 
 	"github.com/songquanpeng/one-api/relay/meta"
@@ -37,9 +36,7 @@ func (a *Adaptor) ConvertRequest(c *gin.Context, meta *meta.Meta, request *model
 
 func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, meta *meta.Meta) (usage *model.Usage, err *model.ErrorWithStatusCode) {
 	if meta.IsStream {
-		var responseText string
-		err, responseText = gemini.StreamHandler(c, resp, meta.ActualModelName)
-		usage = openai.ResponseText2Usage(responseText, meta.ActualModelName, meta.PromptTokens)
+		err, usage = gemini.StreamHandler(c, resp, meta.ActualModelName)
 	} else {
 		switch meta.Mode {
 		case relaymode.Embeddings:

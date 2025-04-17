@@ -80,6 +80,7 @@ func ConvertRequest(textRequest model.GeneralOpenAIRequest) *ChatRequest {
 		geminiRequest.GenerationConfig.ResponseModalities = textRequest.Modalities
 
 	}
+
 	if textRequest.Tools != nil {
 		functions := make([]FunctionDeclaration, 0, len(textRequest.Tools))
 		for _, tool := range textRequest.Tools {
@@ -128,6 +129,29 @@ func ConvertRequest(textRequest model.GeneralOpenAIRequest) *ChatRequest {
 				FunctionDeclarations: functionDeclarations,
 			},
 		}
+	}
+	if toolChoice := textRequest.ToolChoice; toolChoice != nil {
+		toolConfig := ToolConfig{
+			FunctionCallingConfig: FunctionCallingConfig{
+				Mode: "auto", // default mode
+			},
+		}
+		if str, ok := toolChoice.(string); ok {
+			switch str {
+			case "required":
+				toolConfig.FunctionCallingConfig.Mode = "any"
+				toolConfig.FunctionCallingConfig.AllowedFunctionNames = getAllowedFunctionNames(&geminiRequest)
+			case "auto":
+			}
+		} else if m, ok := toolChoice.(map[string]interface{}); ok {
+			if funcMap, ok := m["function"].(map[string]interface{}); ok {
+				if funcName, ok := funcMap["name"].(string); ok {
+					toolConfig.FunctionCallingConfig.Mode = "any"
+					toolConfig.FunctionCallingConfig.AllowedFunctionNames = []string{funcName}
+				}
+			}
+		}
+		geminiRequest.ToolConfig = toolConfig
 	}
 	shouldAddDummyModelMessage := false
 	toolCallIdMap := make(map[string]string)
@@ -238,6 +262,21 @@ func ConvertRequest(textRequest model.GeneralOpenAIRequest) *ChatRequest {
 	return &geminiRequest
 }
 
+func getAllowedFunctionNames(geminiRequest *ChatRequest) []string {
+	seen := make(map[string]bool)
+	var uniqueNames []string
+
+	for _, tool := range geminiRequest.Tools {
+		for _, fnDecl := range tool.FunctionDeclarations {
+			if !seen[fnDecl.Name] {
+				seen[fnDecl.Name] = true
+				uniqueNames = append(uniqueNames, fnDecl.Name)
+			}
+		}
+	}
+	return uniqueNames
+}
+
 func ConvertEmbeddingRequest(request model.GeneralOpenAIRequest) *BatchEmbeddingRequest {
 	inputs := request.ParseInput()
 	requests := make([]EmbeddingRequest, len(inputs))
@@ -261,9 +300,28 @@ func ConvertEmbeddingRequest(request model.GeneralOpenAIRequest) *BatchEmbedding
 	}
 }
 
+type ModalityTokenCount struct {
+	Modality   string `json:"modality"`
+	TokenCount int    `json:"tokenCount"`
+}
+
+type UsageMetadata struct {
+	PromptTokenCount           int                  `json:"promptTokenCount"`
+	CachedContentTokenCount    int                  `json:"cachedContentTokenCount"`
+	CandidatesTokenCount       int                  `json:"candidatesTokenCount"`
+	ToolUsePromptTokenCount    int                  `json:"toolUsePromptTokenCount"`
+	ThoughtsTokenCount         int                  `json:"thoughtsTokenCount"`
+	TotalTokenCount            int                  `json:"totalTokenCount"`
+	PromptTokensDetails        []ModalityTokenCount `json:"promptTokensDetails"`
+	CacheTokensDetails         []ModalityTokenCount `json:"cacheTokensDetails"`
+	CandidatesTokensDetails    []ModalityTokenCount `json:"candidatesTokensDetails"`
+	ToolUsePromptTokensDetails []ModalityTokenCount `json:"toolUsePromptTokensDetails"`
+}
+
 type ChatResponse struct {
 	Candidates     []ChatCandidate    `json:"candidates"`
 	PromptFeedback ChatPromptFeedback `json:"promptFeedback"`
+	UsageMetadata  UsageMetadata      `json:"usageMetadata"`
 }
 
 func (g *ChatResponse) GetResponseText() string {
@@ -387,6 +445,11 @@ func responseGeminiChat2OpenAI(response *ChatResponse) *openai.TextResponse {
 		}
 		fullTextResponse.Choices = append(fullTextResponse.Choices, choice)
 	}
+	fullTextResponse.Usage = model.Usage{
+		CompletionTokens: response.UsageMetadata.CandidatesTokenCount,
+		PromptTokens:     response.UsageMetadata.PromptTokenCount,
+		TotalTokens:      response.UsageMetadata.TotalTokenCount,
+	}
 	return &fullTextResponse
 }
 
@@ -394,10 +457,11 @@ func streamResponseGeminiChat2OpenAI(geminiResponse *ChatResponse) *openai.ChatC
 	var choice openai.ChatCompletionsStreamResponseChoice
 	// choice.Delta.Content = geminiResponse.GetResponseText()
 	thoughtText := geminiResponse.GetResponseThoughtText()
-	if len(geminiResponse.Candidates) <= 0 {
+	if len(geminiResponse.Candidates) == 0 {
 		return nil
 	}
-	multiModContents, content, _ := getMultiModOrPlainContents(&geminiResponse.Candidates[0])
+	firstCandidate := geminiResponse.Candidates[0]
+	multiModContents, content, _ := getMultiModOrPlainContents(&firstCandidate)
 	if thoughtText != "" {
 		choice.Delta.ReasoningContent = thoughtText
 	}
@@ -405,8 +469,11 @@ func streamResponseGeminiChat2OpenAI(geminiResponse *ChatResponse) *openai.ChatC
 		choice.Delta.MultiModContents = multiModContents
 	}
 	choice.Delta.Content = content
-
-	if geminiResponse.Candidates[0].Content.Parts[0].FunctionCall != nil {
+	var firstPart *Part
+	if len(firstCandidate.Content.Parts) > 0 {
+		firstPart = &firstCandidate.Content.Parts[0]
+	}
+	if firstPart != nil && firstPart.FunctionCall != nil {
 		choice.Delta.ToolCalls = getToolCalls(&geminiResponse.Candidates[0])
 		choice.FinishReason = &constant.ToolCallsFinishReason
 	}
@@ -465,13 +532,12 @@ func embeddingResponseGemini2OpenAI(response *EmbeddingResponse) *openai.Embeddi
 	return &openAIEmbeddingResponse
 }
 
-func StreamHandler(c *gin.Context, resp *http.Response, modelName string) (*model.ErrorWithStatusCode, string) {
-	responseText := ""
+func StreamHandler(c *gin.Context, resp *http.Response, modelName string) (*model.ErrorWithStatusCode, *model.Usage) {
 	scanner := bufio.NewScanner(resp.Body)
 	scanner.Split(bufio.ScanLines)
 
 	common.SetEventStreamHeaders(c)
-
+	usage := model.Usage{}
 	for scanner.Scan() {
 		data := scanner.Text()
 		data = strings.TrimSpace(data)
@@ -487,17 +553,20 @@ func StreamHandler(c *gin.Context, resp *http.Response, modelName string) (*mode
 			logger.SysError("error unmarshalling stream response: " + err.Error())
 			continue
 		}
+		//处理费用
+		usage.TotalTokens = geminiResponse.UsageMetadata.TotalTokenCount
+		usage.PromptTokens = geminiResponse.UsageMetadata.PromptTokenCount
+		usage.CompletionTokens = geminiResponse.UsageMetadata.CandidatesTokenCount
 
 		response := streamResponseGeminiChat2OpenAI(&geminiResponse)
-		if response == nil {
+		if response == nil || len(response.Choices) == 0 {
 			continue
 		}
 		if config.DebugUserIds[c.GetInt(ctxkey.Id)] {
 			responseText, _ := json.Marshal(response)
 			logger.DebugForcef(c.Request.Context(), "gemini Stream Response: %s userId: %d", string(responseText), c.GetInt(ctxkey.Id))
 		}
-		responseText += response.Choices[0].Delta.StringContent() + response.Choices[0].Delta.StringReasoningContent()
-
+		response.Usage = &usage
 		err = render.ObjectData(c, response)
 		if err != nil {
 			logger.SysError(err.Error())
@@ -512,10 +581,10 @@ func StreamHandler(c *gin.Context, resp *http.Response, modelName string) (*mode
 
 	err := resp.Body.Close()
 	if err != nil {
-		return openai.ErrorWrapper(err, "close_response_body_failed", http.StatusInternalServerError), ""
+		return openai.ErrorWrapper(err, "close_response_body_failed", http.StatusInternalServerError), &usage
 	}
 
-	return nil, responseText
+	return nil, &usage
 }
 
 func Handler(c *gin.Context, resp *http.Response, promptTokens int, modelName string) (*model.ErrorWithStatusCode, *model.Usage) {
@@ -545,13 +614,6 @@ func Handler(c *gin.Context, resp *http.Response, promptTokens int, modelName st
 	}
 	fullTextResponse := responseGeminiChat2OpenAI(&geminiResponse)
 	fullTextResponse.Model = modelName
-	completionTokens := openai.CountTokenText(geminiResponse.GetResponseText()+geminiResponse.GetResponseThoughtText(), modelName)
-	usage := model.Usage{
-		PromptTokens:     promptTokens,
-		CompletionTokens: completionTokens,
-		TotalTokens:      promptTokens + completionTokens,
-	}
-	fullTextResponse.Usage = usage
 	jsonResponse, err := json.Marshal(fullTextResponse)
 	if err != nil {
 		return openai.ErrorWrapper(err, "marshal_response_body_failed", http.StatusInternalServerError), nil
@@ -567,7 +629,7 @@ func Handler(c *gin.Context, resp *http.Response, promptTokens int, modelName st
 	if err != nil {
 		return openai.ErrorWrapper(err, "write_response_body_failed", http.StatusRequestTimeout), nil
 	}
-	return nil, &usage
+	return nil, &fullTextResponse.Usage
 }
 
 func EmbeddingHandler(c *gin.Context, resp *http.Response) (*model.ErrorWithStatusCode, *model.Usage) {
