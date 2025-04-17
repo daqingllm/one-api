@@ -4,6 +4,7 @@ import (
 	"github.com/songquanpeng/one-api/controller"
 	"github.com/songquanpeng/one-api/middleware"
 	"github.com/songquanpeng/one-api/relay/rproxy"
+	"github.com/songquanpeng/one-api/relay/rproxy/gemini"
 	"github.com/songquanpeng/one-api/relay/rproxy/ideogram"
 	"github.com/songquanpeng/one-api/relay/rproxy/oai"
 
@@ -28,6 +29,9 @@ func SetRelayRouter(router *gin.Engine) {
 	directRproxyRouter := router.Group("")
 	directRproxyRouter.Use(middleware.RelayPanicRecover(), middleware.RelayTime())
 	{
+		directRproxyRouter.POST("/v1beta/models/:model/*action", controller.RelayRProxy(func() rproxy.WeaverFactory {
+			return &gemini.GeminiGenerateWeaverFactory{}
+		}))
 		// directRproxyRouter.POST("/v1/responses", controller.RelayRProxy(&oai.OAIResponseWeaverFactory{}))
 		directRproxyRouter.POST("/v1/responses", controller.RelayRProxy(func() rproxy.WeaverFactory {
 			return &oai.OAIResponseWeaverFactory{}
