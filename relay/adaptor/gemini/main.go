@@ -96,17 +96,6 @@ func ConvertRequest(textRequest model.GeneralOpenAIRequest) *ChatRequest {
 				continue
 
 			}
-			// if tool.Function.Parameters != nil && common.IsEmptyObject(tool.Function.Parameters) {
-			// 	tool.Function.Parameters = nil
-			// } else if tool.Function.Parameters != nil {
-			// 	// 兼容gemini不能传空对象
-			// 	if params, ok := tool.Function.Parameters.(map[string]any); ok {
-			// 		if params["type"] == "object" && common.IsEmptyObject(params["properties"]) {
-			// 			tool.Function.Parameters = nil
-			// 		}
-			// 	}
-
-			// }
 			functions = append(functions, functionDeclaration)
 		}
 		geminiRequest.Tools = []ChatTools{
@@ -130,24 +119,26 @@ func ConvertRequest(textRequest model.GeneralOpenAIRequest) *ChatRequest {
 			},
 		}
 	}
-	if toolChoice := textRequest.ToolChoice; toolChoice != nil {
-		toolConfig := ToolConfig{
+	if len(geminiRequest.Tools) > 0 {
+		var toolConfig ToolConfig = ToolConfig{
 			FunctionCallingConfig: FunctionCallingConfig{
 				Mode: "auto", // default mode
 			},
 		}
-		if str, ok := toolChoice.(string); ok {
-			switch str {
-			case "required":
-				toolConfig.FunctionCallingConfig.Mode = "any"
-				toolConfig.FunctionCallingConfig.AllowedFunctionNames = getAllowedFunctionNames(&geminiRequest)
-			case "auto":
-			}
-		} else if m, ok := toolChoice.(map[string]interface{}); ok {
-			if funcMap, ok := m["function"].(map[string]interface{}); ok {
-				if funcName, ok := funcMap["name"].(string); ok {
+		if toolChoice := textRequest.ToolChoice; toolChoice != nil {
+			if str, ok := toolChoice.(string); ok {
+				switch str {
+				case "required":
 					toolConfig.FunctionCallingConfig.Mode = "any"
-					toolConfig.FunctionCallingConfig.AllowedFunctionNames = []string{funcName}
+					toolConfig.FunctionCallingConfig.AllowedFunctionNames = getAllowedFunctionNames(&geminiRequest)
+				case "auto":
+				}
+			} else if m, ok := toolChoice.(map[string]interface{}); ok {
+				if funcMap, ok := m["function"].(map[string]interface{}); ok {
+					if funcName, ok := funcMap["name"].(string); ok {
+						toolConfig.FunctionCallingConfig.Mode = "any"
+						toolConfig.FunctionCallingConfig.AllowedFunctionNames = []string{funcName}
+					}
 				}
 			}
 		}
