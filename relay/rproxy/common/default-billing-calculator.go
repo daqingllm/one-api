@@ -14,9 +14,32 @@ import (
 	"github.com/songquanpeng/one-api/relay/rproxy"
 )
 
+type ChargeMode int
+
+const (
+	// TokenUsage 表示按Token使用量计费
+	TokenUsage ChargeMode = iota
+	// PayPerUse 表示按次计费
+	PayPerUse
+)
+
+type ItemType int
+
+const (
+	//
+	PromptTokens ItemType = iota
+	CompletionTokens
+	CachedTokens
+	ToolUsePromoptTokens
+	ThoughtsTokens
+	WebSearch
+)
+
 type BillItem struct {
 	ID            int64
 	Name          string
+	ItemType      ItemType
+	ChargeMode    ChargeMode
 	UnitPrice     float64
 	Quantity      float64
 	Discount      *Discount

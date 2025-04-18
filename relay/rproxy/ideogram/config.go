@@ -140,12 +140,12 @@ func init() {
 		PreCalcStrategyFunc: PreCalcStrategyFunc,
 		GetUrlFunc:          GetUrlFunc,
 	}
-	registry.Register(getKey("/ideogram/generate"), adaptorBuilder)
-	registry.Register(getKey("/ideogram/edit"), adaptorBuilder)
-	registry.Register(getKey("/ideogram/remix"), adaptorBuilder)
-	registry.Register(getKey("/ideogram/upscale"), adaptorBuilder)
-	registry.Register(getKey("/ideogram/describe"), adaptorBuilder)
-	registry.Register(getKey("/ideogram/reframe"), adaptorBuilder)
+	registry.Register("/ideogram/generate", "POST", strconv.Itoa(int(channeltype.IdeoGram)), adaptorBuilder)
+	registry.Register("/ideogram/edit", "POST", strconv.Itoa(int(channeltype.IdeoGram)), adaptorBuilder)
+	registry.Register("/ideogram/remix", "POST", strconv.Itoa(int(channeltype.IdeoGram)), adaptorBuilder)
+	registry.Register("/ideogram/upscale", "POST", strconv.Itoa(int(channeltype.IdeoGram)), adaptorBuilder)
+	registry.Register("/ideogram/describe", "POST", strconv.Itoa(int(channeltype.IdeoGram)), adaptorBuilder)
+	registry.Register("/ideogram/reframe", "POST", strconv.Itoa(int(channeltype.IdeoGram)), adaptorBuilder)
 	logger.SysLogf("register ideogram channel type end %d", channeltype.IdeoGram)
 
 }

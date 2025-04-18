@@ -10,8 +10,9 @@ import (
 )
 
 type DefaultContextInitializer struct {
-	tokenRetrierver rproxy.TokenRetriever
-	modelRetrierver rproxy.ModelRetriever
+	tokenRetrierver    rproxy.TokenRetriever
+	modelRetrierver    rproxy.ModelRetriever
+	PostInitializeFunc func(context *rproxy.RproxyContext) *relaymodel.ErrorWithStatusCode
 }
 
 func (c *DefaultContextInitializer) Initialize(context *rproxy.RproxyContext) (err *relaymodel.ErrorWithStatusCode) {
@@ -46,6 +47,12 @@ func (c *DefaultContextInitializer) Initialize(context *rproxy.RproxyContext) (e
 	if context.ResolvedRequest != nil {
 		if err := context.ResolvedRequest.([]byte); err != nil {
 			context.Meta.IsStream = gjson.GetBytes(context.ResolvedRequest.([]byte), "stream").Bool()
+		}
+	}
+	if c.PostInitializeFunc != nil {
+		err = c.PostInitializeFunc(context)
+		if err != nil {
+			return err
 		}
 	}
 	return nil

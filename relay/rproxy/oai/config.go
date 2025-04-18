@@ -252,10 +252,10 @@ func init() {
 	channelTypes := []int{channeltype.OpenAI, channeltype.Azure}
 	for _, channelType := range channelTypes {
 		logger.SysLogf("register openai response channel type start %d", channelType)
-		registry.Register(getKey("/v1/responses", "POST", channelType), adaptorBuilder)
-		registry.Register(getKey("/v1/responses/:response_id", "GET", channelType), nopBillingAdaptorBuilder)
-		registry.Register(getKey("/v1/responses/:response_id", "DELETE", channelType), nopBillingAdaptorBuilder)
-		registry.Register(getKey("/v1/responses/:response_id/input_items", "GET", channelType), nopBillingAdaptorBuilder)
+		registry.Register("/v1/responses", "POST", strconv.Itoa(channelType), adaptorBuilder)
+		registry.Register("/v1/responses/:response_id", "GET", strconv.Itoa(channelType), nopBillingAdaptorBuilder)
+		registry.Register("/v1/responses/:response_id", "DELETE", strconv.Itoa(channelType), nopBillingAdaptorBuilder)
+		registry.Register("/v1/responses/:response_id/input_items", "GET", strconv.Itoa(channelType), nopBillingAdaptorBuilder)
 		logger.SysLogf("register openai response channel type end %d", channelType)
 	}
 

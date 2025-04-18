@@ -29,7 +29,7 @@ func SetRelayRouter(router *gin.Engine) {
 	directRproxyRouter := router.Group("")
 	directRproxyRouter.Use(middleware.RelayPanicRecover(), middleware.RelayTime())
 	{
-		directRproxyRouter.POST("/v1beta/models/:model/*action", controller.RelayRProxy(func() rproxy.WeaverFactory {
+		directRproxyRouter.POST("/v1beta/models/:modelAction", controller.RelayRProxy(func() rproxy.WeaverFactory {
 			return &gemini.GeminiGenerateWeaverFactory{}
 		}))
 		// directRproxyRouter.POST("/v1/responses", controller.RelayRProxy(&oai.OAIResponseWeaverFactory{}))

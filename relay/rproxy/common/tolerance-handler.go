@@ -3,7 +3,6 @@ package common
 import (
 	"net/http"
 	"strconv"
-	"strings"
 
 	"github.com/songquanpeng/one-api/common/logger"
 	"github.com/songquanpeng/one-api/model"
@@ -19,7 +18,7 @@ func NewToleranceHandler() *ToleranceHandler {
 }
 func (t *ToleranceHandler) Handle(channel *model.Channel, context *rproxy.RproxyContext) (err *relaymodel.ErrorWithStatusCode) {
 	logger.SysLogf("tolerance handler channel %v", channel)
-	adaptor := rproxy.GetChannelAdaptorRegistry().GetAdaptor(strings.Join([]string{context.SrcContext.Request.URL.Path, context.SrcContext.Request.Method, strconv.Itoa(channel.Type)}, "-"))
+	adaptor := rproxy.GetChannelAdaptorRegistry().GetAdaptor(context.SrcContext.Request.URL.Path, context.SrcContext.Request.Method, strconv.Itoa(channel.Type))
 	logger.SysLogf("tolerance handler adaptor %v", adaptor)
 	if adaptor == nil {
 		return relaymodel.NewErrorWithStatusCode(http.StatusInternalServerError, "get_adaptor_failed", "get_adaptor_failed")

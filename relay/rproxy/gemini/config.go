@@ -1,7 +1,10 @@
 package gemini
 
 import (
+	"bytes"
 	"fmt"
+	"io"
+	"net/http"
 	"strconv"
 	"strings"
 
@@ -31,7 +34,7 @@ func PreCalcStrategyFunc(context *rproxy.RproxyContext, channel *model.Channel, 
 	input := parsed.Get("contents").String()
 	promptTokens := int(config.PreConsumedQuota) + openai.CountTokenInput(input, context.GetRequestModel())
 
-	maxTokens := parsed.Get("max_output_tokens").Int()
+	maxTokens := parsed.Get("generationConfig.maxOutputTokens").Int()
 	if maxTokens != 0 {
 		promptTokens += int(maxTokens)
 
@@ -107,8 +110,25 @@ func PostCalcStrategyFunc(context *rproxy.RproxyContext, channel *model.Channel,
 	return nil
 }
 
-func getKey(path string, method string, channelType int) string {
-	return strings.Join([]string{path, method, strconv.Itoa(channelType)}, "-")
+func PostInitializeFunc(context *rproxy.RproxyContext) *relaymodel.ErrorWithStatusCode {
+	if strings.HasSuffix(context.SrcContext.Request.URL.Path, "streamGenerateContent") {
+		context.Meta.IsStream = true
+	}
+	srcCtx := context.SrcContext
+	contentType := srcCtx.Request.Header.Get("Content-Type")
+
+	if strings.Contains(contentType, "application/json") {
+		bodyBytes, err := io.ReadAll(srcCtx.Request.Body)
+		if err != nil {
+			return &relaymodel.ErrorWithStatusCode{
+				StatusCode: http.StatusBadRequest,
+				Error:      relaymodel.Error{Message: "read_request_body_failed", Code: "READ_BODY_FAILED"},
+			}
+		}
+		srcCtx.Request.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
+		context.ResolvedRequest = bodyBytes
+	}
+	return nil
 }
 func init() {
 	//url-channeltype
@@ -120,7 +140,7 @@ func init() {
 	}
 
 	logger.SysLogf("register gemin response channel type start %d", channeltype.Gemini)
-	registry.Register(getKey("/v1beta/models/:model/*action", "POST", channeltype.Gemini), adaptorBuilder)
+	registry.Register("/v1beta/models/:modelAction", "POST", strconv.Itoa(int(channeltype.Gemini)), adaptorBuilder)
 	logger.SysLogf("register gemin response channel type end %d", channeltype.Gemini)
 
 }

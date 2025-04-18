@@ -2,6 +2,7 @@ package gemini
 
 import (
 	"net/http"
+	"strings"
 
 	relaymodel "github.com/songquanpeng/one-api/relay/model"
 	"github.com/songquanpeng/one-api/relay/rproxy"
@@ -11,7 +12,9 @@ type GeminiModelRetriever struct {
 }
 
 func (r *GeminiModelRetriever) Retrieve(context *rproxy.RproxyContext) (modelName string, err *relaymodel.ErrorWithStatusCode) {
-	model := context.SrcContext.Param("model")
+	modelAction := context.SrcContext.Param("modelAction")
+	parts := strings.SplitN(modelAction, ":", 2)
+	model := parts[0]
 	if model == "" {
 		return "", &relaymodel.ErrorWithStatusCode{
 			StatusCode: http.StatusBadRequest,

@@ -14,7 +14,7 @@ type GeminiTokenRetriever struct {
 }
 
 func (r *GeminiTokenRetriever) Retrieve(context *rproxy.RproxyContext) (token *model.Token, err *relaymodel.ErrorWithStatusCode) {
-	key := context.SrcContext.Param("key")
+	key := context.SrcContext.Query("key")
 	if key == "" {
 		return nil, relaymodel.NewErrorWithStatusCode(http.StatusBadRequest, "missing_key", "Path中缺少key参数")
 	}

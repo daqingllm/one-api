@@ -14,6 +14,7 @@ func (f *GeminiGenerateWeaverFactory) GetWeaver(ctx *gin.Context) (weaver rproxy
 		NewWeaverBuilder(ctx).
 		TokenRetriever(&GeminiTokenRetriever{}).
 		ModelRetriever(&GeminiModelRetriever{}).
+		PostInitializeFunc(PostInitializeFunc).
 		Build()
 	return
 }
