@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/songquanpeng/one-api/common/ctxkey"
 	"github.com/songquanpeng/one-api/common/logger"
 
 	"github.com/gin-gonic/gin"
