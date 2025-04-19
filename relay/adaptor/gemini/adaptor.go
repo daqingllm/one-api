@@ -90,7 +90,7 @@ func (a *Adaptor) ConvertRequest(c *gin.Context, meta *meta.Meta, request *model
 			geminiRequest.GenerationConfig.ThinkingConfig = &ThinkingConfig{IncludeThoughts: true}
 		}
 		if c.GetBool(ctxkey.NoThinking) {
-			geminiRequest.GenerationConfig.ThinkingConfig = &ThinkingConfig{ThinkingBudget: 0}
+			geminiRequest.GenerationConfig.ThinkingConfig = &ThinkingConfig{IncludeThoughts: false, ThinkingBudget: 0}
 		}
 		if config.DebugUserIds[meta.UserId] {
 			geminiRequestJSON, _ := json.Marshal(geminiRequest)
