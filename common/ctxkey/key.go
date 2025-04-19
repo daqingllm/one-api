@@ -26,4 +26,5 @@ const (
 	SurfingContext    = "surfing_context"
 	Thinking          = "thinking"
 	ThinkingContext   = "thinking_context"
+	NoThinking        = "no_thinking"
 )

@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/songquanpeng/one-api/common/ctxkey"
 	"github.com/songquanpeng/one-api/common/logger"
 
 	"github.com/gin-gonic/gin"
@@ -87,6 +88,9 @@ func (a *Adaptor) ConvertRequest(c *gin.Context, meta *meta.Meta, request *model
 			}
 		} else if strings.HasPrefix(meta.ActualModelName, "gemini-2.0-flash-thinking-exp") {
 			geminiRequest.GenerationConfig.ThinkingConfig = &ThinkingConfig{IncludeThoughts: true}
+		}
+		if c.GetBool(ctxkey.NoThinking) {
+			geminiRequest.GenerationConfig.ThinkingConfig = &ThinkingConfig{ThinkingBudget: 0}
 		}
 		if config.DebugUserIds[meta.UserId] {
 			geminiRequestJSON, _ := json.Marshal(geminiRequest)
