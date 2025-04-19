@@ -117,6 +117,7 @@ type ChatTools struct {
 
 type ThinkingConfig struct {
 	IncludeThoughts bool `json:"include_thoughts"`
+	ThinkingBudget  int  `json:"thinking_budget,omitempty"`
 }
 
 type ChatGenerationConfig struct {

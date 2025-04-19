@@ -157,6 +157,9 @@ func TokenAuth() func(c *gin.Context) {
 			c.Set(ctxkey.Thinking, true)
 			requestModel = strings.Replace(requestModel, ":thinking", "", -1)
 		}
+		if strings.Contains(requestModel, ":nothink") {
+			c.Set(ctxkey.NoThinking, true)
+		}
 		c.Set(ctxkey.RequestModel, requestModel)
 		if token.Models != nil && *token.Models != "" {
 			c.Set(ctxkey.AvailableModels, *token.Models)
