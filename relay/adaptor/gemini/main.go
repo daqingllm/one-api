@@ -196,20 +196,21 @@ func ConvertRequest(textRequest model.GeneralOpenAIRequest) *ChatRequest {
 			geminiRequest.Contents = append(geminiRequest.Contents, content)
 		case model.ContentMessage:
 			content.Role = "user"
-			content.Parts = append(content.Parts, Part{
-				Text: message.StringContent(),
-			})
 			openaiContent := message.ParseContent()
 			var parts []Part
 			imageNum := 0
+			var blankPart bool = false
 			for _, part := range openaiContent {
 				if part.Type == model.ContentTypeText {
+					if part.Text == "" {
+						blankPart = true
+						continue
+					}
 					parts = append(parts, Part{
 						Text: part.Text,
 					})
 				} else if part.Type == model.ContentTypeImageURL {
-					imageNum += 1
-					if imageNum > VisionMaxImageNum {
+					if imageNum >= VisionMaxImageNum {
 						continue
 					}
 					mimeType, data, _ := image.GetImageFromUrl(part.ImageURL.Url)
@@ -219,19 +220,22 @@ func ConvertRequest(textRequest model.GeneralOpenAIRequest) *ChatRequest {
 							Data:     data,
 						},
 					})
+					imageNum++
 				}
 			}
-			content.Parts = parts
-
-			// there's no assistant role in gemini and API shall vomit if Role is not user or model
-			if content.Role == "assistant" {
-				content.Role = "model"
+			if blankPart && len(parts) == 0 {
+				continue
 			}
-			// Converting system prompt to prompt from user for the same reason
-			if content.Role == "system" {
+			switch message.Role {
+			case "assistant":
+				// there's no assistant role in gemini and API shall vomit if Role is not user or model
+				content.Role = "model"
+			case "system":
+				// Converting system prompt to prompt from user for the same reason
 				content.Role = "user"
 				shouldAddDummyModelMessage = true
 			}
+			content.Parts = parts
 			geminiRequest.Contents = append(geminiRequest.Contents, content)
 
 			// If a system message is the last message, we need to add a dummy model message to make gemini happy
