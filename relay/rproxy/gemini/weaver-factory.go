@@ -18,3 +18,16 @@ func (f *GeminiGenerateWeaverFactory) GetWeaver(ctx *gin.Context) (weaver rproxy
 		Build()
 	return
 }
+
+type VertexGenerateWeaverFactory struct {
+}
+
+func (f *VertexGenerateWeaverFactory) GetWeaver(ctx *gin.Context) (weaver rproxy.Weaver) {
+	weaver = common.
+		NewWeaverBuilder(ctx).
+		TokenRetriever(&common.AuthorizationTokenRetriever{}).
+		ModelRetriever(&GeminiModelRetriever{}).
+		PostInitializeFunc(PostInitializeFunc).
+		Build()
+	return
+}

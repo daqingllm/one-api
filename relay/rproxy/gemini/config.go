@@ -12,6 +12,7 @@ import (
 	"github.com/songquanpeng/one-api/common/logger"
 	"github.com/songquanpeng/one-api/model"
 	"github.com/songquanpeng/one-api/relay/adaptor/openai"
+	"github.com/songquanpeng/one-api/relay/adaptor/vertexai"
 	"github.com/songquanpeng/one-api/relay/billing/ratio"
 	"github.com/songquanpeng/one-api/relay/channeltype"
 	relaymodel "github.com/songquanpeng/one-api/relay/model"
@@ -27,6 +28,25 @@ func GetUrlFunc(context *rproxy.RproxyContext, channel *model.Channel) (url stri
 	}
 	return baseURL + context.SrcContext.Request.URL.Path + "?key=" + channel.Key, nil
 
+}
+
+func GetVertexUrlFunc(context *rproxy.RproxyContext, channel *model.Channel) (url string, err *relaymodel.ErrorWithStatusCode) {
+	var baseURL string = *channel.BaseURL
+	return baseURL + context.SrcContext.Request.URL.Path, nil
+
+}
+
+func SetVertexHeaderFunc(context *rproxy.RproxyContext, channel *model.Channel, request *http.Request) (err *relaymodel.ErrorWithStatusCode) {
+	request.Header.Set("Authorization", fmt.Sprintf("Bearer %s", channel.Key))
+	token, e := vertexai.GetToken(context.SrcContext, channel.Id, channel.Config)
+	if e != nil {
+		return &relaymodel.ErrorWithStatusCode{
+			StatusCode: http.StatusInternalServerError,
+			Error:      relaymodel.Error{Message: "get_token_failed", Code: "GET_TOKEN_FAILED"},
+		}
+	}
+	request.Header.Set("Authorization", "Bearer "+token)
+	return nil
 }
 
 func PreCalcStrategyFunc(context *rproxy.RproxyContext, channel *model.Channel, bill *common.Bill) (err *relaymodel.ErrorWithStatusCode) {
@@ -139,8 +159,19 @@ func init() {
 		GetUrlFunc:           GetUrlFunc,
 	}
 
+	var vertexAdaptorBuilder = common.DefaultHttpAdaptorBuilder{
+		PreCalcStrategyFunc:  PreCalcStrategyFunc,
+		PostCalcStrategyFunc: PostCalcStrategyFunc,
+		GetUrlFunc:           GetVertexUrlFunc,
+		SetHeaderFunc:        SetVertexHeaderFunc,
+	}
+
 	logger.SysLogf("register gemin response channel type start %d", channeltype.Gemini)
 	registry.Register("/v1beta/models/:modelAction", "POST", strconv.Itoa(int(channeltype.Gemini)), adaptorBuilder)
+	//vertex ai
+	registry.Register("/v1/projects/:VertexAIProjectID/locations/:region/publishers/google/models/:modelAction",
+		"POST", strconv.Itoa(int(channeltype.Gemini)), vertexAdaptorBuilder)
+
 	logger.SysLogf("register gemin response channel type end %d", channeltype.Gemini)
 
 }

@@ -32,7 +32,10 @@ func SetRelayRouter(router *gin.Engine) {
 		directRproxyRouter.POST("/v1beta/models/:modelAction", controller.RelayRProxy(func() rproxy.WeaverFactory {
 			return &gemini.GeminiGenerateWeaverFactory{}
 		}))
-		// directRproxyRouter.POST("/v1/responses", controller.RelayRProxy(&oai.OAIResponseWeaverFactory{}))
+		//vertex
+		directRproxyRouter.POST("/v1/projects/:VertexAIProjectID/locations/:region/publishers/google/models/:modelAction", controller.RelayRProxy(func() rproxy.WeaverFactory {
+			return &gemini.VertexGenerateWeaverFactory{}
+		}))
 		directRproxyRouter.POST("/v1/responses", controller.RelayRProxy(func() rproxy.WeaverFactory {
 			return &oai.OAIResponseWeaverFactory{}
 		}))
