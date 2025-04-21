@@ -30,6 +30,7 @@ const (
 	PromptTokens ItemType = iota
 	CompletionTokens
 	CachedTokens
+	CachedStorage
 	ToolUsePromoptTokens
 	ThoughtsTokens
 	WebSearch

@@ -88,7 +88,6 @@ func PostCalcStrategyFunc(context *rproxy.RproxyContext, channel *model.Channel,
 			totalUsage.OutputTokens += int(usage.Get("candidatesTokenCount").Int())
 		}
 	} else {
-
 		parsed := gjson.ParseBytes(context.ResolvedResponse.([]byte))
 		if config.DebugUserIds[context.GetUserId()] {
 			logger.DebugForcef(context.SrcContext, "usage:%v", parsed)
