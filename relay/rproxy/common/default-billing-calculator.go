@@ -114,6 +114,7 @@ func (b *DefaultBillingCalculator) PreCalAndExecute(context *rproxy.RproxyContex
 	if err != nil {
 		return openai.ErrorWrapper(err, "get_user_quota_failed", http.StatusInternalServerError)
 	}
+	logger.Infof(context.SrcContext, "default billing calculator userId: %d, userQuota: %d, preTotalQuota: %d", context.GetUserId(), userQuota, b.Bill.PreTotalQuota)
 	if userQuota-b.Bill.PreTotalQuota < 0 {
 		return openai.ErrorWrapper(errors.New("user quota is not enough"), "insufficient_user_quota", http.StatusForbidden)
 	}
