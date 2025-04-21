@@ -32,13 +32,29 @@ func GetUrlFunc(context *rproxy.RproxyContext, channel *model.Channel) (url stri
 
 func GetVertexUrlFunc(context *rproxy.RproxyContext, channel *model.Channel) (url string, err *relaymodel.ErrorWithStatusCode) {
 	var baseURL string = *channel.BaseURL
+	if baseURL == "" {
+		config, err := channel.LoadConfig()
+		if err != nil {
+			return "", &relaymodel.ErrorWithStatusCode{
+				StatusCode: http.StatusInternalServerError,
+				Error:      relaymodel.Error{Message: "load_config_failed", Code: "LOAD_CONFIG_FAILED"},
+			}
+		}
+		baseURL = fmt.Sprintf("https://%s-aiplatform.googleapis.com", config.Region)
+	}
 	return baseURL + context.SrcContext.Request.URL.Path, nil
 
 }
 
 func SetVertexHeaderFunc(context *rproxy.RproxyContext, channel *model.Channel, request *http.Request) (err *relaymodel.ErrorWithStatusCode) {
-	request.Header.Set("Authorization", fmt.Sprintf("Bearer %s", channel.Key))
-	token, e := vertexai.GetToken(context.SrcContext, channel.Id, channel.Config)
+	config, e := channel.LoadConfig()
+	if e != nil {
+		return &relaymodel.ErrorWithStatusCode{
+			StatusCode: http.StatusInternalServerError,
+			Error:      relaymodel.Error{Message: "load_config_failed", Code: "LOAD_CONFIG_FAILED"},
+		}
+	}
+	token, e := vertexai.GetToken(context.SrcContext, channel.Id, config.VertexAIADC)
 	if e != nil {
 		return &relaymodel.ErrorWithStatusCode{
 			StatusCode: http.StatusInternalServerError,
@@ -169,7 +185,7 @@ func init() {
 	registry.Register("/v1beta/models/:modelAction", "POST", strconv.Itoa(int(channeltype.Gemini)), adaptorBuilder)
 	//vertex ai
 	registry.Register("/v1/projects/:VertexAIProjectID/locations/:region/publishers/google/models/:modelAction",
-		"POST", strconv.Itoa(int(channeltype.Gemini)), vertexAdaptorBuilder)
+		"POST", strconv.Itoa(int(channeltype.VertextAI)), vertexAdaptorBuilder)
 
 	logger.SysLogf("register gemin response channel type end %d", channeltype.Gemini)
 
