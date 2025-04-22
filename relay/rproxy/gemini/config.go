@@ -18,6 +18,7 @@ import (
 	relaymodel "github.com/songquanpeng/one-api/relay/model"
 	"github.com/songquanpeng/one-api/relay/rproxy"
 	"github.com/songquanpeng/one-api/relay/rproxy/common"
+	"github.com/songquanpeng/one-api/relay/util"
 	"github.com/tidwall/gjson"
 )
 
@@ -145,6 +146,10 @@ func PostCalcStrategyFunc(context *rproxy.RproxyContext, channel *model.Channel,
 	return nil
 }
 
+func StreamHandFunc(context *rproxy.RproxyContext, resp rproxy.Response) (result any, err *relaymodel.ErrorWithStatusCode) {
+	return util.StreamGeminiResponseHandle(context.SrcContext, resp.(*http.Response))
+}
+
 func PostInitializeFunc(context *rproxy.RproxyContext) *relaymodel.ErrorWithStatusCode {
 	if strings.HasSuffix(context.SrcContext.Request.URL.Path, "streamGenerateContent") {
 		context.Meta.IsStream = true
@@ -172,6 +177,7 @@ func init() {
 		PreCalcStrategyFunc:  PreCalcStrategyFunc,
 		PostCalcStrategyFunc: PostCalcStrategyFunc,
 		GetUrlFunc:           GetUrlFunc,
+		StreamHandFunc:       StreamHandFunc,
 	}
 
 	var vertexAdaptorBuilder = common.DefaultHttpAdaptorBuilder{
@@ -179,6 +185,7 @@ func init() {
 		PostCalcStrategyFunc: PostCalcStrategyFunc,
 		GetUrlFunc:           GetVertexUrlFunc,
 		SetHeaderFunc:        SetVertexHeaderFunc,
+		StreamHandFunc:       StreamHandFunc,
 	}
 
 	logger.SysLogf("register gemin response channel type start %d", channeltype.Gemini)

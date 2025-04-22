@@ -208,6 +208,8 @@ func (r *DefaultRequestHandler) Handle(context *rproxy.RproxyContext) (req rprox
 }
 
 type DefaultResponseHandler struct {
+	StreamHandFunc func(context *rproxy.RproxyContext, resp rproxy.Response) (result any, err *relaymodel.ErrorWithStatusCode)
+	HandleFunc     func(context *rproxy.RproxyContext, resp rproxy.Response) (result any, err *relaymodel.ErrorWithStatusCode)
 }
 
 func (r *DefaultResponseHandler) Handle(context *rproxy.RproxyContext, resp rproxy.Response) (err *relaymodel.ErrorWithStatusCode) {
@@ -217,10 +219,18 @@ func (r *DefaultResponseHandler) Handle(context *rproxy.RproxyContext, resp rpro
 	}
 	var result any
 	if context.Meta.IsStream {
-		result, err = util.StreamResponseHandle(context.SrcContext, httpResp)
+		if r.StreamHandFunc != nil {
+			result, err = r.StreamHandFunc(context, httpResp)
+		} else {
+			result, err = util.StreamResponseHandle(context.SrcContext, httpResp)
+		}
 
 	} else {
-		result, err = util.ResponseHandle(context.SrcContext, httpResp)
+		if r.HandleFunc != nil {
+			result, err = r.HandleFunc(context, httpResp)
+		} else {
+			result, err = util.ResponseHandle(context.SrcContext, httpResp)
+		}
 	}
 	context.ResolvedResponse = result
 	return

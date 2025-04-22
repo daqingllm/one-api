@@ -21,6 +21,9 @@ type DefaultHttpAdaptorBuilder struct {
 	PreCalcStrategyFunc   func(context *rproxy.RproxyContext, channel *model.Channel, bill *Bill) (err *relaymodel.ErrorWithStatusCode)
 	PostCalcStrategyFunc  func(context *rproxy.RproxyContext, channel *model.Channel, bill *Bill) (err *relaymodel.ErrorWithStatusCode)
 	FinalCalcStrategyFunc func(context *rproxy.RproxyContext, channel *model.Channel, bill *Bill) (err *relaymodel.ErrorWithStatusCode)
+
+	StreamHandFunc func(context *rproxy.RproxyContext, resp rproxy.Response) (result any, err *relaymodel.ErrorWithStatusCode)
+	HandleFunc     func(context *rproxy.RproxyContext, resp rproxy.Response) (result any, err *relaymodel.ErrorWithStatusCode)
 }
 
 func SetNopHeaderFunc(context *rproxy.RproxyContext, channel *model.Channel, request *http.Request) (err *relaymodel.ErrorWithStatusCode) {
@@ -69,7 +72,10 @@ func (b DefaultHttpAdaptorBuilder) Build() (adaptor rproxy.RproxyAdaptor) {
 	}
 	var responseHandler rproxy.ResponseHandler
 	if b.GetResponseHandler == nil || b.GetResponseHandler() == nil {
-		responseHandler = &DefaultResponseHandler{}
+		responseHandler = &DefaultResponseHandler{
+			StreamHandFunc: b.StreamHandFunc,
+			HandleFunc:     b.HandleFunc,
+		}
 	} else {
 		responseHandler = b.GetResponseHandler()
 	}

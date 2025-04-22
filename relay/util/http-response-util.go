@@ -60,3 +60,32 @@ func StreamResponseHandle(c *gin.Context, resp *http.Response) (result any, e *m
 	}
 	return []byte(completedResponse), nil
 }
+
+func StreamGeminiResponseHandle(c *gin.Context, resp *http.Response) (result any, e *model.ErrorWithStatusCode) {
+	scanner := bufio.NewScanner(resp.Body)
+	scanner.Split(func(data []byte, atEOF bool) (advance int, token []byte, err error) {
+		if atEOF && len(data) == 0 {
+			return 0, nil, nil
+		}
+		if i := strings.Index(string(data), ",\n\n"); i >= 0 {
+			return i + 3, data[0:i], nil
+		}
+		if atEOF {
+			return len(data), data, nil
+		}
+		return 0, nil, nil
+	})
+	common.SetEventStreamHeaders(c)
+	var completedResponse string
+	for scanner.Scan() {
+		data := scanner.Text()
+		render.RawData(c, data)
+		if len(data) < 6 || !strings.HasPrefix(data, "data: {\"type\":\"response.completed\"") {
+			continue
+		}
+		data = strings.TrimPrefix(data, "data:")
+		data = strings.TrimSpace(data)
+		completedResponse = data
+	}
+	return []byte(completedResponse), nil
+}
