@@ -4,11 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/songquanpeng/one-api/common/ctxkey"
-	"github.com/songquanpeng/one-api/relay/constant/role"
 	"math"
 	"net/http"
 	"strings"
+
+	"github.com/songquanpeng/one-api/common/ctxkey"
+	"github.com/songquanpeng/one-api/relay/constant/role"
 
 	"github.com/gin-gonic/gin"
 	"github.com/songquanpeng/one-api/common"
@@ -66,6 +67,10 @@ func getPreConsumedQuota(textRequest *relaymodel.GeneralOpenAIRequest, promptTok
 }
 
 func preConsumeQuota(ctx context.Context, textRequest *relaymodel.GeneralOpenAIRequest, promptTokens int, ratio float64, meta *meta.Meta) (int64, *relaymodel.ErrorWithStatusCode) {
+	if meta.OriginModelName == "gpt-4o-image" || meta.OriginModelName == "gpt-4o-image-vip" {
+		//如果模型是gpt-4o-image或gpt-4o-image-vip，则不进行预消费
+		return 0, nil
+	}
 	preConsumedQuota := getPreConsumedQuota(textRequest, promptTokens, ratio)
 
 	userQuota, err := model.CacheGetUserQuota(ctx, meta.UserId)
@@ -90,6 +95,22 @@ func preConsumeQuota(ctx context.Context, textRequest *relaymodel.GeneralOpenAIR
 	return preConsumedQuota, nil
 }
 
+func postConsumeQuotaPerCall(ctx context.Context, usage *relaymodel.Usage, meta *meta.Meta, textRequest *relaymodel.GeneralOpenAIRequest) {
+	var callQuota int64
+	switch meta.OriginModelName {
+	case "gpt-4o-image":
+		callQuota = int64(0.003 * billingratio.USD * 1000)
+	case "gpt-4o-image-vip":
+		callQuota = int64(0.007 * billingratio.USD * 1000)
+	}
+	var extraLog string
+	callCost := float64(callQuota) / 1000 * 0.002
+	extraLog += fmt.Sprintf("单次费用$%.4f。", callCost)
+	model.RecordConsumeLog(ctx, meta.UserId, meta.ChannelId, 0, 0, int(callQuota), textRequest.Model, meta.TokenName, callQuota, extraLog)
+	model.UpdateUserUsedQuotaAndRequestCount(meta.UserId, callQuota)
+	model.UpdateChannelUsedQuota(meta.ChannelId, callQuota)
+}
+
 func postConsumeQuota(c *gin.Context, ctx context.Context, usage *relaymodel.Usage, meta *meta.Meta, textRequest *relaymodel.GeneralOpenAIRequest, ratio float64, preConsumedQuota int64, modelRatio float64, groupRatio float64, systemPromptReset bool) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -98,6 +119,11 @@ func postConsumeQuota(c *gin.Context, ctx context.Context, usage *relaymodel.Usa
 	}()
 	if usage == nil {
 		logger.Error(ctx, "usage is nil, which is unexpected")
+		return
+	}
+	// gpt-4o-image is a special case, we need to consume quota per call
+	if meta.OriginModelName == "gpt-4o-image" || meta.OriginModelName == "gpt-4o-image-vip" {
+		postConsumeQuotaPerCall(ctx, usage, meta, textRequest)
 		return
 	}
 	var quota int64
