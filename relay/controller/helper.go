@@ -106,8 +106,7 @@ func postConsumeQuotaPerCall(ctx context.Context, usage *relaymodel.Usage, meta 
 	var extraLog string
 	callCost := float64(callQuota) / 1000 * 0.002
 	extraLog += fmt.Sprintf("单次费用$%.4f。", callCost)
-	logContent := fmt.Sprintf("[%s] %s", meta.TokenName, extraLog)
-	model.RecordConsumeLog(ctx, meta.UserId, meta.ChannelId, 0, 0, int(callQuota), textRequest.Model, meta.TokenName, callQuota, logContent)
+	model.RecordConsumeLog(ctx, meta.UserId, meta.ChannelId, 0, 0, int(callQuota), textRequest.Model, meta.TokenName, callQuota, extraLog)
 	model.UpdateUserUsedQuotaAndRequestCount(meta.UserId, callQuota)
 	model.UpdateChannelUsedQuota(meta.ChannelId, callQuota)
 }
