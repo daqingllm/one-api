@@ -67,7 +67,7 @@ func getPreConsumedQuota(textRequest *relaymodel.GeneralOpenAIRequest, promptTok
 }
 
 func preConsumeQuota(ctx context.Context, textRequest *relaymodel.GeneralOpenAIRequest, promptTokens int, ratio float64, meta *meta.Meta) (int64, *relaymodel.ErrorWithStatusCode) {
-	if meta.OriginModelName == "gpt-4o-image" || meta.OriginModelName == "gpt-4o-image-vip" {
+	if strings.TrimSpace(meta.OriginModelName) == "gpt-4o-image" || strings.TrimSpace(meta.OriginModelName) == "gpt-4o-image-vip" {
 		//如果模型是gpt-4o-image或gpt-4o-image-vip，则不进行预消费
 		return 0, nil
 	}
@@ -97,7 +97,7 @@ func preConsumeQuota(ctx context.Context, textRequest *relaymodel.GeneralOpenAIR
 
 func postConsumeQuotaPerCall(ctx context.Context, usage *relaymodel.Usage, meta *meta.Meta, textRequest *relaymodel.GeneralOpenAIRequest) {
 	var callQuota int64
-	switch meta.OriginModelName {
+	switch strings.TrimSpace(meta.OriginModelName) {
 	case "gpt-4o-image":
 		callQuota = int64(0.003 * billingratio.USD * 1000)
 	case "gpt-4o-image-vip":
