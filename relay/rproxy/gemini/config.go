@@ -76,13 +76,15 @@ func PreCalcStrategyFunc(context *rproxy.RproxyContext, channel *model.Channel, 
 		promptTokens += int(maxTokens)
 
 	}
-	billItem := &common.BillItem{
-		Name:      "PromptTokens",
-		UnitPrice: 1,
-		Quantity:  float64(promptTokens),
-		Quota:     int64(float64(promptTokens) * 1),
+	bill.PreBillItems = append(bill.PreBillItems, common.TokenUsageBillItem(common.PromptTokens, 1, float64(promptTokens)))
+	//web search
+	tools := parsed.Get("tools").Array()
+	for _, tool := range tools {
+		if tool.Get("googleSearch").Exists() {
+			bill.PreBillItems = append(bill.PreBillItems, common.PayperUseBillItem(common.WebSearch, 0.035, 1))
+			break
+		}
 	}
-	bill.PreBillItems = append(bill.PreBillItems, billItem)
 	return nil
 }
 
@@ -100,7 +102,9 @@ func PostCalcStrategyFunc(context *rproxy.RproxyContext, channel *model.Channel,
 		if config.DebugUserIds[context.GetUserId()] {
 			logger.DebugForcef(context.SrcContext, "usage:%s", parsed)
 		}
-		if usage := parsed.Get("response.usageMetadata"); usage.Exists() {
+		// 获取数组最后一个元素
+		lastResponse := parsed.Array()[len(parsed.Array())-1]
+		if usage := lastResponse.Get("usageMetadata"); usage.Exists() {
 			totalUsage.InputTokens += int(usage.Get("promptTokenCount").Int())
 			totalUsage.OutputTokens += int(usage.Get("candidatesTokenCount").Int())
 		}
@@ -116,12 +120,7 @@ func PostCalcStrategyFunc(context *rproxy.RproxyContext, channel *model.Channel,
 	}
 
 	if totalUsage.InputTokens > 0 {
-		bill.BillItems = append(bill.BillItems, &common.BillItem{
-			Name:      "PromptTokens",
-			UnitPrice: 1,
-			Quantity:  float64(totalUsage.InputTokens),
-			Quota:     int64(float64(totalUsage.InputTokens)),
-		})
+		bill.BillItems = append(bill.BillItems, common.TokenUsageBillItem(common.PromptTokens, 1, float64(totalUsage.InputTokens)))
 	}
 
 	if totalUsage.OutputTokens > 0 {

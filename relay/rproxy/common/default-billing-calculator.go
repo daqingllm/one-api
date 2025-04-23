@@ -36,6 +36,24 @@ const (
 	WebSearch
 )
 
+func (i ItemType) String() string {
+	names := []string{
+		"PromptTokens",
+		"CompletionTokens",
+		"CachedTokens",
+		"CachedStorage",
+		"ToolUsePromoptTokens",
+		"ThoughtsTokens",
+		"WebSearch",
+	}
+
+	if int(i) < 0 || int(i) >= len(names) {
+		return fmt.Sprintf("Unknown(%d)", i)
+	}
+
+	return names[int(i)]
+}
+
 type BillItem struct {
 	ID            int64
 	Name          string
@@ -46,7 +64,9 @@ type BillItem struct {
 	Discount      *Discount
 	DiscountQuota int64
 	Quota         int64
+	Cost          float64
 }
+
 type DiscountType int
 
 type Discount struct {
@@ -184,11 +204,17 @@ func (b *DefaultBillingCalculator) PostCalcAndExecute(context *rproxy.RproxyCont
 		if item.Discount != nil {
 			logContent += fmt.Sprintf("%s %.3f，", item.Discount.Name, item.Discount.Ratio)
 		}
+		if item.ChargeMode == PayPerUse {
+			logContent += fmt.Sprintf("%s费用 %4f，", item.ItemType.String(), item.Cost)
+		}
 	}
 	var promptTokens int = 0
 	var completionTokens int = 0
 	var cachedTokens int = 0
 	for _, billItem := range b.Bill.BillItems {
+		if PayPerUse == billItem.ChargeMode {
+			continue
+		}
 		switch billItem.Name {
 		case "PromptTokens":
 			promptTokens += int(billItem.Quantity)
@@ -238,12 +264,22 @@ func (b *DefaultBillingCalculator) calcTotalBill() {
 	}
 	if len(b.Bill.BillItems) == 0 {
 		b.Bill.BillItems = b.Bill.PreBillItems
+	} else {
+		for _, item := range b.Bill.PreBillItems {
+			if item.ChargeMode == PayPerUse {
+				b.Bill.BillItems = append(b.Bill.BillItems, item)
+			}
+		}
 	}
 	totalOriginal := int64(0)
-
+	var payPerUseQuota int64 = 0
 	for _, item := range b.Bill.BillItems {
-		itemOriginal := item.Quota
-		totalOriginal += itemOriginal
+		switch item.ChargeMode {
+		case PayPerUse:
+			payPerUseQuota += item.Quota
+		default:
+			totalOriginal += item.Quota
+		}
 	}
 	var ratio float64 = 1
 	for _, discount := range b.Bill.Discounts {
@@ -252,5 +288,26 @@ func (b *DefaultBillingCalculator) calcTotalBill() {
 	}
 	b.Bill.OriginalQuota = totalOriginal
 	b.Bill.DiscountQuota = int64(float64(totalOriginal) * ratio)
-	b.Bill.TotalQuota = b.Bill.DiscountQuota
+	b.Bill.TotalQuota = b.Bill.DiscountQuota + payPerUseQuota
+}
+
+func PayperUseBillItem(itemType ItemType, unitPrice float64, quantity float64) *BillItem {
+	return &BillItem{
+		ChargeMode: PayPerUse,
+		ItemType:   itemType,
+		UnitPrice:  unitPrice,
+		Quantity:   quantity,
+		Quota:      int64(unitPrice * ratio.USD * 1000 * quantity),
+		Cost:       unitPrice * quantity,
+	}
+}
+
+func TokenUsageBillItem(itemType ItemType, unitPrice float64, quantity float64) *BillItem {
+	return &BillItem{
+		ChargeMode: TokenUsage,
+		ItemType:   itemType,
+		UnitPrice:  unitPrice,
+		Quantity:   quantity,
+		Quota:      int64(unitPrice * quantity),
+	}
 }

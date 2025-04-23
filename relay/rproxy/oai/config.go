@@ -89,9 +89,10 @@ func PreCalcStrategyFunc(context *rproxy.RproxyContext, channel *model.Channel, 
 	// if webSearch {
 	// 	billItem := &common.BillItem{
 	// 		Name:      "WebSearchTokens",
-	// 		UnitPrice: 1,             // 单价示例
-	// 		Quantity:  1000,            // 按次或按 token 数计算
-	// 		Quota:     int64(1000 * 1), // 配额换算系数
+	// 		UnitPrice: 0.035 * ratio.USD, // 单价示例
+	// 		Quantity:  1000,              // 按次或按 token 数计算
+	// 		Quota:     int64(1000 * 1),   // 配额换算系数
+	// 		Cost:      float64(1000 * 0.035 * ratio.USD),
 	// 	}
 	// 	bill.PreBillItems = append(bill.PreBillItems, billItem)
 	// }
@@ -102,6 +103,7 @@ func PreCalcStrategyFunc(context *rproxy.RproxyContext, channel *model.Channel, 
 	// 		UnitPrice: 0.5, // 单价示例
 	// 		Quantity:  500, // 按次或按 token 数计算
 	// 		Quota:     int64(500 * 1),
+	// 		Cost:      float64(500 * 0.5),
 	// 	}
 	// 	bill.PreBillItems = append(bill.PreBillItems, billItem)
 	// }
