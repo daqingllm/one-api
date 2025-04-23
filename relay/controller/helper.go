@@ -69,6 +69,13 @@ func getPreConsumedQuota(textRequest *relaymodel.GeneralOpenAIRequest, promptTok
 func preConsumeQuota(ctx context.Context, textRequest *relaymodel.GeneralOpenAIRequest, promptTokens int, ratio float64, meta *meta.Meta) (int64, *relaymodel.ErrorWithStatusCode) {
 	if strings.TrimSpace(meta.OriginModelName) == "gpt-4o-image" || strings.TrimSpace(meta.OriginModelName) == "gpt-4o-image-vip" {
 		//如果模型是gpt-4o-image或gpt-4o-image-vip，则不进行预消费
+		userQuota, err := model.CacheGetUserQuota(ctx, meta.UserId)
+		if err != nil {
+			return 0, openai.ErrorWrapper(err, "get_user_quota_failed", http.StatusInternalServerError)
+		}
+		if userQuota < 0 {
+			return 0, openai.ErrorWrapper(errors.New("user quota is not enough"), "insufficient_user_quota", http.StatusForbidden)
+		}
 		return 0, nil
 	}
 	preConsumedQuota := getPreConsumedQuota(textRequest, promptTokens, ratio)
@@ -102,6 +109,14 @@ func postConsumeQuotaPerCall(ctx context.Context, usage *relaymodel.Usage, meta 
 		callQuota = int64(0.003 * billingratio.USD * 1000)
 	case "gpt-4o-image-vip":
 		callQuota = int64(0.007 * billingratio.USD * 1000)
+	}
+	err := model.PostConsumeTokenQuota(meta.TokenId, callQuota)
+	if err != nil {
+		logger.Error(ctx, "error consuming token remain quota: "+err.Error())
+	}
+	err = model.CacheUpdateUserQuota(ctx, meta.UserId)
+	if err != nil {
+		logger.Error(ctx, "error update user quota cache: "+err.Error())
 	}
 	var extraLog string
 	callCost := float64(callQuota) / 1000 * 0.002
