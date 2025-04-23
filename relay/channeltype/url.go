@@ -52,4 +52,6 @@ var ChannelBaseURLs = []string{
 	"https://api.x.ai",          // 46
 	"",                          // 47
 	"https://api.perplexity.ai", // 48
+	"",                          // 49
+	"https://api.jina.ai",       // 50
 }

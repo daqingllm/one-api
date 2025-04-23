@@ -59,6 +59,15 @@ func StreamHandler(c *gin.Context, resp *http.Response, relayMode int) (*model.E
 				// but for empty choice and no usage, we should not pass it to client, this is for azure
 				continue // just ignore empty choice
 			}
+
+			// for jina thinking
+			for i, _ := range streamResponse.Choices {
+				if streamResponse.Choices[i].Delta.Type == "think" {
+					streamResponse.Choices[i].Delta.ReasoningContent = streamResponse.Choices[i].Delta.Content
+					streamResponse.Choices[i].Delta.Content = nil
+					streamResponse.Choices[i].Delta.Type = ""
+				}
+			}
 			_ = render.ObjectData(c, streamResponse)
 			for _, choice := range streamResponse.Choices {
 				responseText += conv.AsString(choice.Delta.Content)

@@ -88,7 +88,7 @@ func SetRelayRouter(router *gin.Engine) {
 		relayV1Router.GET("/fine_tuning/jobs/:id/events", controller.RelayNotImplemented)
 		relayV1Router.DELETE("/models/:model", controller.RelayNotImplemented)
 		relayV1Router.POST("/moderations", controller.Relay)
-		//relayV1Router.POST("/rerank", controller.Relay)
+		relayV1Router.POST("/rerank", controller.Relay)
 		relayV1Router.POST("/assistants", controller.RelayNotImplemented)
 		relayV1Router.GET("/assistants/:id", controller.RelayNotImplemented)
 		relayV1Router.POST("/assistants/:id", controller.RelayNotImplemented)
