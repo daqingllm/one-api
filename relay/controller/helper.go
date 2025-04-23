@@ -247,6 +247,34 @@ func postConsumeQuota(c *gin.Context, ctx context.Context, usage *relaymodel.Usa
 	model.UpdateChannelUsedQuota(meta.ChannelId, quota)
 }
 
+func postConsumeRerankQuota(c *gin.Context, ctx context.Context, usage *relaymodel.RerankUsage, m *meta.Meta) {
+	groupRatio := billingratio.GetGroupRatio(m.Group)
+	modelRatio := billingratio.GetModelRatio(m.ActualModelName, m.ChannelType)
+	var quota int64
+	var logContent string
+
+	if usage.TotalTokens != nil {
+		quota = int64(math.Ceil(float64(*usage.TotalTokens) * modelRatio * groupRatio))
+		logContent = fmt.Sprintf("模型倍率 %.3f，分组倍率 %.3f", modelRatio, groupRatio)
+	} else if usage.SearchUnits != nil {
+		//todo postConsumeQuotaPerCall
+	} else {
+		quota = 1
+	}
+	err := model.PostConsumeTokenQuota(m.TokenId, quota)
+	if err != nil {
+		logger.Error(ctx, "error consuming token remain quota: "+err.Error())
+	}
+	err = model.CacheUpdateUserQuota(ctx, m.UserId)
+	if err != nil {
+		logger.Error(ctx, "error update user quota cache: "+err.Error())
+	}
+
+	model.RecordConsumeLog(ctx, m.UserId, m.ChannelId, *usage.TotalTokens, 0, 0, m.OriginModelName, m.TokenName, quota, logContent)
+	model.UpdateUserUsedQuotaAndRequestCount(m.UserId, quota)
+	model.UpdateChannelUsedQuota(m.ChannelId, quota)
+}
+
 func getMappedModelName(modelName string, mapping map[string]string) (string, bool) {
 	if mapping == nil {
 		return modelName, false
