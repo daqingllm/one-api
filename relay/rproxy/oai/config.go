@@ -12,7 +12,6 @@ import (
 	"github.com/songquanpeng/one-api/model"
 	"github.com/songquanpeng/one-api/relay/adaptor/openai"
 	"github.com/songquanpeng/one-api/relay/billing/ratio"
-	"github.com/songquanpeng/one-api/relay/channeltype"
 	relaymodel "github.com/songquanpeng/one-api/relay/model"
 	"github.com/songquanpeng/one-api/relay/rproxy"
 	"github.com/songquanpeng/one-api/relay/rproxy/common"
@@ -233,32 +232,4 @@ func ReplaceBodyParamsFunc(context *rproxy.RproxyContext, channel *model.Channel
 
 func getKey(path string, method string, channelType int) string {
 	return strings.Join([]string{path, method, strconv.Itoa(channelType)}, "-")
-}
-func init() {
-	//url-channeltype
-	registry := rproxy.GetChannelAdaptorRegistry()
-	var adaptorBuilder = common.DefaultHttpAdaptorBuilder{
-		SetHeaderFunc:         SetHeaderFunc,
-		PreCalcStrategyFunc:   PreCalcStrategyFunc,
-		PostCalcStrategyFunc:  PostCalcStrategyFunc,
-		ReplaceBodyParamsFunc: ReplaceBodyParamsFunc,
-		GetUrlFunc:            GetUrlFunc,
-	}
-
-	var nopBillingAdaptorBuilder = common.DefaultHttpAdaptorBuilder{
-		GetBillingCalculator: func() rproxy.BillingCalculator {
-			return &common.NOPBillingCalculator{}
-		},
-		SetHeaderFunc: SetHeaderFunc,
-	}
-	channelTypes := []int{channeltype.OpenAI, channeltype.Azure}
-	for _, channelType := range channelTypes {
-		logger.SysLogf("register openai response channel type start %d", channelType)
-		registry.Register("/v1/responses", "POST", strconv.Itoa(channelType), adaptorBuilder)
-		registry.Register("/v1/responses/:response_id", "GET", strconv.Itoa(channelType), nopBillingAdaptorBuilder)
-		registry.Register("/v1/responses/:response_id", "DELETE", strconv.Itoa(channelType), nopBillingAdaptorBuilder)
-		registry.Register("/v1/responses/:response_id/input_items", "GET", strconv.Itoa(channelType), nopBillingAdaptorBuilder)
-		logger.SysLogf("register openai response channel type end %d", channelType)
-	}
-
 }

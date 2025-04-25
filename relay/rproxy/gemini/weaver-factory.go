@@ -31,3 +31,27 @@ func (f *VertexGenerateWeaverFactory) GetWeaver(ctx *gin.Context) (weaver rproxy
 		Build()
 	return
 }
+
+type GeminiFileWeaverFactory struct {
+}
+
+func (f *GeminiFileWeaverFactory) GetWeaver(ctx *gin.Context) (weaver rproxy.Weaver) {
+	weaver = common.
+		NewWeaverBuilder(ctx).
+		TokenRetriever(&GeminiTokenRetriever{}).
+		ModelRetriever(&common.SpecificNameModelRetriever{ModelName: "gemini-2.5-pro-preview-03-25"}).
+		Build()
+	return
+}
+
+type GeminiCacheWeaverFactory struct {
+}
+
+func (f *GeminiCacheWeaverFactory) GetWeaver(ctx *gin.Context) (weaver rproxy.Weaver) {
+	weaver = common.
+		NewWeaverBuilder(ctx).
+		TokenRetriever(&GeminiTokenRetriever{}).
+		ModelRetriever(&GeminiCacheModelRetriever{}).
+		Build()
+	return
+}

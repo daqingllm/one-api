@@ -31,6 +31,30 @@ type AdaptorBuilder interface {
 	Build() (adaptor RproxyAdaptor)
 }
 
+// RegisterBatch 批量注册相同的构建器到多个路由模式
+// 将pathPattern, method, channelType作为一个整体进行批量注册
+func (r *ChannelAdaptorRegistry) RegisterBatch(patterns []RoutePattern, builder AdaptorBuilder) {
+	for _, pattern := range patterns {
+		r.Register(pattern.PathPattern, pattern.Method, pattern.ChannelType, builder)
+	}
+}
+
+// RegisterMultiBuilders 为同一个路由模式注册多个构建器
+// 将pathPattern, method, channelType作为一个整体，注册多个构建器
+func (r *ChannelAdaptorRegistry) RegisterMultiBuilders(pattern RoutePattern, builders []AdaptorBuilder) {
+	for _, builder := range builders {
+		r.Register(pattern.PathPattern, pattern.Method, pattern.ChannelType, builder)
+	}
+}
+
+// RegisterForChannelTypes 为多个渠道类型注册相同的路由模式和构建器
+// 将同一个路由模式和方法注册到多个渠道类型
+func (r *ChannelAdaptorRegistry) RegisterForChannelTypes(pathPattern, method string, channelTypes []string, builder AdaptorBuilder) {
+	for _, channelType := range channelTypes {
+		r.Register(pathPattern, method, channelType, builder)
+	}
+}
+
 func (r *ChannelAdaptorRegistry) Register(pathPattern, method, channelType string, builder AdaptorBuilder) {
 	r.adaptorBuilders = append(r.adaptorBuilders, RouterAdaptor{
 		pattern: RoutePattern{

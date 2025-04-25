@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"strconv"
 	"strings"
 
 	"github.com/songquanpeng/one-api/common/config"
@@ -14,7 +13,6 @@ import (
 	"github.com/songquanpeng/one-api/relay/adaptor/openai"
 	"github.com/songquanpeng/one-api/relay/adaptor/vertexai"
 	"github.com/songquanpeng/one-api/relay/billing/ratio"
-	"github.com/songquanpeng/one-api/relay/channeltype"
 	relaymodel "github.com/songquanpeng/one-api/relay/model"
 	"github.com/songquanpeng/one-api/relay/rproxy"
 	"github.com/songquanpeng/one-api/relay/rproxy/common"
@@ -31,7 +29,43 @@ func GetUrlFunc(context *rproxy.RproxyContext, channel *model.Channel) (url stri
 
 }
 
+func GetFileUrlFunc(context *rproxy.RproxyContext, channel *model.Channel) (url string, err *relaymodel.ErrorWithStatusCode) {
+	var baseURL string = *channel.BaseURL
+	if baseURL == "" {
+		baseURL = "https://generativelanguage.googleapis.com"
+	}
+	return baseURL + context.SrcContext.Request.URL.Path, nil
+
+}
+
 func GetVertexUrlFunc(context *rproxy.RproxyContext, channel *model.Channel) (url string, err *relaymodel.ErrorWithStatusCode) {
+	// 检查请求路径是否包含/v1beta/models，如果是原生gemini，需要转换为vertex格式的请求路径
+	if strings.Contains(context.SrcContext.Request.URL.Path, "/v1beta/models") {
+		modelAction := context.SrcContext.Param("modelAction")
+		config, err := channel.LoadConfig()
+		if err != nil {
+			return "", &relaymodel.ErrorWithStatusCode{
+				StatusCode: http.StatusInternalServerError,
+				Error:      relaymodel.Error{Message: "load_config_failed", Code: "LOAD_CONFIG_FAILED"},
+			}
+		}
+		region := config.Region
+		if region == "" {
+			region = "us-central1"
+		}
+		projectID := config.VertexAIProjectID
+		if projectID == "" {
+			return "", &relaymodel.ErrorWithStatusCode{
+				StatusCode: http.StatusInternalServerError,
+				Error:      relaymodel.Error{Message: "missing_project_id", Code: "MISSING_PROJECT_ID"},
+			}
+		}
+		newPath := fmt.Sprintf("/v1/projects/%s/locations/%s/publishers/google/models/%s",
+			projectID, region, modelAction)
+
+		context.SrcContext.Request.URL.Path = newPath
+		logger.Infof(context.SrcContext, "转换Gemini路径为Vertex AI格式: %s", newPath)
+	}
 	var baseURL string = *channel.BaseURL
 	if baseURL == "" {
 		config, err := channel.LoadConfig()
@@ -66,6 +100,11 @@ func SetVertexHeaderFunc(context *rproxy.RproxyContext, channel *model.Channel, 
 	return nil
 }
 
+func SetFileHeaderFunc(context *rproxy.RproxyContext, channel *model.Channel, request *http.Request) (err *relaymodel.ErrorWithStatusCode) {
+	request.Header.Set("x-goog-api-key", channel.Key)
+	return nil
+}
+
 func PreCalcStrategyFunc(context *rproxy.RproxyContext, channel *model.Channel, bill *common.Bill) (err *relaymodel.ErrorWithStatusCode) {
 	parsed := gjson.ParseBytes(context.ResolvedRequest.([]byte))
 	input := parsed.Get("contents").String()
@@ -85,6 +124,19 @@ func PreCalcStrategyFunc(context *rproxy.RproxyContext, channel *model.Channel, 
 			break
 		}
 	}
+	return nil
+}
+
+func CachePostCalcStrategyFunc(context *rproxy.RproxyContext, channel *model.Channel, bill *common.Bill) (err *relaymodel.ErrorWithStatusCode) {
+	// parsed := gjson.ParseBytes(context.ResolvedRequest.([]byte))
+	// input := parsed.Get("contents").String()
+	// promptTokens := int(config.PreConsumedQuota) + openai.CountTokenInput(input, context.GetRequestModel())
+
+	// maxTokens := parsed.Get("generationConfig.maxOutputTokens").Int()
+	// if maxTokens != 0 {
+	// 	promptTokens += int(maxTokens)
+	// }
+	// bill.PreBillItems = append(bill.PreBillItems, common.TokenUsageBillItem(common.PromptTokens, 1, float64(promptTokens)))
 	return nil
 }
 
@@ -139,9 +191,7 @@ func PostCalcStrategyFunc(context *rproxy.RproxyContext, channel *model.Channel,
 			},
 		}
 		bill.BillItems = append(bill.BillItems, billItem)
-
 	}
-
 	return nil
 }
 
@@ -168,31 +218,4 @@ func PostInitializeFunc(context *rproxy.RproxyContext) *relaymodel.ErrorWithStat
 		context.ResolvedRequest = bodyBytes
 	}
 	return nil
-}
-func init() {
-	//url-channeltype
-	registry := rproxy.GetChannelAdaptorRegistry()
-	var adaptorBuilder = common.DefaultHttpAdaptorBuilder{
-		PreCalcStrategyFunc:  PreCalcStrategyFunc,
-		PostCalcStrategyFunc: PostCalcStrategyFunc,
-		GetUrlFunc:           GetUrlFunc,
-		StreamHandFunc:       StreamHandFunc,
-	}
-
-	var vertexAdaptorBuilder = common.DefaultHttpAdaptorBuilder{
-		PreCalcStrategyFunc:  PreCalcStrategyFunc,
-		PostCalcStrategyFunc: PostCalcStrategyFunc,
-		GetUrlFunc:           GetVertexUrlFunc,
-		SetHeaderFunc:        SetVertexHeaderFunc,
-		StreamHandFunc:       StreamHandFunc,
-	}
-
-	logger.SysLogf("register gemin response channel type start %d", channeltype.Gemini)
-	registry.Register("/v1beta/models/:modelAction", "POST", strconv.Itoa(int(channeltype.Gemini)), adaptorBuilder)
-	//vertex ai
-	registry.Register("/v1/projects/:VertexAIProjectID/locations/:region/publishers/google/models/:modelAction",
-		"POST", strconv.Itoa(int(channeltype.VertextAI)), vertexAdaptorBuilder)
-
-	logger.SysLogf("register gemin response channel type end %d", channeltype.Gemini)
-
 }

@@ -21,6 +21,7 @@ func (t *ToleranceHandler) Handle(channel *model.Channel, context *rproxy.Rproxy
 	adaptor := rproxy.GetChannelAdaptorRegistry().GetAdaptor(context.SrcContext.Request.URL.Path, context.SrcContext.Request.Method, strconv.Itoa(channel.Type))
 	logger.SysLogf("tolerance handler adaptor %v", adaptor)
 	if adaptor == nil {
+		logger.Errorf(context.SrcContext, "get_adaptor_failed channel %v", channel)
 		return relaymodel.NewErrorWithStatusCode(http.StatusInternalServerError, "get_adaptor_failed", "get_adaptor_failed")
 	}
 	adaptor.SetChannel(channel)

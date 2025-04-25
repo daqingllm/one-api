@@ -36,13 +36,16 @@ func (f *FailOverTolerancer) FaultTolerance(context *RproxyContext) (err *relaym
 		if channel.Status != 1 {
 			continue
 		}
-		err = f.handler.Handle(channel, context)
-		if err == nil {
+		e := f.handler.Handle(channel, context)
+		if e == nil {
 			model.CacheSetRecentChannel(context.SrcContext, context.GetUserId(), context.GetOriginalModel(), channel.Id)
 			return nil
 		}
-		logger.Errorf(context.SrcContext, "channelId: %d ,error handling request: msg:%s ,err:%s", channel.Id, err.Message, err.Error.Message)
-
+		logger.Errorf(context.SrcContext, "channelId: %d ,error handling request: msg:%s ,err:%s", channel.Id, e.Message, e.Error.Message)
+		if e.StatusCode == http.StatusInternalServerError && e.Error.Code == "get_adaptor_failed" {
+			continue
+		}
+		err = e
 	}
 	model.CacheSetRecentChannel(context.SrcContext, context.GetUserId(), context.GetOriginalModel(), 0)
 	go LogRespError(context, orderedChannels, err)

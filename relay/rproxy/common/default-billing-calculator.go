@@ -165,7 +165,7 @@ func (b *DefaultBillingCalculator) PreCalAndExecute(context *rproxy.RproxyContex
 	if err != nil {
 		return openai.ErrorWrapper(err, "decrease_user_quota_failed", http.StatusInternalServerError)
 	}
-	e := model.PostConsumeTokenQuota(context.Meta.TokenId, b.Bill.PreTotalQuota)
+	e := model.PreConsumeTokenQuota(context.Meta.TokenId, b.Bill.PreTotalQuota)
 	if e != nil {
 		logger.Error(context.SrcContext, "error return pre-consumed quota: "+e.Error())
 		return openai.ErrorWrapper(e, "decrease_user_quota_failed", http.StatusInternalServerError)
@@ -173,7 +173,7 @@ func (b *DefaultBillingCalculator) PreCalAndExecute(context *rproxy.RproxyContex
 	return nil
 }
 func (b *DefaultBillingCalculator) RollBackPreCalAndExecute(context *rproxy.RproxyContext) *relaymodel.ErrorWithStatusCode {
-	if len(b.Bill.BillItems) > 0 {
+	if len(b.Bill.PreBillItems) > 0 {
 		go func(ctx *rproxy.RproxyContext, preConsumedQuota int64) {
 			err := model.PostConsumeTokenQuota(ctx.Meta.TokenId, -preConsumedQuota)
 			if err != nil {
