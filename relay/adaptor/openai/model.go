@@ -84,6 +84,11 @@ type SlimTextResponse struct {
 	Error       model.Error `json:"error"`
 }
 
+type SlimImageResponse struct {
+	Created int64             `json:"created"`
+	Usage   *model.ImageUsage `json:"usage,omitempty"`
+}
+
 type TextResponseChoice struct {
 	Index         int `json:"index"`
 	model.Message `json:"message"`

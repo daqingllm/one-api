@@ -68,6 +68,13 @@ func getImageSizeRatio(model string, size string) float64 {
 	return 1
 }
 
+func getImageQualityRatio(model string, quality string) float64 {
+	if ratio, ok := billingratio.ImageQualityRatios[model][quality]; ok {
+		return ratio
+	}
+	return 1
+}
+
 func validateImageRequest(imageRequest *relaymodel.ImageRequest, _ *meta.Meta, relayMode int) *relaymodel.ErrorWithStatusCode {
 	// check prompt length
 	if imageRequest.Prompt == "" && (relayMode == relaymode.ImagesEdits || relayMode == relaymode.ImagesGenerations) {
@@ -94,15 +101,16 @@ func getImageCostRatio(imageRequest *relaymodel.ImageRequest) (float64, error) {
 	if imageRequest == nil {
 		return 0, errors.New("imageRequest is nil")
 	}
-	imageCostRatio := getImageSizeRatio(imageRequest.Model, imageRequest.Size)
+	imageSizeCostRatio := getImageSizeRatio(imageRequest.Model, imageRequest.Size)
+	imageQualityRatio := getImageQualityRatio(imageRequest.Model, imageRequest.Quality)
 	if imageRequest.Quality == "hd" && imageRequest.Model == "dall-e-3" {
 		if imageRequest.Size == "1024x1024" {
-			imageCostRatio *= 2
+			imageQualityRatio = 2
 		} else {
-			imageCostRatio *= 1.5
+			imageQualityRatio = 1.5
 		}
 	}
-	return imageCostRatio, nil
+	return imageSizeCostRatio * imageQualityRatio, nil
 }
 
 func RelayImageHelper(c *gin.Context, relayMode int) *relaymodel.ErrorWithStatusCode {
@@ -208,12 +216,23 @@ func RelayImageHelper(c *gin.Context, relayMode int) *relaymodel.ErrorWithStatus
 		return RelayErrorHandler(resp)
 	}
 
+	// do response
+	_, respErr := adaptor.DoResponse(c, resp, meta)
+	if respErr != nil {
+		logger.Errorf(ctx, "respErr is not nil: %+v", respErr)
+		return respErr
+	}
+
 	defer func(ctx context.Context) {
 		if resp != nil &&
 			resp.StatusCode != http.StatusCreated && // replicate returns 201
 			resp.StatusCode != http.StatusOK {
 			return
 		}
+		//usage := openai.GetImageUsageIfPossible(resp)
+		//if usage != nil {
+		//
+		//}
 
 		err := model.PostConsumeTokenQuota(meta.TokenId, quota)
 		if err != nil {
@@ -232,13 +251,6 @@ func RelayImageHelper(c *gin.Context, relayMode int) *relaymodel.ErrorWithStatus
 			model.UpdateChannelUsedQuota(channelId, quota)
 		}
 	}(c.Request.Context())
-
-	// do response
-	_, respErr := adaptor.DoResponse(c, resp, meta)
-	if respErr != nil {
-		logger.Errorf(ctx, "respErr is not nil: %+v", respErr)
-		return respErr
-	}
 
 	return nil
 }

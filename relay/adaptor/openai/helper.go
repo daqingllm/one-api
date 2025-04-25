@@ -1,7 +1,11 @@
 package openai
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
 	"strings"
 
 	"github.com/songquanpeng/one-api/relay/channeltype"
@@ -28,4 +32,26 @@ func GetFullRequestURL(baseURL string, requestURL string, channelType int) strin
 		}
 	}
 	return fullRequestURL
+}
+
+func GetImageUsageIfPossible(resp *http.Response) *model.ImageUsage {
+	if resp == nil {
+		return nil
+	}
+	var imageResponse SlimImageResponse
+	responseBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil
+	}
+	err = resp.Body.Close()
+	if err != nil {
+		return nil
+	}
+	err = json.Unmarshal(responseBody, &imageResponse)
+	if err != nil {
+		return nil
+	}
+	// Reset response body
+	resp.Body = io.NopCloser(bytes.NewBuffer(responseBody))
+	return imageResponse.Usage
 }
