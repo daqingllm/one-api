@@ -25,6 +25,16 @@ func GetUrlFunc(context *rproxy.RproxyContext, channel *model.Channel) (url stri
 	if baseURL == "" {
 		baseURL = "https://generativelanguage.googleapis.com"
 	}
+	rawQuery := context.SrcContext.Request.URL.RawQuery
+
+	if rawQuery != "" {
+		queryParams := context.SrcContext.Request.URL.Query()
+		queryParams.Del("key")
+		newRawQuery := queryParams.Encode()
+		if newRawQuery != "" {
+			return baseURL + context.SrcContext.Request.URL.Path + "?" + newRawQuery + "&key=" + channel.Key, nil
+		}
+	}
 	return baseURL + context.SrcContext.Request.URL.Path + "?key=" + channel.Key, nil
 
 }
@@ -33,6 +43,10 @@ func GetFileUrlFunc(context *rproxy.RproxyContext, channel *model.Channel) (url 
 	var baseURL string = *channel.BaseURL
 	if baseURL == "" {
 		baseURL = "https://generativelanguage.googleapis.com"
+	}
+	rawQuery := context.SrcContext.Request.URL.RawQuery
+	if rawQuery != "" {
+		return baseURL + context.SrcContext.Request.URL.Path + "?" + rawQuery, nil
 	}
 	return baseURL + context.SrcContext.Request.URL.Path, nil
 
@@ -76,6 +90,10 @@ func GetVertexUrlFunc(context *rproxy.RproxyContext, channel *model.Channel) (ur
 			}
 		}
 		baseURL = fmt.Sprintf("https://%s-aiplatform.googleapis.com", config.Region)
+	}
+	rawQuery := context.SrcContext.Request.URL.RawQuery
+	if rawQuery != "" {
+		return baseURL + context.SrcContext.Request.URL.Path + "?" + rawQuery, nil
 	}
 	return baseURL + context.SrcContext.Request.URL.Path, nil
 
@@ -154,12 +172,19 @@ func PostCalcStrategyFunc(context *rproxy.RproxyContext, channel *model.Channel,
 		if config.DebugUserIds[context.GetUserId()] {
 			logger.DebugForcef(context.SrcContext, "usage:%s", parsed)
 		}
-		// 获取数组最后一个元素
-		lastResponse := parsed.Array()[len(parsed.Array())-1]
-		if usage := lastResponse.Get("usageMetadata"); usage.Exists() {
-			totalUsage.InputTokens += int(usage.Get("promptTokenCount").Int())
-			totalUsage.OutputTokens += int(usage.Get("candidatesTokenCount").Int())
+		if parsed.IsArray() {
+			lastResponse := parsed.Array()[len(parsed.Array())-1]
+			if usage := lastResponse.Get("usageMetadata"); usage.Exists() {
+				totalUsage.InputTokens += int(usage.Get("promptTokenCount").Int())
+				totalUsage.OutputTokens += int(usage.Get("candidatesTokenCount").Int())
+			}
+		} else {
+			if usage := parsed.Get("usageMetadata"); usage.Exists() {
+				totalUsage.InputTokens += int(usage.Get("promptTokenCount").Int())
+				totalUsage.OutputTokens += int(usage.Get("candidatesTokenCount").Int())
+			}
 		}
+
 	} else {
 		parsed := gjson.ParseBytes(context.ResolvedResponse.([]byte))
 		if config.DebugUserIds[context.GetUserId()] {
@@ -196,6 +221,10 @@ func PostCalcStrategyFunc(context *rproxy.RproxyContext, channel *model.Channel,
 }
 
 func StreamHandFunc(context *rproxy.RproxyContext, resp rproxy.Response) (result any, err *relaymodel.ErrorWithStatusCode) {
+	query := context.SrcContext.Request.URL.Query()
+	if query.Get("alt") == "sse" {
+		return util.StreamResponseHandle(context.SrcContext, resp.(*http.Response))
+	}
 	return util.StreamGeminiResponseHandle(context.SrcContext, resp.(*http.Response))
 }
 
