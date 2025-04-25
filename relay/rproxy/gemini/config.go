@@ -223,7 +223,7 @@ func PostCalcStrategyFunc(context *rproxy.RproxyContext, channel *model.Channel,
 func StreamHandFunc(context *rproxy.RproxyContext, resp rproxy.Response) (result any, err *relaymodel.ErrorWithStatusCode) {
 	query := context.SrcContext.Request.URL.Query()
 	if query.Get("alt") == "sse" {
-		return util.StreamResponseHandle(context.SrcContext, resp.(*http.Response))
+		return util.StreamGeminiSSEResponseHandle(context.SrcContext, resp.(*http.Response))
 	}
 	return util.StreamGeminiResponseHandle(context.SrcContext, resp.(*http.Response))
 }
