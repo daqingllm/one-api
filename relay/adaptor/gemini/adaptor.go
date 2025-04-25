@@ -88,6 +88,9 @@ func (a *Adaptor) ConvertRequest(c *gin.Context, meta *meta.Meta, request *model
 		} else if strings.HasPrefix(meta.ActualModelName, "gemini-2.0-flash-thinking-exp") {
 			geminiRequest.GenerationConfig.ThinkingConfig = &ThinkingConfig{IncludeThoughts: true}
 		}
+		if strings.HasSuffix(meta.OriginModelName, "-nothink") {
+			geminiRequest.GenerationConfig.ThinkingConfig = &ThinkingConfig{IncludeThoughts: false, ThinkingBudget: 0}
+		}
 		if config.DebugUserIds[meta.UserId] {
 			geminiRequestJSON, _ := json.Marshal(geminiRequest)
 			logger.DebugForcef(c.Request.Context(), "gemini request: %s ,uid: %d", string(geminiRequestJSON), meta.UserId)
