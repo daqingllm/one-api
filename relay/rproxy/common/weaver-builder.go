@@ -2,6 +2,7 @@ package common
 
 import (
 	"github.com/gin-gonic/gin"
+	relaymodel "github.com/songquanpeng/one-api/relay/model"
 	"github.com/songquanpeng/one-api/relay/rproxy"
 )
 
@@ -12,6 +13,7 @@ type WeaverBuilder struct {
 	validators         []rproxy.Validator
 	tokenRetrierver    rproxy.TokenRetriever
 	modelRetriever     rproxy.ModelRetriever
+	postInitializeFunc func(context *rproxy.RproxyContext) *relaymodel.ErrorWithStatusCode
 }
 
 func NewWeaverBuilder(ctx *gin.Context) *WeaverBuilder {
@@ -27,6 +29,11 @@ func (w *WeaverBuilder) FailOverTolerancer(selector rproxy.ChannelSelector, hand
 }
 func (w *WeaverBuilder) AddValidators(validators ...rproxy.Validator) *WeaverBuilder {
 	w.validators = append(w.validators, validators...)
+	return w
+}
+
+func (w *WeaverBuilder) PostInitializeFunc(postInitializeFunc func(context *rproxy.RproxyContext) *relaymodel.ErrorWithStatusCode) *WeaverBuilder {
+	w.postInitializeFunc = postInitializeFunc
 	return w
 }
 
@@ -55,8 +62,9 @@ func (w *WeaverBuilder) Build() (weaver rproxy.Weaver) {
 	}
 	if w.contextInitializer == nil {
 		w.contextInitializer = &DefaultContextInitializer{
-			modelRetrierver: w.modelRetriever,
-			tokenRetrierver: w.tokenRetrierver,
+			modelRetrierver:    w.modelRetriever,
+			tokenRetrierver:    w.tokenRetrierver,
+			PostInitializeFunc: w.postInitializeFunc,
 		}
 	}
 

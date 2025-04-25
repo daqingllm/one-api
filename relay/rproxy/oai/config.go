@@ -12,7 +12,6 @@ import (
 	"github.com/songquanpeng/one-api/model"
 	"github.com/songquanpeng/one-api/relay/adaptor/openai"
 	"github.com/songquanpeng/one-api/relay/billing/ratio"
-	"github.com/songquanpeng/one-api/relay/channeltype"
 	relaymodel "github.com/songquanpeng/one-api/relay/model"
 	"github.com/songquanpeng/one-api/relay/rproxy"
 	"github.com/songquanpeng/one-api/relay/rproxy/common"
@@ -89,9 +88,10 @@ func PreCalcStrategyFunc(context *rproxy.RproxyContext, channel *model.Channel, 
 	// if webSearch {
 	// 	billItem := &common.BillItem{
 	// 		Name:      "WebSearchTokens",
-	// 		UnitPrice: 1,             // 单价示例
-	// 		Quantity:  1000,            // 按次或按 token 数计算
-	// 		Quota:     int64(1000 * 1), // 配额换算系数
+	// 		UnitPrice: 0.035 * ratio.USD, // 单价示例
+	// 		Quantity:  1000,              // 按次或按 token 数计算
+	// 		Quota:     int64(1000 * 1),   // 配额换算系数
+	// 		Cost:      float64(1000 * 0.035 * ratio.USD),
 	// 	}
 	// 	bill.PreBillItems = append(bill.PreBillItems, billItem)
 	// }
@@ -102,6 +102,7 @@ func PreCalcStrategyFunc(context *rproxy.RproxyContext, channel *model.Channel, 
 	// 		UnitPrice: 0.5, // 单价示例
 	// 		Quantity:  500, // 按次或按 token 数计算
 	// 		Quota:     int64(500 * 1),
+	// 		Cost:      float64(500 * 0.5),
 	// 	}
 	// 	bill.PreBillItems = append(bill.PreBillItems, billItem)
 	// }
@@ -231,32 +232,4 @@ func ReplaceBodyParamsFunc(context *rproxy.RproxyContext, channel *model.Channel
 
 func getKey(path string, method string, channelType int) string {
 	return strings.Join([]string{path, method, strconv.Itoa(channelType)}, "-")
-}
-func init() {
-	//url-channeltype
-	registry := rproxy.GetChannelAdaptorRegistry()
-	var adaptorBuilder = common.DefaultHttpAdaptorBuilder{
-		SetHeaderFunc:         SetHeaderFunc,
-		PreCalcStrategyFunc:   PreCalcStrategyFunc,
-		PostCalcStrategyFunc:  PostCalcStrategyFunc,
-		ReplaceBodyParamsFunc: ReplaceBodyParamsFunc,
-		GetUrlFunc:            GetUrlFunc,
-	}
-
-	var nopBillingAdaptorBuilder = common.DefaultHttpAdaptorBuilder{
-		GetBillingCalculator: func() rproxy.BillingCalculator {
-			return &common.NOPBillingCalculator{}
-		},
-		SetHeaderFunc: SetHeaderFunc,
-	}
-	channelTypes := []int{channeltype.OpenAI, channeltype.Azure}
-	for _, channelType := range channelTypes {
-		logger.SysLogf("register openai response channel type start %d", channelType)
-		registry.Register(getKey("/v1/responses", "POST", channelType), adaptorBuilder)
-		registry.Register(getKey("/v1/responses/:response_id", "GET", channelType), nopBillingAdaptorBuilder)
-		registry.Register(getKey("/v1/responses/:response_id", "DELETE", channelType), nopBillingAdaptorBuilder)
-		registry.Register(getKey("/v1/responses/:response_id/input_items", "GET", channelType), nopBillingAdaptorBuilder)
-		logger.SysLogf("register openai response channel type end %d", channelType)
-	}
-
 }

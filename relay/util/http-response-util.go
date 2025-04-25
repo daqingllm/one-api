@@ -22,7 +22,12 @@ func ResponseHandle(c *gin.Context, resp *http.Response) (result any, e *model.E
 	defer resp.Body.Close()
 	resp.Body = io.NopCloser(bytes.NewBuffer(responseBody))
 	for k, v := range resp.Header {
-		c.Writer.Header().Set(k, v[0])
+		if k == "X-Goog-Upload-Url" {
+			// 处理 Gemini 文件上传响应头，将 X-Goog-Upload-Url 转换为 X-Goog-Upload-URL 以保持兼容性
+			c.Writer.Header()["X-Goog-Upload-URL"] = v
+		} else {
+			c.Writer.Header().Set(k, v[0])
+		}
 	}
 	c.Writer.WriteHeader(resp.StatusCode)
 	_, err = io.Copy(c.Writer, resp.Body)
@@ -57,6 +62,20 @@ func StreamResponseHandle(c *gin.Context, resp *http.Response) (result any, e *m
 		data = strings.TrimPrefix(data, "data:")
 		data = strings.TrimSpace(data)
 		completedResponse = data
+	}
+	return []byte(completedResponse), nil
+}
+
+func StreamGeminiResponseHandle(c *gin.Context, resp *http.Response) (result any, e *model.ErrorWithStatusCode) {
+	scanner := bufio.NewScanner(resp.Body)
+	scanner.Split(bufio.ScanLines)
+	common.SetEventStreamHeaders(c)
+	var completedResponse string
+	for scanner.Scan() {
+		data := scanner.Text()
+		render.RawData(c, data)
+		data = strings.TrimSpace(data)
+		completedResponse += data
 	}
 	return []byte(completedResponse), nil
 }

@@ -7,10 +7,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/songquanpeng/one-api/common/logger"
 	"github.com/songquanpeng/one-api/model"
 	"github.com/songquanpeng/one-api/relay/billing/ratio"
-	"github.com/songquanpeng/one-api/relay/channeltype"
 	relaymodel "github.com/songquanpeng/one-api/relay/model"
 	"github.com/songquanpeng/one-api/relay/rproxy"
 	"github.com/songquanpeng/one-api/relay/rproxy/common"
@@ -126,26 +124,4 @@ func getPicNums(context *rproxy.RproxyContext) (picNum float64, err *relaymodel.
 		return picNum, nil
 	}
 	return 1, nil
-}
-
-func getKey(path string) string {
-	return strings.Join([]string{path, "POST", strconv.Itoa(int(channeltype.IdeoGram))}, "-")
-}
-func init() {
-	//url-channeltype
-	logger.SysLogf("register ideogram channel type start %d", channeltype.IdeoGram)
-	registry := rproxy.GetChannelAdaptorRegistry()
-	var adaptorBuilder = common.DefaultHttpAdaptorBuilder{
-		SetHeaderFunc:       SetHeaderFunc,
-		PreCalcStrategyFunc: PreCalcStrategyFunc,
-		GetUrlFunc:          GetUrlFunc,
-	}
-	registry.Register(getKey("/ideogram/generate"), adaptorBuilder)
-	registry.Register(getKey("/ideogram/edit"), adaptorBuilder)
-	registry.Register(getKey("/ideogram/remix"), adaptorBuilder)
-	registry.Register(getKey("/ideogram/upscale"), adaptorBuilder)
-	registry.Register(getKey("/ideogram/describe"), adaptorBuilder)
-	registry.Register(getKey("/ideogram/reframe"), adaptorBuilder)
-	logger.SysLogf("register ideogram channel type end %d", channeltype.IdeoGram)
-
 }
