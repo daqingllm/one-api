@@ -17,8 +17,8 @@ func NewLoggerWithRotation(filename string, maxSize int) *LoggerWithRotation {
 		Logger: &lumberjack.Logger{
 			Filename:   filename,
 			MaxSize:    maxSize, // megabytes
-			MaxBackups: 30,
-			MaxAge:     7,    //days
+			MaxBackups: 10,
+			MaxAge:     3,    //days
 			Compress:   true, // enabled by default
 		},
 	}
