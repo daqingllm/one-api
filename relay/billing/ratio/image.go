@@ -4,9 +4,9 @@ var ImageSizeRatios = map[string]map[string]float64{
 	// tokens: https://platform.openai.com/docs/guides/image-generation?image-generation-model=gpt-image-1#cost-and-latency
 	// price: https://platform.openai.com/docs/models/gpt-image-1
 	"gpt-image-1": {
-		"1024x1024": 272 * 8,
-		"1024x1536": 408 * 8,
-		"1536x1024": 400 * 8,
+		"1024x1024": 0.272 * 8,
+		"1024x1536": 0.408 * 8,
+		"1536x1024": 0.400 * 8,
 	},
 	"dall-e-2": {
 		"256x256":   1,
