@@ -252,7 +252,7 @@ func RelayImageHelper(c *gin.Context, relayMode int) *relaymodel.ErrorWithStatus
 			tokenName := c.GetString(ctxkey.TokenName)
 			logContent := fmt.Sprintf("模型倍率 %.3f，分组倍率 %.3f", modelRatio, groupRatio)
 			if usage != nil {
-				logContent += fmt.Sprintf("，图片生成倍率 %.3f", billingratio.GetCompletionRatio(imageModel, meta.ChannelType), usage.InputTokensDetails.TextTokens+usage.InputTokensDetails.ImageTokens*2+usage.OutputTokens*8)
+				logContent += fmt.Sprintf("，图片生成倍率 %.3f", billingratio.GetCompletionRatio(imageModel, meta.ChannelType))
 				model.RecordConsumeLog(ctx, meta.UserId, meta.ChannelId, usage.InputTokensDetails.TextTokens+usage.InputTokensDetails.ImageTokens*2, 0, usage.OutputTokens, imageRequest.Model, tokenName, quota, logContent)
 			} else {
 				model.RecordConsumeLog(ctx, meta.UserId, meta.ChannelId, 0, 0, 0, imageRequest.Model, tokenName, quota, logContent)
