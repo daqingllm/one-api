@@ -218,6 +218,7 @@ func RelayImageHelper(c *gin.Context, relayMode int) *relaymodel.ErrorWithStatus
 		return RelayErrorHandler(resp)
 	}
 
+	usage := openai.GetImageUsageIfPossible(resp)
 	// do response
 	_, respErr := adaptor.DoResponse(c, resp, meta)
 	if respErr != nil {
@@ -231,7 +232,6 @@ func RelayImageHelper(c *gin.Context, relayMode int) *relaymodel.ErrorWithStatus
 			resp.StatusCode != http.StatusOK {
 			return
 		}
-		usage := openai.GetImageUsageIfPossible(resp)
 		if usage != nil {
 			//gpt-image price
 			completionRatio := billingratio.GetCompletionRatio(imageModel, meta.ChannelType)
