@@ -235,10 +235,9 @@ func RelayImageHelper(c *gin.Context, relayMode int) *relaymodel.ErrorWithStatus
 		if usage != nil {
 			//gpt-image price
 			completionRatio := billingratio.GetCompletionRatio(imageModel, meta.ChannelType)
-			quota = int64(math.Ceil(ratio*
-				float64(usage.InputTokensDetails.TextTokens) + // text input
+			quota = int64(math.Ceil(ratio * (float64(usage.InputTokensDetails.TextTokens) + // text input
 				float64(usage.InputTokensDetails.ImageTokens*2) + // image input
-				float64(usage.OutputTokens)*completionRatio)) // image output
+				float64(usage.OutputTokens)*completionRatio))) // image output
 		}
 
 		err := model.PostConsumeTokenQuota(meta.TokenId, quota)
@@ -253,10 +252,11 @@ func RelayImageHelper(c *gin.Context, relayMode int) *relaymodel.ErrorWithStatus
 			tokenName := c.GetString(ctxkey.TokenName)
 			logContent := fmt.Sprintf("模型倍率 %.3f，分组倍率 %.3f", modelRatio, groupRatio)
 			if usage != nil {
-				logContent += fmt.Sprintf("，图片生成倍率 8.0，图片生成消耗 %d 个 token", usage.InputTokensDetails.TextTokens+usage.InputTokensDetails.ImageTokens*2+usage.OutputTokens*8)
+				logContent += fmt.Sprintf("，图片生成倍率 %.3f", billingratio.GetCompletionRatio(imageModel, meta.ChannelType), usage.InputTokensDetails.TextTokens+usage.InputTokensDetails.ImageTokens*2+usage.OutputTokens*8)
 				model.RecordConsumeLog(ctx, meta.UserId, meta.ChannelId, usage.InputTokensDetails.TextTokens+usage.InputTokensDetails.ImageTokens*2, 0, usage.OutputTokens, imageRequest.Model, tokenName, quota, logContent)
+			} else {
+				model.RecordConsumeLog(ctx, meta.UserId, meta.ChannelId, 0, 0, 0, imageRequest.Model, tokenName, quota, logContent)
 			}
-			model.RecordConsumeLog(ctx, meta.UserId, meta.ChannelId, 0, 0, 0, imageRequest.Model, tokenName, quota, logContent)
 			model.UpdateUserUsedQuotaAndRequestCount(meta.UserId, quota)
 			channelId := c.GetInt(ctxkey.ChannelId)
 			model.UpdateChannelUsedQuota(channelId, quota)
