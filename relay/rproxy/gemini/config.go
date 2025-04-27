@@ -22,6 +22,7 @@ import (
 
 func GetUrlFunc(context *rproxy.RproxyContext, channel *model.Channel) (url string, err *relaymodel.ErrorWithStatusCode) {
 	var baseURL string = *channel.BaseURL
+	var basePath string = strings.TrimPrefix(context.SrcContext.Request.URL.Path, "/gemini")
 	if baseURL == "" {
 		baseURL = "https://generativelanguage.googleapis.com"
 	}
@@ -32,28 +33,30 @@ func GetUrlFunc(context *rproxy.RproxyContext, channel *model.Channel) (url stri
 		queryParams.Del("key")
 		newRawQuery := queryParams.Encode()
 		if newRawQuery != "" {
-			return baseURL + context.SrcContext.Request.URL.Path + "?" + newRawQuery + "&key=" + channel.Key, nil
+			return baseURL + basePath + "?" + newRawQuery + "&key=" + channel.Key, nil
 		}
 	}
-	return baseURL + context.SrcContext.Request.URL.Path + "?key=" + channel.Key, nil
+	return baseURL + basePath + "?key=" + channel.Key, nil
 
 }
 
 func GetFileUrlFunc(context *rproxy.RproxyContext, channel *model.Channel) (url string, err *relaymodel.ErrorWithStatusCode) {
 	var baseURL string = *channel.BaseURL
+	var basePath string = strings.TrimPrefix(context.SrcContext.Request.URL.Path, "/gemini")
 	if baseURL == "" {
 		baseURL = "https://generativelanguage.googleapis.com"
 	}
 	rawQuery := context.SrcContext.Request.URL.RawQuery
 	if rawQuery != "" {
-		return baseURL + context.SrcContext.Request.URL.Path + "?" + rawQuery, nil
+		return baseURL + basePath + "?" + rawQuery, nil
 	}
-	return baseURL + context.SrcContext.Request.URL.Path, nil
+	return baseURL + basePath, nil
 
 }
 
 func GetVertexUrlFunc(context *rproxy.RproxyContext, channel *model.Channel) (url string, err *relaymodel.ErrorWithStatusCode) {
 	// 检查请求路径是否包含/v1beta/models，如果是原生gemini，需要转换为vertex格式的请求路径
+	var basePath string = strings.TrimPrefix(context.SrcContext.Request.URL.Path, "/gemini")
 	if strings.Contains(context.SrcContext.Request.URL.Path, "/v1beta/models") {
 		modelAction := context.SrcContext.Param("modelAction")
 		config, err := channel.LoadConfig()
@@ -93,9 +96,9 @@ func GetVertexUrlFunc(context *rproxy.RproxyContext, channel *model.Channel) (ur
 	}
 	rawQuery := context.SrcContext.Request.URL.RawQuery
 	if rawQuery != "" {
-		return baseURL + context.SrcContext.Request.URL.Path + "?" + rawQuery, nil
+		return baseURL + basePath + "?" + rawQuery, nil
 	}
-	return baseURL + context.SrcContext.Request.URL.Path, nil
+	return baseURL + basePath, nil
 
 }
 

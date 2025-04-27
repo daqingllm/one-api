@@ -71,7 +71,7 @@ func init() {
 	// }, cacheAdaptorBuilder)
 
 	//原生vertex ai支持
-	registry.Register("/v1/projects/:VertexAIProjectID/locations/:region/publishers/google/models/:modelAction",
+	registry.Register("/gemini/v1/projects/:VertexAIProjectID/locations/:region/publishers/google/models/:modelAction",
 		"POST", strconv.Itoa(int(channeltype.VertextAI)), vertexAdaptorBuilder)
 
 	logger.SysLogf("register gemin response channel type end %d", channeltype.Gemini)
