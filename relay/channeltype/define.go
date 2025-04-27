@@ -50,4 +50,5 @@ const (
 	//Replicate
 	Perplexity = 48
 	IdeoGram   = 49
+	Jina       = 50
 )
