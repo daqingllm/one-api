@@ -1,6 +1,13 @@
 package ratio
 
 var ImageSizeRatios = map[string]map[string]float64{
+	// tokens: https://platform.openai.com/docs/guides/image-generation?image-generation-model=gpt-image-1#cost-and-latency
+	// price: https://platform.openai.com/docs/models/gpt-image-1
+	"gpt-image-1": {
+		"1024x1024": 0.272 * 8,
+		"1024x1536": 0.408 * 8,
+		"1536x1024": 0.400 * 8,
+	},
 	"dall-e-2": {
 		"256x256":   1,
 		"512x512":   1.125,
@@ -40,7 +47,17 @@ var ImageSizeRatios = map[string]map[string]float64{
 	},
 }
 
+var ImageQualityRatios = map[string]map[string]float64{
+	"gpt-image-1": {
+		"low":    1,
+		"medium": 3.9,
+		"high":   15.3,
+		"auto":   15.3,
+	},
+}
+
 var ImageGenerationAmounts = map[string][2]int{
+	"gpt-image-1":               {1, 10},
 	"dall-e-2":                  {1, 10},
 	"dall-e-3":                  {1, 1}, // OpenAI allows n=1 currently.
 	"ali-stable-diffusion-xl":   {1, 4}, // Ali
@@ -51,6 +68,7 @@ var ImageGenerationAmounts = map[string][2]int{
 }
 
 var ImagePromptLengthLimitations = map[string]int{
+	"gpt-image-1":               32000,
 	"dall-e-2":                  1000,
 	"dall-e-3":                  4000,
 	"ali-stable-diffusion-xl":   4000,

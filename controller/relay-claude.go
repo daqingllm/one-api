@@ -116,13 +116,7 @@ func relayTextHelper(c *gin.Context) *relay_model.ErrorWithStatusCode {
 	modelRatio := billingratio.GetModelRatio(request.Model, meta.ChannelType)
 	groupRatio := billingratio.GetGroupRatio(meta.Group)
 	ratio := modelRatio * groupRatio
-	// enrich search Context
-	if c.GetBool(ctxkey.Surfing) {
-		err := tool.EnhanceClaudeSearchPrompt(c, request)
-		if err != nil {
-			logger.Errorf(ctx, "EnhanceClaudeSearchPrompt failed: %s", err.Error())
-		}
-	}
+
 	// pre-consume quota
 	promptTokens := getPromptTokens(request)
 	meta.PromptTokens = promptTokens
@@ -130,6 +124,13 @@ func relayTextHelper(c *gin.Context) *relay_model.ErrorWithStatusCode {
 	if bizErr != nil {
 		logger.Warnf(ctx, "validQuota failed: %+v", *bizErr)
 		return bizErr
+	}
+	// enrich search Context
+	if c.GetBool(ctxkey.Surfing) {
+		err := tool.EnhanceClaudeSearchPrompt(c, request)
+		if err != nil {
+			logger.Errorf(ctx, "EnhanceClaudeSearchPrompt failed: %s", err.Error())
+		}
 	}
 
 	adaptor := getAdaptor(meta.APIType)

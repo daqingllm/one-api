@@ -12,6 +12,7 @@ import (
 	"github.com/songquanpeng/one-api/relay/adaptor/coze"
 	"github.com/songquanpeng/one-api/relay/adaptor/deepl"
 	"github.com/songquanpeng/one-api/relay/adaptor/gemini"
+	"github.com/songquanpeng/one-api/relay/adaptor/jina"
 	"github.com/songquanpeng/one-api/relay/adaptor/ollama"
 	"github.com/songquanpeng/one-api/relay/adaptor/openai"
 	"github.com/songquanpeng/one-api/relay/adaptor/palm"
@@ -22,6 +23,7 @@ import (
 	"github.com/songquanpeng/one-api/relay/adaptor/xunfei"
 	"github.com/songquanpeng/one-api/relay/adaptor/zhipu"
 	"github.com/songquanpeng/one-api/relay/apitype"
+	"github.com/songquanpeng/one-api/relay/channeltype"
 )
 
 func GetAdaptor(apiType int) adaptor.Adaptor {
@@ -64,6 +66,16 @@ func GetAdaptor(apiType int) adaptor.Adaptor {
 		return &proxy.Adaptor{}
 	case apitype.Replicate:
 		return &replicate.Adaptor{}
+	case apitype.Jina:
+		return &jina.Adaptor{}
+	}
+	return nil
+}
+
+func GetRerankAdaptor(channelType int) adaptor.RerankAdaptor {
+	switch channelType {
+	case channeltype.Jina:
+		return &jina.Adaptor{}
 	}
 	return nil
 }

@@ -5,6 +5,7 @@ import "strings"
 type Message struct {
 	Role             string            `json:"role,omitempty"`
 	Content          any               `json:"content,omitempty"`
+	Type             string            `json:"type,omitempty"`
 	ReasoningContent any               `json:"reasoning_content,omitempty"`
 	MultiModContents []MultiModContent `json:"multi_mod_content,omitempty"`
 	Refusal          *string           `json:"refusal,omitempty"`

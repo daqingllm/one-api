@@ -19,3 +19,12 @@ type Adaptor interface {
 	GetModelList() []string
 	GetChannelName() string
 }
+
+type RerankAdaptor interface {
+	Init(meta *meta.Meta)
+	GetRequestURL(meta *meta.Meta) (string, error)
+	SetupRequestHeader(c *gin.Context, req *http.Request, meta *meta.Meta) error
+	ConvertRerankRequest(request *model.RerankRequest) (any, error)
+	DoRequest(c *gin.Context, meta *meta.Meta, requestBody io.Reader) (*http.Response, error)
+	DoRerankResponse(c *gin.Context, resp *http.Response, meta *meta.Meta) (usage *model.RerankUsage, err *model.ErrorWithStatusCode)
+}

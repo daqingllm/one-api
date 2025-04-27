@@ -8,6 +8,18 @@ type Usage struct {
 	CompletionTokensDetails *CompletionTokensDetails `json:"completion_tokens_details,omitempty"`
 }
 
+type ImageUsage struct {
+	TotalTokens        int                 `json:"total_tokens"`
+	InputTokens        int                 `json:"input_tokens"`
+	OutputTokens       int                 `json:"output_tokens"`
+	InputTokensDetails *InputTokensDetails `json:"input_tokens_details,omitempty"`
+}
+
+type InputTokensDetails struct {
+	TextTokens  int `json:"text_tokens"`
+	ImageTokens int `json:"image_tokens"`
+}
+
 type PromptTokensDetails struct {
 	AudioTokens  *int `json:"audio_tokens,omitempty"`
 	CachedTokens *int `json:"cached_tokens,omitempty"`
