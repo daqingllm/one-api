@@ -35,40 +35,40 @@ func init() {
 		SetHeaderFunc: SetFileHeaderFunc,
 	}
 
-	var cacheAdaptorBuilder = common.DefaultHttpAdaptorBuilder{
-		PostCalcStrategyFunc: CachePostCalcStrategyFunc,
-		GetUrlFunc:           GetUrlFunc,
-		SetHeaderFunc:        SetFileHeaderFunc,
-	}
+	// var cacheAdaptorBuilder = common.DefaultHttpAdaptorBuilder{
+	// 	PostCalcStrategyFunc: CachePostCalcStrategyFunc,
+	// 	GetUrlFunc:           GetUrlFunc,
+	// 	SetHeaderFunc:        SetFileHeaderFunc,
+	// }
 
 	logger.SysLogf("register gemin response channel type start %d", channeltype.Gemini)
 
 	// 使用批量注册方式注册Gemini模型接口
 	registry.RegisterBatch([]rproxy.RoutePattern{
-		{PathPattern: "/v1beta/models/:modelAction", Method: "POST", ChannelType: strconv.Itoa(int(channeltype.Gemini))},
+		{PathPattern: "/gemini/v1beta/models/:modelAction", Method: "POST", ChannelType: strconv.Itoa(int(channeltype.Gemini))},
 	}, adaptorBuilder)
 
 	// 注册Gemin转VertexAI模型接口
 	registry.RegisterBatch([]rproxy.RoutePattern{
-		{PathPattern: "/v1beta/models/:modelAction", Method: "POST", ChannelType: strconv.Itoa(int(channeltype.VertextAI))},
+		{PathPattern: "/gemini/v1beta/models/:modelAction", Method: "POST", ChannelType: strconv.Itoa(int(channeltype.VertextAI))},
 	}, vertexAdaptorBuilder)
 
 	// 批量注册Gemini文件相关接口
 	registry.RegisterBatch([]rproxy.RoutePattern{
-		{PathPattern: "/upload/v1beta/files", Method: "POST", ChannelType: strconv.Itoa(int(channeltype.Gemini))},
-		{PathPattern: "/v1beta/files/:filename", Method: "GET", ChannelType: strconv.Itoa(int(channeltype.Gemini))},
-		{PathPattern: "/v1beta/files", Method: "GET", ChannelType: strconv.Itoa(int(channeltype.Gemini))},
-		{PathPattern: "/v1beta/files/:filename", Method: "DELETE", ChannelType: strconv.Itoa(int(channeltype.Gemini))},
+		{PathPattern: "/gemini/v1beta/files", Method: "POST", ChannelType: strconv.Itoa(int(channeltype.Gemini))},
+		{PathPattern: "/gemini/v1beta/files/:filename", Method: "GET", ChannelType: strconv.Itoa(int(channeltype.Gemini))},
+		{PathPattern: "/gemini/v1beta/files", Method: "GET", ChannelType: strconv.Itoa(int(channeltype.Gemini))},
+		{PathPattern: "/gemini/v1beta/files/:filename", Method: "DELETE", ChannelType: strconv.Itoa(int(channeltype.Gemini))},
 	}, fileAdaptorBuilder)
 
 	// 批量注册Gemini缓存内容相关接口
-	registry.RegisterBatch([]rproxy.RoutePattern{
-		{PathPattern: "/v1beta/cachedContents/:cachedname", Method: "GET", ChannelType: strconv.Itoa(int(channeltype.Gemini))},
-		{PathPattern: "/v1beta/cachedContents/:cachedname", Method: "PATCH", ChannelType: strconv.Itoa(int(channeltype.Gemini))},
-		{PathPattern: "/v1beta/cachedContents/:cachedname", Method: "DELETE", ChannelType: strconv.Itoa(int(channeltype.Gemini))},
-		{PathPattern: "/v1beta/cachedContents", Method: "GET", ChannelType: strconv.Itoa(int(channeltype.Gemini))},
-		{PathPattern: "/v1beta/cachedContents", Method: "POST", ChannelType: strconv.Itoa(int(channeltype.Gemini))},
-	}, cacheAdaptorBuilder)
+	// registry.RegisterBatch([]rproxy.RoutePattern{
+	// 	{PathPattern: "/v1beta/cachedContents/:cachedname", Method: "GET", ChannelType: strconv.Itoa(int(channeltype.Gemini))},
+	// 	{PathPattern: "/v1beta/cachedContents/:cachedname", Method: "PATCH", ChannelType: strconv.Itoa(int(channeltype.Gemini))},
+	// 	{PathPattern: "/v1beta/cachedContents/:cachedname", Method: "DELETE", ChannelType: strconv.Itoa(int(channeltype.Gemini))},
+	// 	{PathPattern: "/v1beta/cachedContents", Method: "GET", ChannelType: strconv.Itoa(int(channeltype.Gemini))},
+	// 	{PathPattern: "/v1beta/cachedContents", Method: "POST", ChannelType: strconv.Itoa(int(channeltype.Gemini))},
+	// }, cacheAdaptorBuilder)
 
 	//原生vertex ai支持
 	registry.Register("/v1/projects/:VertexAIProjectID/locations/:region/publishers/google/models/:modelAction",
