@@ -26,22 +26,22 @@ func SetRelayRouter(router *gin.Engine) {
 	{
 		claudeV1Router.POST("/messages", controller.ClaudeMessages)
 	}
-	directRproxyRouter := router.Group("")
-	directRproxyRouter.Use(middleware.RelayPanicRecover(), middleware.RelayTime())
+	geminiRproxyRouter := router.Group("/gemini")
+	geminiRproxyRouter.Use(middleware.RelayPanicRecover(), middleware.RelayTime())
 	{
-		directRproxyRouter.POST("/gemini/v1beta/models/:modelAction", controller.RelayRProxy(func() rproxy.WeaverFactory {
+		geminiRproxyRouter.POST("/v1beta/models/:modelAction", controller.RelayRProxy(func() rproxy.WeaverFactory {
 			return &gemini.GeminiGenerateWeaverFactory{}
 		}))
-		directRproxyRouter.POST("/gemini/v1beta/files", controller.RelayRProxy(func() rproxy.WeaverFactory {
+		geminiRproxyRouter.POST("/v1beta/files", controller.RelayRProxy(func() rproxy.WeaverFactory {
 			return &gemini.GeminiFileWeaverFactory{}
 		}))
-		directRproxyRouter.GET("/gemini/v1beta/files/:filename", controller.RelayRProxy(func() rproxy.WeaverFactory {
+		geminiRproxyRouter.GET("/v1beta/files/:filename", controller.RelayRProxy(func() rproxy.WeaverFactory {
 			return &gemini.GeminiFileWeaverFactory{}
 		}))
-		directRproxyRouter.GET("/gemini/v1beta/files", controller.RelayRProxy(func() rproxy.WeaverFactory {
+		geminiRproxyRouter.GET("/v1beta/files", controller.RelayRProxy(func() rproxy.WeaverFactory {
 			return &gemini.GeminiFileWeaverFactory{}
 		}))
-		directRproxyRouter.DELETE("/gemini/v1beta/files/:filename", controller.RelayRProxy(func() rproxy.WeaverFactory {
+		geminiRproxyRouter.DELETE("/v1beta/files/:filename", controller.RelayRProxy(func() rproxy.WeaverFactory {
 			return &gemini.GeminiFileWeaverFactory{}
 		}))
 
@@ -61,41 +61,51 @@ func SetRelayRouter(router *gin.Engine) {
 		// 	return &gemini.GeminiCacheWeaverFactory{}
 		// }))
 		//vertex
-		directRproxyRouter.POST("/v1/projects/:VertexAIProjectID/locations/:region/publishers/google/models/:modelAction", controller.RelayRProxy(func() rproxy.WeaverFactory {
+		geminiRproxyRouter.POST("/gemini/v1/projects/:VertexAIProjectID/locations/:region/publishers/google/models/:modelAction", controller.RelayRProxy(func() rproxy.WeaverFactory {
 			return &gemini.VertexGenerateWeaverFactory{}
 		}))
-		directRproxyRouter.POST("/v1/responses", controller.RelayRProxy(func() rproxy.WeaverFactory {
+	}
+	oaiResponseRproxyRouter := router.Group("/v1")
+	oaiResponseRproxyRouter.Use(middleware.RelayPanicRecover(), middleware.RelayTime())
+	{
+		oaiResponseRproxyRouter.POST("/responses", controller.RelayRProxy(func() rproxy.WeaverFactory {
 			return &oai.OAIResponseWeaverFactory{}
 		}))
 
-		directRproxyRouter.GET("/v1/responses/:response_id", controller.RelayRProxy(func() rproxy.WeaverFactory {
+		oaiResponseRproxyRouter.GET("/responses/:response_id", controller.RelayRProxy(func() rproxy.WeaverFactory {
 			return &oai.OAIGetInfoWeaverFactory{}
 		}))
-		directRproxyRouter.DELETE("/v1/responses/:response_id", controller.RelayRProxy(func() rproxy.WeaverFactory {
+		oaiResponseRproxyRouter.DELETE("/responses/:response_id", controller.RelayRProxy(func() rproxy.WeaverFactory {
 			return &oai.OAIGetInfoWeaverFactory{}
 		}))
-		directRproxyRouter.GET("/v1/responses/:response_id/input_items", controller.RelayRProxy(func() rproxy.WeaverFactory {
+		oaiResponseRproxyRouter.GET("/responses/:response_id/input_items", controller.RelayRProxy(func() rproxy.WeaverFactory {
 			return &oai.OAIGetInfoWeaverFactory{}
 		}))
-		directRproxyRouter.POST("/ideogram/generate", controller.RelayRProxy(func() rproxy.WeaverFactory {
+
+	}
+	ideogramRproxyRouter := router.Group("/ideogram")
+	ideogramRproxyRouter.Use(middleware.RelayPanicRecover(), middleware.RelayTime())
+	{
+		ideogramRproxyRouter.POST("/generate", controller.RelayRProxy(func() rproxy.WeaverFactory {
 			return &ideogram.IdeoGramWeaverFactory{}
 		}))
-		directRproxyRouter.POST("/ideogram/edit", controller.RelayRProxy(func() rproxy.WeaverFactory {
+		ideogramRproxyRouter.POST("/edit", controller.RelayRProxy(func() rproxy.WeaverFactory {
 			return &ideogram.IdeoGramWeaverFactory{}
 		}))
-		directRproxyRouter.POST("/ideogram/remix", controller.RelayRProxy(func() rproxy.WeaverFactory {
+		ideogramRproxyRouter.POST("/remix", controller.RelayRProxy(func() rproxy.WeaverFactory {
 			return &ideogram.IdeoGramRemixWeaverFactory{}
 		}))
-		directRproxyRouter.POST("/ideogram/upscale", controller.RelayRProxy(func() rproxy.WeaverFactory {
+		ideogramRproxyRouter.POST("/upscale", controller.RelayRProxy(func() rproxy.WeaverFactory {
 			return &ideogram.IdeoGramPathWeaverFactory{}
 		}))
-		directRproxyRouter.POST("/ideogram/describe", controller.RelayRProxy(func() rproxy.WeaverFactory {
+		ideogramRproxyRouter.POST("/describe", controller.RelayRProxy(func() rproxy.WeaverFactory {
 			return &ideogram.IdeoGramPathWeaverFactory{}
 		}))
-		directRproxyRouter.POST("/ideogram/reframe", controller.RelayRProxy(func() rproxy.WeaverFactory {
+		ideogramRproxyRouter.POST("/reframe", controller.RelayRProxy(func() rproxy.WeaverFactory {
 			return &ideogram.IdeoGramWeaverFactory{}
 		}))
 	}
+
 	relayV1Router := router.Group("/v1")
 	relayV1Router.Use(middleware.RelayPanicRecover(), middleware.TokenAuth(), middleware.Distribute(), middleware.RelayTime())
 	{
