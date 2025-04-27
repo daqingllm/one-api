@@ -29,37 +29,37 @@ func SetRelayRouter(router *gin.Engine) {
 	directRproxyRouter := router.Group("")
 	directRproxyRouter.Use(middleware.RelayPanicRecover(), middleware.RelayTime())
 	{
-		directRproxyRouter.POST("/v1beta/models/:modelAction", controller.RelayRProxy(func() rproxy.WeaverFactory {
+		directRproxyRouter.POST("/gemini/v1beta/models/:modelAction", controller.RelayRProxy(func() rproxy.WeaverFactory {
 			return &gemini.GeminiGenerateWeaverFactory{}
 		}))
-		directRproxyRouter.POST("/upload/v1beta/files", controller.RelayRProxy(func() rproxy.WeaverFactory {
+		directRproxyRouter.POST("/gemini/v1beta/files", controller.RelayRProxy(func() rproxy.WeaverFactory {
 			return &gemini.GeminiFileWeaverFactory{}
 		}))
-		directRproxyRouter.GET("/v1beta/files/:filename", controller.RelayRProxy(func() rproxy.WeaverFactory {
+		directRproxyRouter.GET("/gemini/v1beta/files/:filename", controller.RelayRProxy(func() rproxy.WeaverFactory {
 			return &gemini.GeminiFileWeaverFactory{}
 		}))
-		directRproxyRouter.GET("/v1beta/files", controller.RelayRProxy(func() rproxy.WeaverFactory {
+		directRproxyRouter.GET("/gemini/v1beta/files", controller.RelayRProxy(func() rproxy.WeaverFactory {
 			return &gemini.GeminiFileWeaverFactory{}
 		}))
-		directRproxyRouter.DELETE("/v1beta/files/:filename", controller.RelayRProxy(func() rproxy.WeaverFactory {
+		directRproxyRouter.DELETE("/gemini/v1beta/files/:filename", controller.RelayRProxy(func() rproxy.WeaverFactory {
 			return &gemini.GeminiFileWeaverFactory{}
 		}))
 
-		directRproxyRouter.POST("/v1beta/cachedContents", controller.RelayRProxy(func() rproxy.WeaverFactory {
-			return &gemini.GeminiCacheWeaverFactory{}
-		}))
-		directRproxyRouter.GET("/v1beta/cachedContents", controller.RelayRProxy(func() rproxy.WeaverFactory {
-			return &gemini.GeminiCacheWeaverFactory{}
-		}))
-		directRproxyRouter.GET("/v1beta/cachedContents/:cachedname", controller.RelayRProxy(func() rproxy.WeaverFactory {
-			return &gemini.GeminiCacheWeaverFactory{}
-		}))
-		directRproxyRouter.PATCH("/v1beta/cachedContents/:cachedname", controller.RelayRProxy(func() rproxy.WeaverFactory {
-			return &gemini.GeminiCacheWeaverFactory{}
-		}))
-		directRproxyRouter.DELETE("/v1beta/cachedContents/:cachedname", controller.RelayRProxy(func() rproxy.WeaverFactory {
-			return &gemini.GeminiCacheWeaverFactory{}
-		}))
+		// directRproxyRouter.POST("/gemini/v1beta/cachedContents", controller.RelayRProxy(func() rproxy.WeaverFactory {
+		// 	return &gemini.GeminiCacheWeaverFactory{}
+		// }))
+		// directRproxyRouter.GET("/gemini/v1beta/cachedContents", controller.RelayRProxy(func() rproxy.WeaverFactory {
+		// 	return &gemini.GeminiCacheWeaverFactory{}
+		// }))
+		// directRproxyRouter.GET("/gemini/v1beta/cachedContents/:cachedname", controller.RelayRProxy(func() rproxy.WeaverFactory {
+		// 	return &gemini.GeminiCacheWeaverFactory{}
+		// }))
+		// directRproxyRouter.PATCH("/gemini/v1beta/cachedContents/:cachedname", controller.RelayRProxy(func() rproxy.WeaverFactory {
+		// 	return &gemini.GeminiCacheWeaverFactory{}
+		// }))
+		// directRproxyRouter.DELETE("/gemini/v1beta/cachedContents/:cachedname", controller.RelayRProxy(func() rproxy.WeaverFactory {
+		// 	return &gemini.GeminiCacheWeaverFactory{}
+		// }))
 		//vertex
 		directRproxyRouter.POST("/v1/projects/:VertexAIProjectID/locations/:region/publishers/google/models/:modelAction", controller.RelayRProxy(func() rproxy.WeaverFactory {
 			return &gemini.VertexGenerateWeaverFactory{}
