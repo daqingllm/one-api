@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"strconv"
 	"strings"
 
 	"github.com/songquanpeng/one-api/common/config"
@@ -52,6 +51,14 @@ func SetHeaderFunc(context *rproxy.RproxyContext, channel *model.Channel, reques
 	return nil
 }
 
+func PostErrorHandleFunc(context *rproxy.RproxyContext, resp rproxy.Response, e error) (err *relaymodel.ErrorWithStatusCode) {
+	httpResp, _ := resp.(*http.Response)
+	if httpResp != nil && httpResp.ContentLength == 0 {
+		logger.Errorf(context.SrcContext, "响应数据长度为空")
+		return relaymodel.NewErrorWithStatusCode(http.StatusInternalServerError, "empty_response", "empty_response")
+	}
+	return nil
+}
 func PreCalcStrategyFunc(context *rproxy.RproxyContext, channel *model.Channel, bill *common.Bill) (err *relaymodel.ErrorWithStatusCode) {
 	parsed := gjson.ParseBytes(context.ResolvedRequest.([]byte))
 	input := parsed.Get("input").String()
@@ -228,8 +235,4 @@ func ReplaceBodyParamsFunc(context *rproxy.RproxyContext, channel *model.Channel
 		)
 	}
 	return modifiedBody, nil
-}
-
-func getKey(path string, method string, channelType int) string {
-	return strings.Join([]string{path, method, strconv.Itoa(channelType)}, "-")
 }
