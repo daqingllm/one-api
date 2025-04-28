@@ -55,7 +55,7 @@ func init() {
 
 	// 批量注册Gemini文件相关接口
 	registry.RegisterBatch([]rproxy.RoutePattern{
-		{PathPattern: "/gemini/v1beta/files", Method: "POST", ChannelType: strconv.Itoa(int(channeltype.Gemini))},
+		{PathPattern: "/gemini/upload/v1beta/files", Method: "POST", ChannelType: strconv.Itoa(int(channeltype.Gemini))},
 		{PathPattern: "/gemini/v1beta/files/:filename", Method: "GET", ChannelType: strconv.Itoa(int(channeltype.Gemini))},
 		{PathPattern: "/gemini/v1beta/files", Method: "GET", ChannelType: strconv.Itoa(int(channeltype.Gemini))},
 		{PathPattern: "/gemini/v1beta/files/:filename", Method: "DELETE", ChannelType: strconv.Itoa(int(channeltype.Gemini))},

@@ -32,7 +32,7 @@ func SetRelayRouter(router *gin.Engine) {
 		geminiRproxyRouter.POST("/v1beta/models/:modelAction", controller.RelayRProxy(func() rproxy.WeaverFactory {
 			return &gemini.GeminiGenerateWeaverFactory{}
 		}))
-		geminiRproxyRouter.POST("/v1beta/files", controller.RelayRProxy(func() rproxy.WeaverFactory {
+		geminiRproxyRouter.POST("/upload/v1beta/files", controller.RelayRProxy(func() rproxy.WeaverFactory {
 			return &gemini.GeminiFileWeaverFactory{}
 		}))
 		geminiRproxyRouter.GET("/v1beta/files/:filename", controller.RelayRProxy(func() rproxy.WeaverFactory {
