@@ -18,6 +18,7 @@ func init() {
 		PostCalcStrategyFunc:  PostCalcStrategyFunc,
 		ReplaceBodyParamsFunc: ReplaceBodyParamsFunc,
 		GetUrlFunc:            GetUrlFunc,
+		PostErrorHandleFunc:   PostErrorHandleFunc,
 	}
 
 	var nopBillingAdaptorBuilder = common.DefaultHttpAdaptorBuilder{

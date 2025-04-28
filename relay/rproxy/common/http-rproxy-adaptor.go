@@ -87,6 +87,7 @@ func (a *HttpRproxyAdaptor) GetErrorHandler() rproxy.ErrorHandler {
 }
 
 type DefaultErrorHandler struct {
+	PostErrorHandleFunc func(context *rproxy.RproxyContext, resp rproxy.Response, e error) (err *relaymodel.ErrorWithStatusCode)
 }
 
 func (r *DefaultErrorHandler) HandleError(context *rproxy.RproxyContext, resp rproxy.Response, e error) (err *relaymodel.ErrorWithStatusCode) {
@@ -100,6 +101,9 @@ func (r *DefaultErrorHandler) HandleError(context *rproxy.RproxyContext, resp rp
 	}
 	if httpResp.StatusCode != http.StatusOK {
 		return controller.RelayErrorHandler(httpResp)
+	}
+	if r.PostErrorHandleFunc != nil {
+		return r.PostErrorHandleFunc(context, resp, e)
 	}
 	return nil
 }

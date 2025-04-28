@@ -17,6 +17,8 @@ type DefaultHttpAdaptorBuilder struct {
 	SetHeaderFunc         func(context *rproxy.RproxyContext, channel *model.Channel, request *http.Request) (err *relaymodel.ErrorWithStatusCode)
 	ReplaceBodyParamsFunc func(context *rproxy.RproxyContext, channel *model.Channel, body []byte) (replacedBody []byte, err *relaymodel.ErrorWithStatusCode)
 
+	PostErrorHandleFunc func(context *rproxy.RproxyContext, resp rproxy.Response, e error) (err *relaymodel.ErrorWithStatusCode)
+
 	// CalcStrategyFunc      func(context *rproxy.RproxyContext, channel *model.Channel, groupRatio float64) (preConsumedQuota int64, err *relaymodel.ErrorWithStatusCode)
 	PreCalcStrategyFunc   func(context *rproxy.RproxyContext, channel *model.Channel, bill *Bill) (err *relaymodel.ErrorWithStatusCode)
 	PostCalcStrategyFunc  func(context *rproxy.RproxyContext, channel *model.Channel, bill *Bill) (err *relaymodel.ErrorWithStatusCode)
@@ -56,7 +58,9 @@ func (b DefaultHttpAdaptorBuilder) Build() (adaptor rproxy.RproxyAdaptor) {
 	}
 	var errorHandler rproxy.ErrorHandler
 	if b.GetErrorHandler == nil || b.GetErrorHandler() == nil {
-		errorHandler = &DefaultErrorHandler{}
+		errorHandler = &DefaultErrorHandler{
+			PostErrorHandleFunc: b.PostErrorHandleFunc,
+		}
 	} else {
 		errorHandler = b.GetErrorHandler()
 	}
