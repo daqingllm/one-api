@@ -35,6 +35,16 @@ func init() {
 		SetHeaderFunc: SetFileHeaderFunc,
 	}
 
+	var imageAdaptorBuilder = common.DefaultHttpAdaptorBuilder{
+		GetUrlFunc:          GetUrlFunc,
+		PreCalcStrategyFunc: ImagePreCalcStrategyFunc,
+	}
+
+	var videoAdaptorBuilder = common.DefaultHttpAdaptorBuilder{
+		GetUrlFunc:          GetUrlFunc,
+		PreCalcStrategyFunc: VideoPreCalcStrategyFunc,
+	}
+
 	// var cacheAdaptorBuilder = common.DefaultHttpAdaptorBuilder{
 	// 	PostCalcStrategyFunc: CachePostCalcStrategyFunc,
 	// 	GetUrlFunc:           GetUrlFunc,
@@ -45,8 +55,21 @@ func init() {
 
 	// 使用批量注册方式注册Gemini模型接口
 	registry.RegisterBatch([]rproxy.RoutePattern{
-		{PathPattern: "/gemini/v1beta/models/:modelAction", Method: "POST", ChannelType: strconv.Itoa(int(channeltype.Gemini))},
+		{PathPattern: "/gemini/v1beta/models/:model\\:generateContent", Method: "POST", ChannelType: strconv.Itoa(int(channeltype.Gemini))},
 	}, adaptorBuilder)
+
+	registry.RegisterBatch([]rproxy.RoutePattern{
+		{PathPattern: "/gemini/v1beta/models/:model\\:streamGenerateContent", Method: "POST", ChannelType: strconv.Itoa(int(channeltype.Gemini))},
+	}, adaptorBuilder)
+
+	// 使用批量注册方式注册Gemini模型接口
+	registry.RegisterBatch([]rproxy.RoutePattern{
+		{PathPattern: "/gemini/v1beta/models/:model\\:predict", Method: "POST", ChannelType: strconv.Itoa(int(channeltype.Gemini))},
+	}, imageAdaptorBuilder)
+
+	registry.RegisterBatch([]rproxy.RoutePattern{
+		{PathPattern: "/gemini/v1beta/models/:model\\:predictLongRunning", Method: "POST", ChannelType: strconv.Itoa(int(channeltype.Gemini))},
+	}, videoAdaptorBuilder)
 
 	// 注册Gemin转VertexAI模型接口
 	registry.RegisterBatch([]rproxy.RoutePattern{

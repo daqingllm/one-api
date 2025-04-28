@@ -107,6 +107,18 @@ func matchPattern(pattern string, requestSegments []string) bool {
 			return false
 		}
 
+		// 处理转义冒号 \:
+		if strings.Contains(pSeg, "\\:") {
+			// 去掉转义符号，只比较实际的冒号和后面的内容
+			pSegParts := strings.SplitN(pSeg, "\\:", 2)
+			reqSegParts := strings.SplitN(requestSegments[i], ":", 2)
+
+			if len(reqSegParts) != 2 || reqSegParts[1] != pSegParts[1] {
+				return false
+			}
+			continue
+		}
+
 		// 处理通配符 *
 		if pSeg == "*" || (strings.HasPrefix(pSeg, "*") && i == len(patternSegments)-1) {
 			return true

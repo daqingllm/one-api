@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/songquanpeng/one-api/common/config"
@@ -148,6 +149,30 @@ func PreCalcStrategyFunc(context *rproxy.RproxyContext, channel *model.Channel, 
 	return nil
 }
 
+func ImagePreCalcStrategyFunc(context *rproxy.RproxyContext, channel *model.Channel, bill *common.Bill) (err *relaymodel.ErrorWithStatusCode) {
+	parsed := gjson.ParseBytes(context.ResolvedRequest.([]byte))
+	imgNums := parsed.Get("parameters.numberOfImages").String()
+	if imgNums == "" {
+		imgNums = "4"
+	}
+	imgNumInt, _ := strconv.Atoi(imgNums)
+	bill.PreBillItems = append(bill.PreBillItems, common.PayperUseBillItem(common.ImageToken, 0.03, float64(imgNumInt)))
+	return nil
+}
+
+func VideoPreCalcStrategyFunc(context *rproxy.RproxyContext, channel *model.Channel, bill *common.Bill) (err *relaymodel.ErrorWithStatusCode) {
+	parsed := gjson.ParseBytes(context.ResolvedRequest.([]byte))
+	videoNums := parsed.Get("parameters.numberOfVideos").Int()
+	videoDuration := parsed.Get("durationSeconds").Int()
+	if videoNums == 0 {
+		videoNums = 1
+	}
+	if videoDuration == 0 {
+		videoDuration = 5
+	}
+	bill.PreBillItems = append(bill.PreBillItems, common.PayperUseBillItem(common.VideoToken, 0.35, float64(videoNums*videoDuration)))
+	return nil
+}
 func CachePostCalcStrategyFunc(context *rproxy.RproxyContext, channel *model.Channel, bill *common.Bill) (err *relaymodel.ErrorWithStatusCode) {
 	// parsed := gjson.ParseBytes(context.ResolvedRequest.([]byte))
 	// input := parsed.Get("contents").String()

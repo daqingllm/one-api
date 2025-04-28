@@ -34,6 +34,8 @@ const (
 	ToolUsePromoptTokens
 	ThoughtsTokens
 	WebSearch
+	ImageToken
+	VideoToken
 )
 
 func (i ItemType) String() string {
@@ -45,6 +47,8 @@ func (i ItemType) String() string {
 		"ToolUsePromoptTokens",
 		"ThoughtsTokens",
 		"WebSearch",
+		"ImageToken",
+		"VideoToken",
 	}
 
 	if int(i) < 0 || int(i) >= len(names) {
