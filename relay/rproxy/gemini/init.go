@@ -45,6 +45,18 @@ func init() {
 		PreCalcStrategyFunc: VideoPreCalcStrategyFunc,
 	}
 
+	var vertexImageAdaptorBuilder = common.DefaultHttpAdaptorBuilder{
+		GetUrlFunc:          GetVertexUrlFunc,
+		PreCalcStrategyFunc: ImagePreCalcStrategyFunc,
+		SetHeaderFunc:       SetVertexHeaderFunc,
+	}
+
+	var vertexVideoAdaptorBuilder = common.DefaultHttpAdaptorBuilder{
+		GetUrlFunc:          GetVertexUrlFunc,
+		PreCalcStrategyFunc: VideoPreCalcStrategyFunc,
+		SetHeaderFunc:       SetVertexHeaderFunc,
+	}
+
 	// var cacheAdaptorBuilder = common.DefaultHttpAdaptorBuilder{
 	// 	PostCalcStrategyFunc: CachePostCalcStrategyFunc,
 	// 	GetUrlFunc:           GetUrlFunc,
@@ -64,6 +76,15 @@ func init() {
 
 	// 使用批量注册方式注册Gemini模型接口
 	registry.RegisterBatch([]rproxy.RoutePattern{
+		{PathPattern: "/gemini/v1beta/models/:model\\:generateContent", Method: "POST", ChannelType: strconv.Itoa(int(channeltype.Gemini))},
+	}, vertexAdaptorBuilder)
+
+	registry.RegisterBatch([]rproxy.RoutePattern{
+		{PathPattern: "/gemini/v1beta/models/:model\\:streamGenerateContent", Method: "POST", ChannelType: strconv.Itoa(int(channeltype.Gemini))},
+	}, vertexAdaptorBuilder)
+
+	// 使用批量注册方式注册Gemini模型接口
+	registry.RegisterBatch([]rproxy.RoutePattern{
 		{PathPattern: "/gemini/v1beta/models/:model\\:predict", Method: "POST", ChannelType: strconv.Itoa(int(channeltype.Gemini))},
 	}, imageAdaptorBuilder)
 
@@ -71,10 +92,13 @@ func init() {
 		{PathPattern: "/gemini/v1beta/models/:model\\:predictLongRunning", Method: "POST", ChannelType: strconv.Itoa(int(channeltype.Gemini))},
 	}, videoAdaptorBuilder)
 
-	// 注册Gemin转VertexAI模型接口
 	registry.RegisterBatch([]rproxy.RoutePattern{
-		{PathPattern: "/gemini/v1beta/models/:modelAction", Method: "POST", ChannelType: strconv.Itoa(int(channeltype.VertextAI))},
-	}, vertexAdaptorBuilder)
+		{PathPattern: "/gemini/v1beta/models/:model\\:predict", Method: "POST", ChannelType: strconv.Itoa(int(channeltype.VertextAI))},
+	}, vertexImageAdaptorBuilder)
+
+	registry.RegisterBatch([]rproxy.RoutePattern{
+		{PathPattern: "/gemini/v1beta/models/:model\\:predictLongRunning", Method: "POST", ChannelType: strconv.Itoa(int(channeltype.VertextAI))},
+	}, vertexVideoAdaptorBuilder)
 
 	// 批量注册Gemini文件相关接口
 	registry.RegisterBatch([]rproxy.RoutePattern{
