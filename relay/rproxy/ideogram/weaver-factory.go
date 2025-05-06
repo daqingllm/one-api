@@ -43,3 +43,15 @@ func (f *IdeoGramPathWeaverFactory) GetWeaver(ctx *gin.Context) (weaver rproxy.W
 		Build()
 	return
 }
+
+type IdeoGramV3WeaverFactory struct {
+}
+
+func (f *IdeoGramV3WeaverFactory) GetWeaver(ctx *gin.Context) (weaver rproxy.Weaver) {
+	weaver = common.
+		NewWeaverBuilder(ctx).
+		TokenRetriever(&IdeoGramTokenRetriever{}).
+		ModelRetriever(&IdeoGramV3ModelRetriever{}).
+		Build()
+	return
+}
