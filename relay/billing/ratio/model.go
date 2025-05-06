@@ -347,6 +347,7 @@ var ModelRatio = map[string]float64{
 	"V_2A_TURBO":  1,
 	"V_2_E":       1,
 	"V_2_TURBO_E": 1,
+	"V3":          1,
 	"DESCRIBE":    1,
 	"UPSCALE":     1,
 }
