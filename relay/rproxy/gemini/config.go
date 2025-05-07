@@ -81,8 +81,8 @@ func GetVertexUrlFunc(context *rproxy.RproxyContext, channel *model.Channel) (ur
 		newPath := fmt.Sprintf("/v1/projects/%s/locations/%s/publishers/google/models/%s",
 			projectID, region, modelAction)
 
-		context.SrcContext.Request.URL.Path = newPath
 		basePath = newPath
+		logger.Infof(context.SrcContext, "转换Gemini路径为Vertex AI格式: %s", newPath)
 	}
 	var baseURL string = *channel.BaseURL
 	if baseURL == "" {
@@ -100,7 +100,9 @@ func GetVertexUrlFunc(context *rproxy.RproxyContext, channel *model.Channel) (ur
 		queryParams := context.SrcContext.Request.URL.Query()
 		queryParams.Del("key")
 		newRawQuery := queryParams.Encode()
-		return baseURL + basePath + "?" + newRawQuery, nil
+		if newRawQuery != "" {
+			return baseURL + basePath + "?" + newRawQuery, nil
+		}
 	}
 	return baseURL + basePath, nil
 
