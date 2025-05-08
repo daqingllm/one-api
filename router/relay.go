@@ -104,6 +104,22 @@ func SetRelayRouter(router *gin.Engine) {
 		ideogramRproxyRouter.POST("/reframe", controller.RelayRProxy(func() rproxy.WeaverFactory {
 			return &ideogram.IdeoGramWeaverFactory{}
 		}))
+
+		ideogramRproxyRouter.POST("/v1/:model/generate", controller.RelayRProxy(func() rproxy.WeaverFactory {
+			return &ideogram.IdeoGramV3WeaverFactory{}
+		}))
+		ideogramRproxyRouter.POST("/v1/:model/edit", controller.RelayRProxy(func() rproxy.WeaverFactory {
+			return &ideogram.IdeoGramV3WeaverFactory{}
+		}))
+		ideogramRproxyRouter.POST("/v1/:model/remix", controller.RelayRProxy(func() rproxy.WeaverFactory {
+			return &ideogram.IdeoGramV3WeaverFactory{}
+		}))
+		ideogramRproxyRouter.POST("/v1/:model/reframe", controller.RelayRProxy(func() rproxy.WeaverFactory {
+			return &ideogram.IdeoGramV3WeaverFactory{}
+		}))
+		ideogramRproxyRouter.POST("/v1/:model/replace-background", controller.RelayRProxy(func() rproxy.WeaverFactory {
+			return &ideogram.IdeoGramV3WeaverFactory{}
+		}))
 	}
 
 	relayV1Router := router.Group("/v1")

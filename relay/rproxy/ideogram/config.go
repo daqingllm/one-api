@@ -16,23 +16,38 @@ import (
 )
 
 var abilityChannelModelPrices = map[string]float64{
-	"generate-ideogram-V_1":        0.06 * ratio.USD,
-	"generate-ideogram-V_1_TURBO":  0.02 * ratio.USD,
-	"generate-ideogram-V_2":        0.08 * ratio.USD,
-	"generate-ideogram-V_2_TURBO":  0.05 * ratio.USD,
-	"generate-ideogram-V_2A":       0.04 * ratio.USD,
-	"generate-ideogram-V_2A_TURBO": 0.025 * ratio.USD,
-	"edit-ideogram-V_2":            0.08 * ratio.USD,
-	"edit-ideogram-V_2_TURBO":      0.05 * ratio.USD,
-	"remix-ideogram-V_1":           0.06 * ratio.USD,
-	"remix-ideogram-V_1_TURBO":     0.02 * ratio.USD,
-	"remix-ideogram-V_2":           0.08 * ratio.USD,
-	"remix-ideogram-V_2_TURBO":     0.05 * ratio.USD,
-	"remix-ideogram-V_2A":          0.04 * ratio.USD,
-	"remix-ideogram-V_2A_TURBO":    0.025 * ratio.USD,
-	"reframe-ideogram-REFRAME":     0.01 * ratio.USD,
-	"upscale-ideogram-UPSCALE":     0.06 * ratio.USD,
-	"describe-ideogram-DESCRIBE":   0.01 * ratio.USD,
+	"generate-ideogram-V_1":                  0.06 * ratio.USD,
+	"generate-ideogram-V_1_TURBO":            0.02 * ratio.USD,
+	"generate-ideogram-V_2":                  0.08 * ratio.USD,
+	"generate-ideogram-V_2_TURBO":            0.05 * ratio.USD,
+	"generate-ideogram-V_2A":                 0.04 * ratio.USD,
+	"generate-ideogram-V_2A_TURBO":           0.025 * ratio.USD,
+	"edit-ideogram-V_2":                      0.08 * ratio.USD,
+	"edit-ideogram-V_2_TURBO":                0.05 * ratio.USD,
+	"remix-ideogram-V_1":                     0.06 * ratio.USD,
+	"remix-ideogram-V_1_TURBO":               0.02 * ratio.USD,
+	"remix-ideogram-V_2":                     0.08 * ratio.USD,
+	"remix-ideogram-V_2_TURBO":               0.05 * ratio.USD,
+	"remix-ideogram-V_2A":                    0.04 * ratio.USD,
+	"remix-ideogram-V_2A_TURBO":              0.025 * ratio.USD,
+	"reframe-ideogram-REFRAME":               0.01 * ratio.USD,
+	"upscale-ideogram-UPSCALE":               0.06 * ratio.USD,
+	"describe-ideogram-DESCRIBE":             0.01 * ratio.USD,
+	"generate-ideogram-V3_DEFAULT":           0.06 * ratio.USD,
+	"edit-ideogram-V3_DEFAULT":               0.06 * ratio.USD,
+	"remix-ideogram-V3_DEFAULT":              0.06 * ratio.USD,
+	"reframe-ideogram-V3_DEFAULT":            0.06 * ratio.USD,
+	"replace-background-ideogram-V3_DEFAULT": 0.06 * ratio.USD,
+	"generate-ideogram-V3_TURBO":             0.03 * ratio.USD,
+	"edit-ideogram-V3_TURBO":                 0.03 * ratio.USD,
+	"remix-ideogram-V3_TURBO":                0.03 * ratio.USD,
+	"reframe-ideogram-V3_TURBO":              0.03 * ratio.USD,
+	"replace-background-ideogram-V3_TURBO":   0.03 * ratio.USD,
+	"generate-ideogram-V3_QUALITY":           0.09 * ratio.USD,
+	"edit-ideogram-V3_QUALITY":               0.09 * ratio.USD,
+	"remix-ideogram-V3_QUALITY":              0.09 * ratio.USD,
+	"reframe-ideogram-V3_QUALITY":            0.09 * ratio.USD,
+	"replace-background-ideogram-V3_QUALITY": 0.09 * ratio.USD,
 }
 
 func SetHeaderFunc(context *rproxy.RproxyContext, channel *model.Channel, request *http.Request) (err *relaymodel.ErrorWithStatusCode) {
@@ -43,6 +58,62 @@ func SetHeaderFunc(context *rproxy.RproxyContext, channel *model.Channel, reques
 func GetUrlFunc(context *rproxy.RproxyContext, channel *model.Channel) (url string, err *relaymodel.ErrorWithStatusCode) {
 	return *channel.BaseURL + strings.TrimPrefix(context.SrcContext.Request.URL.Path, "/ideogram"), nil
 
+}
+func PreV3CalcStrategyFunc(context *rproxy.RproxyContext, channel *model.Channel, bill *common.Bill) (err *relaymodel.ErrorWithStatusCode) {
+
+	path := context.SrcContext.Request.URL.Path
+	parts := strings.FieldsFunc(path, func(c rune) bool { return c == '/' })
+	if len(parts) == 0 {
+		return relaymodel.NewErrorWithStatusCode(http.StatusBadRequest, "invalid_path", "invalid_path")
+
+	}
+	lastSegment := parts[len(parts)-1]
+	var renderModel string
+	var batchNums float64
+	contentType := context.SrcContext.Request.Header.Get("Content-Type")
+	if strings.Contains(contentType, "multipart/form-data") || strings.Contains(contentType, "application/x-www-form-urlencoded") {
+		if context.SrcContext.Request.MultipartForm == nil {
+			err := context.SrcContext.Request.ParseMultipartForm(32 << 20)
+			if err != nil {
+				return relaymodel.NewErrorWithStatusCode(http.StatusBadRequest, "invalid_form_request", "invalid_form_request")
+			}
+		}
+		renderModel = context.SrcContext.Request.Form.Get("rendering_speed")
+		if renderModel == "" {
+			renderModel = "DEFAULT"
+		}
+		batchNumsStr := context.SrcContext.Request.Form.Get("num_images")
+		if batchNumsStr == "" {
+			batchNums = 1
+		} else {
+			var e error
+			batchNums, e = strconv.ParseFloat(batchNumsStr, 64)
+			if e != nil {
+				return relaymodel.NewErrorWithStatusCode(http.StatusBadRequest, "invalid_num_images", "invalid_num_images")
+			}
+		}
+	}
+	modelName := context.Meta.OriginModelName + "_" + renderModel
+	// 检查价格是否存在
+	priceKey := strings.Join([]string{lastSegment, "ideogram", modelName}, "-")
+	price, exists := abilityChannelModelPrices[priceKey]
+	if !exists {
+		return relaymodel.NewErrorWithStatusCode(
+			http.StatusBadRequest,
+			"unsupported_model or rendering_speed",
+			"unsupported_model or rendering_speed",
+		)
+	}
+	// 计算价格
+	var quantity float64 = price * 1000 * batchNums
+	bill.PreBillItems = append(bill.PreBillItems, &common.BillItem{
+		ID:        0,
+		Name:      "PromptTokens",
+		Quantity:  quantity,
+		UnitPrice: 1,
+		Quota:     int64(quantity * 1),
+	})
+	return nil
 }
 
 func PreCalcStrategyFunc(context *rproxy.RproxyContext, channel *model.Channel, bill *common.Bill) (err *relaymodel.ErrorWithStatusCode) {
