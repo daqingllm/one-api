@@ -3,6 +3,7 @@ package pay
 import (
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/songquanpeng/one-api/model"
@@ -39,8 +40,29 @@ func QueryOrderByTradeNo(c *gin.Context) {
 }
 
 // 查询订单表所有等待付款的订单 再次查询支付宝订单状态并更新
-func UpdateAllOrderStatus(c *gin.Context) {
-	orders, err := model.GetOrdersByStatus("WAIT_BUYER_PAY")
+func UpdateOrderStatusByUser(c *gin.Context) {
+	userId, err := strconv.Atoi(c.Query("userId"))
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": err.Error(),
+		})
+		return
+	}
+	// 没有传入hours参数，默认查询48小时内的订单
+	hours := 48
+	if c.Query("hours") != "" {
+		hours, err = strconv.Atoi(c.Query("hours"))
+		if err != nil {
+			c.JSON(http.StatusOK, gin.H{
+				"success": false,
+				"message": err.Error(),
+			})
+			return
+		}
+	}
+	expiredAt := time.Now().Add(-time.Duration(hours) * time.Hour).Unix()
+	orders, err := model.GetOrdersByStatusByUserId(userId, "WAIT_BUYER_PAY", expiredAt)
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"success": false,
@@ -49,24 +71,36 @@ func UpdateAllOrderStatus(c *gin.Context) {
 		return
 	}
 
+	updatedOrders := make([]*model.OrderRecord, 0)
+	errList := make([]string, 0)
 	// 遍历订单，查询支付宝订单状态并更新
 	for _, order := range orders {
 		if order.GrantType == 1 {
 			// 查询支付宝订单状态
-			_, err := QueryAlipayOrder(c, order.TradeNo)
+			updated, err := QueryAlipayOrder(c, order.TradeNo)
 			if err != nil {
+				errList = append(errList, order.TradeNo+" 支付宝订单查询失败："+err.Error())
 				continue
+			}
+			if updated {
+				updatedOrders = append(updatedOrders, order)
 			}
 		} else if order.GrantType == 2 {
 			// 查询Stripe订单状态
-			// _, err := QueryStripeOrder(c, order.TradeNo)
-			// if err != nil {
-			continue
-			// }
+			updated, err := QueryStripeOrder(c, order.TradeNo)
+			if err != nil {
+				errList = append(errList, order.TradeNo+" Stripe订单查询失败："+err.Error())
+				continue
+			}
+			if updated {
+				updatedOrders = append(updatedOrders, order)
+			}
 		}
 	}
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
-		"message": strconv.Itoa(len(orders)) + "条订单状态更新成功",
+		"message": "查询到" + strconv.Itoa(len(orders)) + "条未完成订单，" + strconv.Itoa(len(updatedOrders)) + "条订单状态更新成功",
+		"data":    updatedOrders,
+		"error":   errList,
 	})
 }
