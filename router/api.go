@@ -145,7 +145,7 @@ func SetApiRouter(router *gin.Engine) {
 			payRoute.GET("/stripe/success", pay.StripeOrderSuccess)
 			payRoute.GET("/stripe/failed", pay.StripeOrderFailed)
 			payRoute.GET("/query/order", pay.QueryOrderByTradeNo)
-			payRoute.GET("/update_order_status", middleware.AdminAuth(), pay.UpdateAllOrderStatus)
+			payRoute.GET("/update_order_status", middleware.AdminAuth(), pay.UpdateOrderStatusByUser)
 		}
 	}
 }
