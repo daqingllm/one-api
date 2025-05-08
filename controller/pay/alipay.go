@@ -3,6 +3,7 @@ package pay
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -132,7 +133,7 @@ func DoneAsync(c *gin.Context, tradeNo string) chan int {
 
 // 创建定时器 每隔 5s 查询支付宝订单状态 状态为成功时结束  2小时后自动结束定时器
 func PollOrderStatus(c *gin.Context, tradeNo string) {
-	ticker := time.NewTicker(3 * time.Second)
+	ticker := time.NewTicker(5 * time.Second)
 	defer ticker.Stop()
 
 	timeoutCtx, cancel := context.WithTimeout(context.Background(), time.Minute*15)
@@ -170,17 +171,17 @@ func QueryAlipayOrder(c *gin.Context, outTradeNo string) (bool, error) {
 
 	// 交易不存在 生成二维码使用支付宝钱包扫码唤起收银台后 支付宝才会创建订单
 	if res.Code == "40004" || res.TradeStatus == "" {
-		return false, nil
+		return false, errors.New("订单不存在")
+	}
+
+	// 获取订单信息
+	record, err := model.GetOrderByTradeNo(outTradeNo)
+	if err != nil {
+		return false, err
 	}
 
 	// 支付成功，更新用户额度
 	if res.TradeStatus == "TRADE_SUCCESS" {
-		// 获取订单信息
-		record, err := model.GetOrderByTradeNo(outTradeNo)
-		if err != nil {
-			return false, err
-		}
-
 		// 订单状态为等待付款时更新用户额度
 		if record.Status == "WAIT_BUYER_PAY" {
 			// 更新用户额度
@@ -206,8 +207,8 @@ func QueryAlipayOrder(c *gin.Context, outTradeNo string) (bool, error) {
 		return false, err
 	}
 
-	// 是否订单完成，不是则返回false
-	return res.TradeStatus != "WAIT_BUYER_PAY", err
+	// 是否订单状态是否变更，不是则返回false
+	return string(res.TradeStatus) != record.Status, err
 }
 
 // 15分钟内未完成支付 关闭交易
