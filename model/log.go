@@ -16,7 +16,7 @@ type Log struct {
 	CreatedAt        int64  `json:"created_at" gorm:"bigint;index:idx_created_at_type"`
 	Type             int    `json:"type" gorm:"index:idx_created_at_type"`
 	Content          string `json:"content"`
-	Username         string `json:"username" gorm:"index:index_username_model_name,priority:2;default:''"`
+	Username         string `json:"username" gorm:"index;index:index_username_model_name,priority:2;default:''"`
 	TokenName        string `json:"token_name" gorm:"index;default:''"`
 	ModelName        string `json:"model_name" gorm:"index;index:index_username_model_name,priority:1;default:''"`
 	Quota            int    `json:"quota" gorm:"default:0"`
@@ -37,11 +37,11 @@ const (
 
 type FailedLog struct {
 	Id            int    `json:"id"`
-	UserId        int    `json:"user_id" gorm:"index:idx_user_id_created_at"`
-	CreatedAt     int64  `json:"created_at" gorm:"bigint;index:idx_user_id_created_at"`
-	ModelName     string `json:"model" gorm:"type:varchar(128)"`
+	UserId        int    `json:"user_id" gorm:"index:idx_user_id_created_at,priority:1"`
+	CreatedAt     int64  `json:"created_at" gorm:"bigint;index:idx_user_id_created_at,priority:2;index:idx_model_name,priority:2"`
+	ModelName     string `json:"model" gorm:"type:varchar(128);index:idx_model_name,priority:1"`
 	Url           string `json:"url" gorm:"type:varchar(255)"`
-	RequestId     string `json:"request_id" gorm:"type:varchar(128)"`
+	RequestId     string `json:"request_id" gorm:"type:varchar(128);index"`
 	ChannelsTried string `json:"channels_tried"`
 	StatusCode    int    `json:"status_code"`
 	ErrorResponse string `json:"error_response"`
@@ -67,31 +67,31 @@ func RecordLog(userId int, logType int, content string) {
 }
 
 func RecordFailedLog(ctx context.Context, userId int, modelName string, channelsTried string, statusCode int, errorResponse string, requestBody string, requestId string, url string) {
-	// requestBody may be too long, so only log the first 1000 characters
-	shortReq := requestBody
-	if len(requestBody) > 1000 {
-		shortReq = requestBody[:1000] + "..."
-	}
-	logger.Error(ctx, fmt.Sprintf("record failed log: userId=%d, modelName=%s, channelsTried=%s, statusCode=%d, errorResponse=%s, requestBody=%s", userId, modelName, channelsTried, statusCode, errorResponse, shortReq))
-	failedLog := &FailedLog{
-		UserId:        userId,
-		CreatedAt:     helper.GetTimestamp(),
-		ModelName:     modelName,
-		Url:           url,
-		RequestId:     requestId,
-		ChannelsTried: channelsTried,
-		StatusCode:    statusCode,
-		ErrorResponse: errorResponse,
-		RequestBody:   requestBody,
-	}
-	st := ctx.Value(helper.StartTimeKey)
-	if st != nil {
-		failedLog.Duration = time.Now().UnixMilli() - st.(int64)
-	}
-	err := LOG_DB.Create(failedLog).Error
-	if err != nil {
-		logger.SysError("failed to record failed log: " + err.Error())
-	}
+	//// requestBody may be too long, so only log the first 1000 characters
+	//shortReq := requestBody
+	//if len(requestBody) > 1000 {
+	//	shortReq = requestBody[:1000] + "..."
+	//}
+	//logger.Error(ctx, fmt.Sprintf("record failed log: userId=%d, modelName=%s, channelsTried=%s, statusCode=%d, errorResponse=%s, requestBody=%s", userId, modelName, channelsTried, statusCode, errorResponse, shortReq))
+	//failedLog := &FailedLog{
+	//	UserId:        userId,
+	//	CreatedAt:     helper.GetTimestamp(),
+	//	ModelName:     modelName,
+	//	Url:           url,
+	//	RequestId:     requestId,
+	//	ChannelsTried: channelsTried,
+	//	StatusCode:    statusCode,
+	//	ErrorResponse: errorResponse,
+	//	RequestBody:   requestBody,
+	//}
+	//st := ctx.Value(helper.StartTimeKey)
+	//if st != nil {
+	//	failedLog.Duration = time.Now().UnixMilli() - st.(int64)
+	//}
+	//err := LOG_DB.Create(failedLog).Error
+	//if err != nil {
+	//	logger.SysError("failed to record failed log: " + err.Error())
+	//}
 }
 
 func RecordTopupLog(userId int, content string, quota int) {
@@ -159,6 +159,12 @@ func GetAllLogs(logType int, startTimestamp int64, endTimestamp int64, modelName
 	}
 	if channel != 0 {
 		tx = tx.Where("channel_id = ?", channel)
+	}
+	if num < 0 {
+		num = -1
+	}
+	if startIdx < 0 {
+		startIdx = -1
 	}
 	err = tx.Order("id desc").Limit(num).Offset(startIdx).Find(&logs).Error
 	return logs, err
