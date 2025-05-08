@@ -67,31 +67,31 @@ func RecordLog(userId int, logType int, content string) {
 }
 
 func RecordFailedLog(ctx context.Context, userId int, modelName string, channelsTried string, statusCode int, errorResponse string, requestBody string, requestId string, url string) {
-	// requestBody may be too long, so only log the first 1000 characters
-	shortReq := requestBody
-	if len(requestBody) > 1000 {
-		shortReq = requestBody[:1000] + "..."
-	}
-	logger.Error(ctx, fmt.Sprintf("record failed log: userId=%d, modelName=%s, channelsTried=%s, statusCode=%d, errorResponse=%s, requestBody=%s", userId, modelName, channelsTried, statusCode, errorResponse, shortReq))
-	failedLog := &FailedLog{
-		UserId:        userId,
-		CreatedAt:     helper.GetTimestamp(),
-		ModelName:     modelName,
-		Url:           url,
-		RequestId:     requestId,
-		ChannelsTried: channelsTried,
-		StatusCode:    statusCode,
-		ErrorResponse: errorResponse,
-		RequestBody:   requestBody,
-	}
-	st := ctx.Value(helper.StartTimeKey)
-	if st != nil {
-		failedLog.Duration = time.Now().UnixMilli() - st.(int64)
-	}
-	err := LOG_DB.Create(failedLog).Error
-	if err != nil {
-		logger.SysError("failed to record failed log: " + err.Error())
-	}
+	//// requestBody may be too long, so only log the first 1000 characters
+	//shortReq := requestBody
+	//if len(requestBody) > 1000 {
+	//	shortReq = requestBody[:1000] + "..."
+	//}
+	//logger.Error(ctx, fmt.Sprintf("record failed log: userId=%d, modelName=%s, channelsTried=%s, statusCode=%d, errorResponse=%s, requestBody=%s", userId, modelName, channelsTried, statusCode, errorResponse, shortReq))
+	//failedLog := &FailedLog{
+	//	UserId:        userId,
+	//	CreatedAt:     helper.GetTimestamp(),
+	//	ModelName:     modelName,
+	//	Url:           url,
+	//	RequestId:     requestId,
+	//	ChannelsTried: channelsTried,
+	//	StatusCode:    statusCode,
+	//	ErrorResponse: errorResponse,
+	//	RequestBody:   requestBody,
+	//}
+	//st := ctx.Value(helper.StartTimeKey)
+	//if st != nil {
+	//	failedLog.Duration = time.Now().UnixMilli() - st.(int64)
+	//}
+	//err := LOG_DB.Create(failedLog).Error
+	//if err != nil {
+	//	logger.SysError("failed to record failed log: " + err.Error())
+	//}
 }
 
 func RecordTopupLog(userId int, content string, quota int) {
