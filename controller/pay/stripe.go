@@ -2,6 +2,7 @@ package pay
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -187,33 +188,24 @@ func StripeOrderFailed(c *gin.Context) {
 }
 
 // 查询Stripe订单状态
-func QueryStripeOrder(c *gin.Context) {
-	sessionId := c.Query("sessionId")
+func QueryStripeOrder(c *gin.Context, sessionId string) (bool, error) {
 	res, err := session.Get(sessionId, nil)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
-		return
+		return false, err
 	}
 
 	// 获取订单信息
 	record, err := model.GetOrderByTradeNo(sessionId)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
-		return
+		return false, err
 	}
 
 	tradeStatus := record.Status
 
-	// 订单未支付
-	if res.PaymentStatus == "unpaid" {
-		tradeStatus = "TRADE_CLOSED"
-	}
+	// // 订单未支付
+	// if res.PaymentStatus == "unpaid" {
+	// 	tradeStatus = "TRADE_CLOSED"
+	// }
 
 	// 支付成功，更新订单状态
 	if res.PaymentStatus == "paid" {
@@ -223,20 +215,12 @@ func QueryStripeOrder(c *gin.Context) {
 			err = model.IncreaseUserQuota(record.UserId, record.Quota)
 			if err != nil {
 				logger.Error(c, "更新用户额度异常: "+err.Error())
-				c.JSON(http.StatusOK, gin.H{
-					"success": false,
-					"message": "更新用户额度异常",
-				})
-				return
+				return false, err
 			}
 			err = model.AddQuotaRecord(record.UserId, 2, record.TradeNo, record.Quota)
 			if err != nil {
 				logger.Error(c, "创建用户额度记录异常: "+err.Error())
-				c.JSON(http.StatusOK, gin.H{
-					"success": false,
-					"message": "创建用户额度记录异常",
-				})
-				return
+				return false, err
 			}
 			tradeStatus = "TRADE_SUCCESS"
 			// 添加额度变更记录
@@ -245,25 +229,15 @@ func QueryStripeOrder(c *gin.Context) {
 	}
 
 	if res.PaymentStatus == "no_payment_required" {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "订单不存在或已过期",
-		})
-		return
+		return false, errors.New("订单不存在或已过期")
 	}
 
 	// 更新订单状态
 	err = model.UpdateOrderStatusByTradeNo(sessionId, tradeStatus)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
-		return
+		return false, err
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"message": "订单状态更新成功",
-	})
+	// 是否订单状态是否变更，不是则返回false
+	return string(tradeStatus) != record.Status, nil
 }

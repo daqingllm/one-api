@@ -49,10 +49,10 @@ func UpdateUserQuota(userId int, quota int64) error {
 	return err
 }
 
-// GetOrdersByStatus 获取所有等待付款的订单
-func GetOrdersByStatus(status string) ([]*OrderRecord, error) {
+// GetOrdersByStatus 获取用户48小时内未完成订单
+func GetOrdersByStatusByUserId(userId int, status string, expiredAt int64) ([]*OrderRecord, error) {
 	var orders []*OrderRecord
-	err := DB.Where("status = ?", status).Find(&orders).Error
+	err := DB.Where("user_id = ? AND status = ? AND create_at > ?", userId, status, expiredAt).Find(&orders).Error
 	if err != nil {
 		return nil, err
 	}
