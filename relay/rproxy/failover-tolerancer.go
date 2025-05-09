@@ -43,6 +43,9 @@ func (f *FailOverTolerancer) FaultTolerance(context *RproxyContext) (err *relaym
 		}
 		logger.Errorf(context.SrcContext, "channelId: %d ,error handling request: msg:%s ,err:%s", channel.Id, e.Message, e.Error.Message)
 		if e.StatusCode == http.StatusInternalServerError && e.Error.Code == "get_adaptor_failed" {
+			if len(f.channels) == 1 {
+				err = e
+			}
 			continue
 		}
 		err = e

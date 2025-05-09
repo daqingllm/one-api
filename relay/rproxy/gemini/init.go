@@ -76,11 +76,11 @@ func init() {
 
 	// 使用批量注册方式注册Gemini模型接口
 	registry.RegisterBatch([]rproxy.RoutePattern{
-		{PathPattern: "/gemini/v1beta/models/:model\\:generateContent", Method: "POST", ChannelType: strconv.Itoa(int(channeltype.Gemini))},
+		{PathPattern: "/gemini/v1beta/models/:model\\:generateContent", Method: "POST", ChannelType: strconv.Itoa(int(channeltype.VertextAI))},
 	}, vertexAdaptorBuilder)
 
 	registry.RegisterBatch([]rproxy.RoutePattern{
-		{PathPattern: "/gemini/v1beta/models/:model\\:streamGenerateContent", Method: "POST", ChannelType: strconv.Itoa(int(channeltype.Gemini))},
+		{PathPattern: "/gemini/v1beta/models/:model\\:streamGenerateContent", Method: "POST", ChannelType: strconv.Itoa(int(channeltype.VertextAI))},
 	}, vertexAdaptorBuilder)
 
 	// 使用批量注册方式注册Gemini模型接口
